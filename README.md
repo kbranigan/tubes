@@ -41,6 +41,8 @@ These are applications at the end of the chain, they make something real out of 
 <dl>
   <dt>./write_bmp <i>[file]</i></dt>
   <dd>Makes a BMP file - rendered off screen by OpenGL.</dd>
+  <dt>./write_kml <i>[file]</i></dt>
+  <dd>Makes a KML file - this'll work in google earth, or google maps provided you have a url for it.</dd>
 </dl>
 
 

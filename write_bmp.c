@@ -302,8 +302,6 @@ int main(int argc, char ** argv)
     fprintf(stderr, "no filename specified, using 'output.bmp'\n");
   }
   
-  //struct Shapes * s = load_shapes(stdin);
-  
   if (!read_header(stdin, FILE_VERSION_2))
   {
     fprintf(stderr, "read header failed.\n");
