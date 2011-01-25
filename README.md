@@ -49,6 +49,9 @@ These are applications at the end of the chain, they make something real out of 
 Examples
 --------
 
+icitw_wgs84.dbf is available at http://www.toronto.ca/open/datasets/wards/
+This repo only includes the source files, to create them, type 'make'
+
     ./read_shapefile icitw_wgs84.dbf | ./tesselate | ./group_shapes_on_unique_set_id | ./add_random_colors | ./write_bmp toronto_ward_map.bmp
 
 This produces: http://media.myttc.ca/toronto_ward_map.gif
