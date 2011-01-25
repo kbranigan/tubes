@@ -49,17 +49,17 @@ These are applications at the end of the chain, they make something real out of 
 Examples
 --------
 
-    <b>./read_shapefile <i>icitw_wgs84.dbf</i> | ./tesselate | ./group_shapes_on_unique_set_id | ./add_random_colors | ./write_bmp <i>toronto_ward_map.bmp</i></b>
+    ./read_shapefile icitw_wgs84.dbf | ./tesselate | ./group_shapes_on_unique_set_id | ./add_random_colors | ./write_bmp toronto_ward_map.bmp
 
 This produces: http://media.myttc.ca/toronto_ward_map.gif
 
-    <b>./read_shapefile <i>icitw_wgs84.dbf</i> | ./write_kml <i>toronto_ward_map.kml</i></b>
+    ./read_shapefile icitw_wgs84.dbf | ./write_kml toronto_ward_map.kml
 
 This produces: http://maps.google.com/maps?q=http://media.myttc.ca/toronto_ward_map.kml%23
 
 The advantage with this process is that you can redirect any stage to a file and and inspect it such as:
 
-    <b>./read_shapefile icitw_wgs84.dbf > <i>basic_data</i> ; cat <i>basic_data</i> > ./inspect</b>
+    ./read_shapefile icitw_wgs84.dbf > <i>basic_data</i> ; cat <i>basic_data</i> > ./inspect</b>
 
 This will output something similar to:
 
