@@ -59,7 +59,7 @@ This produces: http://maps.google.com/maps?q=http://media.myttc.ca/toronto_ward_
 
 The advantage with this process is that you can redirect any stage to a file and and inspect it such as:
 
-    ./read_shapefile icitw_wgs84.dbf > <i>basic_data</i> ; cat <i>basic_data</i> > ./inspect</b>
+    ./read_shapefile icitw_wgs84.dbf > basic_data ; cat basic_data > ./inspect
 
 This will output something similar to:
 
