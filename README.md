@@ -31,6 +31,8 @@ You can use these applications to modify and transform the raw vertex data and p
   <dd>The tesselator breaks an area into several TRIANGLE shapes, though they all have the same unique_set_id. This application merges the vertex arrays of the shapes for each unique_set_id.</dd>
   <dt>./add_random_colors</dt>
   <dd>This application adds an additional vertex array for the colour data - it chooses a random colour for each shape.</dd>
+  <dt>./reduce_by_distance <i>[distance]</i></dt>
+  <dd>This application strips out vertexs that are too close to their previous vertex.</dd>
 </dl>
 
 Consume
