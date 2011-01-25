@@ -41,4 +41,6 @@ int main(int argc, char *argv[])
   }
   write_shape(stdout, shape);
   free_shape(shape);
+  
+  fprintf(stderr, "%s: %d vertexes created\n", argv[0], shape->num_vertexs);
 }

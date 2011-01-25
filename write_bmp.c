@@ -157,7 +157,7 @@ void setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, 
   glOrtho(min_x-diff_x*0.1, max_x+diff_x*0.1, min_y-diff_y*0.1, max_y+diff_y*0.1, -100, 100);
   //glOrtho(-1.5, 1.5, 1.5, -1.5, -1.5, 1.5);
   
-  printf("[%f, %f], [%f, %f], [%f, %f]\n", min_x, max_x, min_y, max_y, min_z, max_z);
+  //printf("[%f, %f], [%f, %f], [%f, %f]\n", min_x, max_x, min_y, max_y, min_z, max_z);
   
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
@@ -290,16 +290,12 @@ void combineCallback(GLdouble coords[3],
 
 int main(int argc, char ** argv)
 {
+  char * filename = argc > 1 ? argv[1] : "output.bmp";
+  
   if (!stdin_is_piped())
   {
     fprintf(stderr, "%s needs a data source. (redirected pipe, using |)\n", argv[0]);
     exit(1);
-  }
-  
-  char * filename = argc > 1 ? argv[1] : "output.bmp";
-  if (argc == 1)
-  {
-    fprintf(stderr, "no filename specified, using 'output.bmp'\n");
   }
   
   if (!read_header(stdin, FILE_VERSION_2))
@@ -348,7 +344,6 @@ int main(int argc, char ** argv)
   
   setup_offscreen_render(b[0][0], b[0][1], b[1][0], b[1][1], b[2][0], b[2][1]);
   
-  fprintf(stderr, "num_shapes = %d\n", num_shapes);
   long i, j, k;
   for (i = 0 ; i < num_shapes ; i++)
   {
@@ -498,6 +493,7 @@ int main(int argc, char ** argv)
   */
   
   write_image(filename, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+  fprintf(stderr, "%s: %dx%d bmp created named '%s'\n", argv[0], TEXTURE_WIDTH, TEXTURE_HEIGHT, filename);
 }
 
 

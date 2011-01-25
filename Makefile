@@ -1,5 +1,5 @@
 
-all: read_mysql_shapes bbox write_bmp tesselate inspect add_random_colors group_shapes_on_unique_set_id read_shapefile read_mysql_line_strips produce_single_test_circle write_kml
+all: read_mysql_shapes bbox write_bmp tesselate inspect add_random_colors group_shapes_on_unique_set_id read_shapefile read_mysql_line_strips produce_single_test_circle write_kml reduce_by_distance
 
 therest: read_mysql_line_strips
 
@@ -14,6 +14,9 @@ read_mysql_shapes: scheme.o read_mysql_shapes.c
 
 group_shapes_on_unique_set_id: scheme.o group_shapes_on_unique_set_id.c
 	gcc scheme.o group_shapes_on_unique_set_id.c -o group_shapes_on_unique_set_id
+
+reduce_by_distance: scheme.o reduce_by_distance.c
+	gcc scheme.o reduce_by_distance.c -o reduce_by_distance
 
 bbox: scheme.o bbox.c
 	gcc scheme.o bbox.c -o bbox
