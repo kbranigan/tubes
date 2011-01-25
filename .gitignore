@@ -1,0 +1,15 @@
+*.o
+inspect
+add_random_colors
+bbox
+group_shapes_on_unique_set_id
+produce_single_test_circle
+read_mysql_line_strips
+read_mysql_shapes
+read_shapefile
+tesselate
+write_bmp
+*.dbf
+*.shp
+*.shx
+

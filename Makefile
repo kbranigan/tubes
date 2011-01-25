@@ -1,8 +1,10 @@
 
-all: read_mysql_shapes bbox write_bmp tesselate inspect add_random_colors group_shapes_on_unique_set_id read_shapefile
+all: read_mysql_shapes bbox write_bmp tesselate inspect add_random_colors group_shapes_on_unique_set_id read_shapefile read_mysql_line_strips produce_single_test_circle
 
 therest: read_mysql_line_strips
 
+produce_single_test_circle: scheme.o produce_single_test_circle.c
+	gcc scheme.o produce_single_test_circle.c -o produce_single_test_circle
 
 read_mysql_line_strips: scheme.o read_mysql_line_strips.c
 	gcc scheme.o read_mysql_line_strips.c -o read_mysql_line_strips -I/usr/local/mysql/include/mysql -L/usr/local/mysql/lib/mysql -lmysqlclient
