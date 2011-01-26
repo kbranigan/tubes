@@ -7,9 +7,11 @@ produce_single_test_circle
 read_mysql_line_strips
 read_mysql_shapes
 read_shapefile
+reduce_by_distance
 tesselate
 write_bmp
+write_kml
 *.dbf
 *.shp
 *.shx
-
+*.kml
