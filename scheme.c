@@ -172,11 +172,14 @@ struct Shape * read_shape(FILE * fp)
     for (i = 0 ; i < shape->num_attributes ; i++)
     {
       struct Attribute * attribute = &shape->attributes[i];
-      if (fread(&attribute->key, sizeof(attribute->key), 1, fp) != 1) { fprintf(stderr, "fread attribute %d key error\n", i); return NULL; }
       
-      if (fread(&attribute->length, sizeof(attribute->length), 1, fp) != 1) { fprintf(stderr, "fread attribute %d length error\n", i); return NULL; }
-      attribute->value = malloc(attribute->length);
-      if (fread(&attribute->value, attribute->length, 1, fp) != 1) { fprintf(stderr, "fread attribute %d value error\n", i); return NULL; }
+      if (fread(&attribute->key_length, sizeof(attribute->key_length), 1, fp) != 1) { fprintf(stderr, "fread attribute %d key length error\n", i); return NULL; }
+      attribute->value = malloc(attribute->key_length);
+      if (fread(&attribute->key, attribute->key_length, 1, fp) != 1) { fprintf(stderr, "fread attribute %d key error\n", i); return NULL; }
+      
+      if (fread(&attribute->value_length, sizeof(attribute->value_length), 1, fp) != 1) { fprintf(stderr, "fread attribute %d value length error\n", i); return NULL; }
+      attribute->value = malloc(attribute->value_length);
+      if (fread(&attribute->value, attribute->value_length, 1, fp) != 1) { fprintf(stderr, "fread attribute %d value error\n", i); return NULL; }
       
       //fprintf(stderr, "%d: %s: %s\n", i, attribute->key, attribute->value);
     }
@@ -197,7 +200,7 @@ struct Shape * read_shape(FILE * fp)
       va->shape = shape;
       if (fread(&va->array_type, sizeof(va->array_type), 1, fp) != 1) { fprintf(stderr, "fread vertex_array %d array_type error\n", i); return NULL; }
       if (fread(&va->num_dimensions, sizeof(va->num_dimensions), 1, fp) != 1) { fprintf(stderr, "fread vertex_array %d num_dimensions error\n", i); return NULL; }
-      if (va->num_dimensions != 3) fprintf(stderr, "va->num_dimensions = %d\n", va->num_dimensions);
+      //if (va->num_dimensions != 3) fprintf(stderr, "va->num_dimensions = %d\n", va->num_dimensions);
       
       va->vertexs = (double*)malloc(sizeof(double)*shape->num_vertexs*va->num_dimensions);
       
@@ -215,133 +218,6 @@ int free_shape(struct Shape * shape)
   free(shape);
   return 1;
 }
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-/*int main(int argc, char *argv[])
-{
-  FILE * fp = fopen("garf", "wb");
-  uint32_t temp;
-  double temf;
-  temp = 42;     assert(fwrite(&temp, sizeof(temp), 1, fp) == 1);
-  temp = 2;      assert(fwrite(&temp, sizeof(temp), 1, fp) == 1);
-  
-  temf = 1/0.0;  assert(fwrite(&temp, sizeof(temp), 1, fp) == 1);
-  temp = 0;      assert(fwrite(&temp, sizeof(temp), 1, fp) == 1);
-  temp = 1;      assert(fwrite(&temp, sizeof(temp), 1, fp) == 1);
-  {
-    char temc[20] = "itsakey";
-    temp = strlen(temc);
-    fwrite(&temc, sizeof(temc), 1, fp);
-    sprintf(temc, "kitsvalue");
-    temp = strlen(temc) + 1;      assert(fwrite(&temp, sizeof(temp), 1, fp) == 1);
-    temp = strlen(temc);
-    fwrite(&temc, sizeof(temc), 1, fp);
-  }
-  
-  temp = GL_TRIANGLES; assert(fwrite(&temp, sizeof(temp), 1, fp) == 1);
-  temp = 3;      assert(fwrite(&temp, sizeof(temp), 1, fp) == 1);
-  temp = 1;      assert(fwrite(&temp, sizeof(temp), 1, fp) == 1);
-  
-  
-  
-  fclose(fp);
-  
-  fp = fopen("garf", "rb");
-  if (open_file(fp, 2))
-  {
-    struct Shape * shape = NULL;
-    while ((shape = read_shape(fp)))
-    {
-      printf(" read shape\n");
-      
-      //free(shape);
-    }
-    printf("open succeeded\n");
-  }
-  printf("done\n");
-}*/
-
-/*struct Shapes * load_shapes(FILE * fp)
-{
-  uint32_t file_header;
-  if (fread(&file_header, sizeof(file_header), 1, fp) != 1) { fprintf(stderr, "fread error 1\n"); exit(1); }
-  if (file_header != 42) { fprintf(stderr, "file_header != 42\n"); exit(1); }
-  
-  struct Shapes * s = (struct Shapes *)malloc(sizeof(struct Shapes));
-  memset(s, 0, sizeof(struct Shapes));
-  
-  //if (fread(&s->num_shapes, sizeof(s->num_shapes), 1, fp) != 1) { fprintf(stderr, "fread error 2\n"); exit(1); }
-  //s->shapes = (struct Shape *)malloc(sizeof(struct Shape)*s->num_shapes);
-  
-  //for (i = 0 ; i < s->num_shapes ; i++)
-  while (stdin_has_data())
-  {
-    s->num_shapes++;
-    s->shapes = (struct Shape *)realloc(s->shapes, sizeof(struct Shape)*s->num_shapes);
-    struct Shape * sh = &s->shapes[s->num_shapes-1];
-    
-    double shape_start;
-    int ret = fread(&shape_start, sizeof(shape_start), 1, stdin);
-    if (ret != 1) { s->num_shapes--; break; }
-    
-    if (shape_start != (1.0 / 0.0)) { fprintf(stderr, "shape_start != inf\n"); exit(1); }
-    
-    if (fread(&sh->unique_id, sizeof(sh->unique_id), 1, stdin) != 1) { fprintf(stderr, "fread error 4\n"); exit(1); }
-    if (fread(&sh->name, sizeof(sh->name), 1, stdin) != 1) { fprintf(stderr, "fread error 5\n"); exit(1); }
-    if (fread(&sh->frame_type, sizeof(sh->frame_type), 1, stdin) != 1) { fprintf(stderr, "fread error 6\n"); exit(1); }
-    if (fread(&sh->vertex_type, sizeof(sh->vertex_type), 1, stdin) != 1) { fprintf(stderr, "fread error 7\n"); exit(1); }
-    if (sh->vertex_type != GL_VERTEX_ARRAY) { fprintf(stderr, "vertex_type != GL_VERTEX_ARRAY\n"); exit(1); }
-    if (fread(&sh->number_of_vertexs, sizeof(sh->number_of_vertexs), 1, stdin) != 1) { fprintf(stderr, "fread error 8\n"); exit(1); }
-    
-    sh->data = (double*)malloc(sizeof(double)*3*sh->number_of_vertexs);
-    memset(sh->data, 0, sizeof(double)*3*sh->number_of_vertexs);
-    
-    long j;
-    for (j = 0 ; j < sh->number_of_vertexs ; j++)
-    {
-      if (fread(sh->data+j*3, sizeof(double), 1, fp) != 1) { fprintf(stderr, "fread data error 9\n"); exit(1); }
-      if (fread(sh->data+j*3+1, sizeof(double), 1, fp) != 1) { fprintf(stderr, "fread data error 10\n"); exit(1); }
-      if (fread(sh->data+j*3+2, sizeof(double), 1, fp) != 1) { fprintf(stderr, "fread data error 11\n"); exit(1); }
-    }
-  }
-  
-  return s;
-}
-
-void write_shape(struct Shape * s, FILE * fp)
-{
-  if (fp == NULL) fp = stdout;
-  
-  double inf = 1.0 / 0.0;
-  if (fwrite(&inf, sizeof(inf), 1, fp) != 1) { fprintf(stderr, "\n"); exit(1); };
-  
-  if (fwrite(&s->unique_id, sizeof(s->unique_id), 1, fp) != 1) { fprintf(stderr, "\n"); exit(1); };
-  if (fwrite(s->name, sizeof(s->name), 1, fp) != 1) { fprintf(stderr, "\n"); exit(1); };
-  if (fwrite(&s->frame_type, sizeof(s->frame_type), 1, fp) != 1) { fprintf(stderr, "\n"); exit(1); };
-  if (fwrite(&s->vertex_type, sizeof(s->vertex_type), 1, fp) != 1) { fprintf(stderr, "\n"); exit(1); };
-  if (fwrite(&s->number_of_vertexs, sizeof(s->number_of_vertexs), 1, fp) != 1) { fprintf(stderr, "\n"); exit(1); };
-  
-  long j;
-  for (j = 0 ; j < s->number_of_vertexs ; j++)
-  {
-    if (fwrite(s->data+j*3, sizeof(double), 1, fp) != 1) { fprintf(stderr, "writing X coord failed.\n"); exit(1); };
-    if (fwrite(s->data+j*3+1, sizeof(double), 1, fp) != 1) { fprintf(stderr, "writing Y coord failed.\n"); exit(1); };
-    if (fwrite(s->data+j*3+2, sizeof(double), 1, fp) != 1) { fprintf(stderr, "writing Z coord failed.\n"); exit(1); };
-  }
-}
-
-void write_shapes(struct Shapes * ss, FILE * fp)
-{
-  uint32_t file_header = 42;
-  if (fwrite(&file_header, sizeof(file_header), 1, fp) != 1) { fprintf(stderr, "writing file header failed.\n"); exit(1); };
-  
-  long i;
-  for (i = 0 ; i < ss->num_shapes ; i++)
-  {
-    write_shape(&ss->shapes[i], fp);
-  }
-}*/
 
 int point_in_triangle(vec2d A, vec2d B, vec2d C, vec2d P)
 {
