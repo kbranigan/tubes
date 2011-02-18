@@ -51,15 +51,15 @@ int main(int argc, char *argv[])
     shape->vertex_arrays = (struct VertexArray*)malloc(sizeof(struct VertexArray)*shape->num_vertex_arrays);
     
     struct VertexArray *va = &shape->vertex_arrays[0];
-    va->num_dimensions = 3;
+    va->num_dimensions = 2;
     va->array_type = GL_VERTEX_ARRAY;
     va->vertexs = (double*)malloc(sizeof(double)*shape->num_vertexs*va->num_dimensions);
     //printf("%ld: %d\n", i, psShape->nSHPType);
     for (j = 0, iPart = 1; j < psShape->nVertices ; j++)
     {
-      va->vertexs[j*3+0] = psShape->padfX[j];
-      va->vertexs[j*3+1] = psShape->padfY[j];
-      va->vertexs[j*3+2] = 0;
+      va->vertexs[j*va->num_dimensions+0] = psShape->padfX[j];
+      va->vertexs[j*va->num_dimensions+1] = psShape->padfY[j];
+      //va->vertexs[j*va->num_dimensions+2] = 0;
     }
     write_shape(stdout, shape);
     free_shape(shape);

@@ -85,7 +85,7 @@ void beginCallback(GLenum which)
   
   struct VertexArray * va = &out_shape->vertex_arrays[0];
   memset(va, 0, sizeof(struct VertexArray));
-  va->num_dimensions = 3;
+  va->num_dimensions = 2;
   va->array_type = GL_VERTEX_ARRAY;
 }
 
@@ -215,14 +215,14 @@ int main(int argc, char ** argv)
     for (i = 0 ; i < shape->num_vertex_arrays ; i++)
     {
       struct VertexArray * va = &shape->vertex_arrays[i];
-      if (va->num_dimensions != 3) continue;
+      if (va->num_dimensions < 2) continue;
       for (j = 0 ; j < shape->num_vertexs ; j++)
       {
         double *vertex;
         vertex = (double *) malloc(3 * sizeof(double));
-        vertex[0] = va->vertexs[j*3];
-        vertex[1] = va->vertexs[j*3+1];
-        vertex[2] = va->vertexs[j*3+2];
+        vertex[0] = va->vertexs[j*va->num_dimensions];
+        vertex[1] = va->vertexs[j*va->num_dimensions+1];
+        vertex[2] = (va->num_dimensions == 3) ? va->vertexs[j*va->num_dimensions+2] : 0;
         
         gluTessVertex(tobj, vertex, vertex);
       }
