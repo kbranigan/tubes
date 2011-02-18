@@ -1,5 +1,5 @@
 
-all: read_mysql_shapes bbox write_bmp tesselate inspect add_random_colors group_shapes_on_unique_set_id read_shapefile read_mysql_line_strips produce_single_test_circle write_kml reduce_by_distance reduce_by_id coordinate_convert
+all: read_mysql_shapes bbox write_bmp tesselate inspect add_random_colors group_shapes_on_unique_set_id read_shapefile produce_single_test_circle write_kml reduce_by_distance reduce_by_id coordinate_convert
 
 therest: read_mysql_line_strips
 
