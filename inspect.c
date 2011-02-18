@@ -12,7 +12,7 @@ int main(int argc, char ** argv)
     exit(1);
   }
   
-  read_header(stdin, FILE_VERSION_2);
+  read_header(stdin, CURRENT_VERSION);
   
   int num_shapes = 0;
   int num_shapes_with_no_vertexs = 0;

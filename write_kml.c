@@ -27,7 +27,7 @@ int main(int argc, char ** argv)
     exit(1);
   }
   
-  if (!read_header(stdin, FILE_VERSION_2))
+  if (!read_header(stdin, CURRENT_VERSION))
   {
     fprintf(stderr, "read header failed.\n");
     exit(1);

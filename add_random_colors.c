@@ -18,8 +18,8 @@ int main(int argc, char ** argv)
     exit(1);
   }
   
-  if (!read_header(stdin, FILE_VERSION_2)) { fprintf(stderr, "read header failed.\n"); exit(1); }
-  if (!write_header(stdout, FILE_VERSION_2)) { fprintf(stderr, "write header failed.\n"); exit(1); }
+  if (!read_header(stdin, CURRENT_VERSION)) { fprintf(stderr, "read header failed.\n"); exit(1); }
+  if (!write_header(stdout, CURRENT_VERSION)) { fprintf(stderr, "write header failed.\n"); exit(1); }
   
   struct Shape * shape = NULL;
   while ((shape = read_shape(stdin)))

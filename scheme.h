@@ -10,8 +10,9 @@
 #include "vectmath.h"
 
 #define FILE_VERSION_2 2
+#define FILE_VERSION_3 3
 
-#define CURRENT_VERSION 2
+#define CURRENT_VERSION FILE_VERSION_3
 
 /* include this file before OpenGL headers, that way these defines don't conflict */
 
@@ -83,8 +84,9 @@ struct VertexArray {
 };
 
 struct Attribute {
-  uint32_t length;
-  char key[20];
+  uint32_t key_length;
+  char * key;
+  uint32_t value_length;
   char * value;
 };
 

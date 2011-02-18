@@ -18,10 +18,14 @@ group_field becomes the unique_id, it currently needs to be an integer
 
 */
 
+#include "scheme.h"
 #include <OpenGL/gl.h>
 
 int main(int argc, char *argv[])
 {
+  printf("use ./read_mysql_shapes instead\n");
+  return 0;
+  
   char * database    = (argc > 1) ? argv[1] : "ttc";
   char * table       = (argc > 2) ? argv[2] : "shape_points";
   char * group_field = (argc > 3) ? argv[3] : "shape_id";

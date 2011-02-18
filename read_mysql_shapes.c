@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 	  MYSQL_RES * res = mysql_store_result(&mysql);
     MYSQL_ROW row;
     
-    if (!write_header(stdout, FILE_VERSION_2)) exit(1);
+    if (!write_header(stdout, CURRENT_VERSION)) exit(1);
     
     while ((row = mysql_fetch_row(res)))
     {

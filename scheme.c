@@ -51,7 +51,7 @@ int write_header(FILE * fp, uint32_t file_version)
   
   uint32_t file_header = 42;
   if (fwrite(&file_header, sizeof(file_header), 1, stdout) != 1) sprintf(error, "fwrite error.\n");
-  if (file_version != 2) sprintf(error, "fwrite file_version != 2.\n");
+  if (file_version != CURRENT_VERSION) sprintf(error, "fwrite file_version != CURRENT_VERSION (%d)\n", CURRENT_VERSION);
   if (fwrite(&file_version, sizeof(file_version), 1, stdout) != 1) sprintf(error, "fwrite error.\n");
   
   if (strlen(error) > 0)
@@ -73,7 +73,7 @@ int read_header(FILE * fp, uint32_t req_file_version)
   if (file_header != 42) sprintf(error, "file_header != 42\n");
   if (fread(&file_version, sizeof(file_version), 1, fp) != 1) sprintf(error, "fread file_version error\n");
   if (req_file_version != 0 && file_version != req_file_version) sprintf(error, "file_version (%d) != req_file_version (%d)\n", file_version, req_file_version);
-  if (file_version > 2) sprintf(error, "file_version > 2\n");
+  if (file_version > CURRENT_VERSION) sprintf(error, "file_version (%d) > CURRENT_VERSION (%d)\n", file_version, CURRENT_VERSION);
   
   if (strlen(error) > 0)
   {

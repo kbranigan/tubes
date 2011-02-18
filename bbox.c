@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     {10000000, -10000000}
   };
   
-  if (read_header(stdin, FILE_VERSION_2))
+  if (read_header(stdin, CURRENT_VERSION))
   {
     struct Shape * shape = NULL;
     

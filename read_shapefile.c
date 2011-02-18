@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
   long nRecordCount = DBFGetRecordCount(d);
   long nFieldCount = DBFGetFieldCount(d);
   
-  if (!write_header(stdout, FILE_VERSION_2)) { fprintf(stderr, "write header failed.\n"); exit(1); }
+  if (!write_header(stdout, CURRENT_VERSION)) { fprintf(stderr, "write header failed.\n"); exit(1); }
   
   long i;
   for (i = 0 ; i < nRecordCount ; i++)

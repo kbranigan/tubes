@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     exit(1);
   }
   
-  if (!write_header(stdout, FILE_VERSION_2)) exit(1);
+  if (!write_header(stdout, CURRENT_VERSION)) exit(1);
   
   struct Shape * shape = (struct Shape*)malloc(sizeof(struct Shape));
   memset(shape, 0, sizeof(struct Shape));
