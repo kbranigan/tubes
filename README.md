@@ -33,6 +33,8 @@ You can use these applications to modify and transform the raw vertex data and p
   <dd>This application adds an additional vertex array for the colour data - it chooses a random colour for each shape.</dd>
   <dt>./reduce_by_distance <i>[distance]</i></dt>
   <dd>This application strips out vertexs that are too close to their previous vertex.</dd>
+  <dt>./coordinate_convert <i>[nad27/wgs84] [utm/mtm] [zone] (mrm)</i></dt>
+  <dd>Converts silly coordinate systems to lat/lng</dd>
 </dl>
 
 Consume
