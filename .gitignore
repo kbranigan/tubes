@@ -11,6 +11,9 @@ reduce_by_distance
 tesselate
 write_bmp
 write_kml
+coordinate_convert
+reduce_by_id
+a.out
 *.dbf
 *.shp
 *.shx
