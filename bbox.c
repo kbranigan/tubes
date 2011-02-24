@@ -28,18 +28,18 @@ int main(int argc, char *argv[])
         
         if (va->array_type != GL_VERTEX_ARRAY) continue;
         
-        if (va->num_dimensions != 3) fprintf(stderr, "vertex_array has %d dimensions (expected 3)\n", va->num_dimensions);
+        //if (va->num_dimensions != 3) fprintf(stderr, "vertex_array has %d dimensions (expected 3)\n", va->num_dimensions);
         if (va->vertexs == NULL) { fprintf(stderr, "vertex array %ld is NULL\n", i); exit(1); }
       
         for (j = 0 ; j < shape->num_vertexs ; j++)
         {
-          double x = va->vertexs[j*3];
-          double y = va->vertexs[j*3+1];
-          double z = va->vertexs[j*3+2];
+          double x = va->vertexs[j*va->num_dimensions];
+          double y = va->vertexs[j*va->num_dimensions+1];
+          double z = va->vertexs[j*va->num_dimensions+2];
           
           if (x < b[0][0]) b[0][0] = x; if (x > b[0][1]) b[0][1] = x;
           if (y < b[1][0]) b[1][0] = y; if (y > b[1][1]) b[1][1] = y;
-          if (z < b[2][0]) b[2][0] = z; if (z > b[2][1]) b[2][1] = z;
+          if (va->num_dimensions >= 3) { if (z < b[2][0]) b[2][0] = z; if (z > b[2][1]) b[2][1] = z; }
         }
       }
       free_shape(shape);
