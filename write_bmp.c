@@ -130,7 +130,7 @@ void setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, 
   //  printf("fboUsed = false\n");
   //  fboUsed = false;
   
-  glEnable(GL_DEPTH_TEST);
+  glDisable(GL_DEPTH_TEST);
 	glShadeModel(GL_SMOOTH);
 	glPolygonOffset (1.0f, 1.0f);
 	
@@ -291,6 +291,7 @@ void combineCallback(GLdouble coords[3],
 int main(int argc, char ** argv)
 {
   char * filename = argc > 1 ? argv[1] : "output.bmp";
+  int draw_individual_shapes = 0;
   
   if (!stdin_is_piped())
   {
@@ -310,6 +311,7 @@ int main(int argc, char ** argv)
     {10000000, -10000000}
   };
   
+  double x,y,z;
   int num_shapes = 0;
   struct Shape ** shapes = NULL;
   
@@ -324,29 +326,35 @@ int main(int argc, char ** argv)
     for (i = 0 ; i < shape->num_vertex_arrays ; i++)
     {
       struct VertexArray * va = &shape->vertex_arrays[i];
-      if (va->num_dimensions != 3) fprintf(stderr, "vertex_array has %d dimensions (expected 3)\n", va->num_dimensions);
-      if (va->vertexs == NULL) { fprintf(stderr, "vertex array %ld is NULL\n", i); exit(1); }
-      
       if (va->array_type != GL_VERTEX_ARRAY) continue;
+      if (va->num_dimensions < 2) fprintf(stderr, "vertex_array has %d dimensions (expected at least 2)\n", va->num_dimensions);
+      if (va->vertexs == NULL) { fprintf(stderr, "vertex array %ld is NULL\n", i); exit(1); }
       
       for (j = 0 ; j < shape->num_vertexs ; j++)
       {
-        double x = va->vertexs[j*3];
-        double y = va->vertexs[j*3+1];
-        double z = va->vertexs[j*3+2];
+        x = va->vertexs[j*va->num_dimensions];
+        y = va->vertexs[j*va->num_dimensions+1];
+        if (va->num_dimensions >= 3) z = va->vertexs[j*va->num_dimensions+2];
         
         if (x < b[0][0]) b[0][0] = x; if (x > b[0][1]) b[0][1] = x;
         if (y < b[1][0]) b[1][0] = y; if (y > b[1][1]) b[1][1] = y;
-        if (z < b[2][0]) b[2][0] = z; if (z > b[2][1]) b[2][1] = z;
+        if (va->num_dimensions >= 3) { if (z < b[2][0]) b[2][0] = z; if (z > b[2][1]) b[2][1] = z; }
       }
     }
   }
   
-  setup_offscreen_render(b[0][0], b[0][1], b[1][0], b[1][1], b[2][0], b[2][1]);
+  if (!draw_individual_shapes)
+  {
+    setup_offscreen_render(b[0][0], b[0][1], b[1][0], b[1][1], b[2][0], b[2][1]);
+  }
   
   long i, j, k;
   for (i = 0 ; i < num_shapes ; i++)
   {
+    if (draw_individual_shapes)
+    {
+      setup_offscreen_render(b[0][0], b[0][1], b[1][0], b[1][1], b[2][0], b[2][1]);
+    }
     shape = shapes[i];
     glBegin(shape->gl_type);
     glColor3f(0,0,0);
@@ -354,7 +362,7 @@ int main(int argc, char ** argv)
     {
       struct VertexArray * va = &shape->vertex_arrays[j];
       if (va->array_type != GL_COLOR_ARRAY) continue;
-      if (va->num_dimensions != 3) fprintf(stderr, "vertex_array has %d dimensions (expected 3)\n", va->num_dimensions);
+      if (va->num_dimensions < 3) fprintf(stderr, "vertex_array has %d dimensions (expected at least 3)\n", va->num_dimensions);
       if (va->vertexs == NULL) { fprintf(stderr, "vertex array %ld is NULL\n", j); exit(1); }
       
       for (k = 0 ; k < shape->num_vertexs ; k++)
@@ -368,7 +376,7 @@ int main(int argc, char ** argv)
     {
       struct VertexArray * va = &shape->vertex_arrays[j];
       if (va->array_type != GL_VERTEX_ARRAY) continue;
-      if (va->num_dimensions != 3) fprintf(stderr, "vertex_array has %d dimensions (expected 3)\n", va->num_dimensions);
+      if (va->num_dimensions < 2) fprintf(stderr, "vertex_array has %d dimensions (expected at least 2)\n", va->num_dimensions);
       if (va->vertexs == NULL) { fprintf(stderr, "vertex array %ld is NULL\n", j); exit(1); }
       
       for (k = 0 ; k < shape->num_vertexs ; k++)
@@ -379,9 +387,25 @@ int main(int argc, char ** argv)
       }
     }
     glEnd();
-    //free_shape(shape);
+    free_shape(shape);
+    
+    if (draw_individual_shapes)
+    {
+      char f[100];
+      sprintf(f, "output/%ld.bmp", i);
+      write_image(f, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+      fprintf(stderr, "%s: %dx%d bmp created named '%s'\n", argv[0], TEXTURE_WIDTH, TEXTURE_HEIGHT, f);
+    }
   }
-  //free(shapes);
+  
+  if (!draw_individual_shapes)
+  {
+    write_image(filename, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+    fprintf(stderr, "%s: %dx%d bmp created named '%s'\n", argv[0], TEXTURE_WIDTH, TEXTURE_HEIGHT, filename);
+  }
+  
+  //write_image(filename, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+  //fprintf(stderr, "%s: %dx%d bmp created named '%s'\n", argv[0], TEXTURE_WIDTH, TEXTURE_HEIGHT, filename);
   
   /*GLUtesselator * tobj = NULL;
   if (strcmp(tess, "tess")==0)
@@ -492,8 +516,6 @@ int main(int argc, char ** argv)
   mysql_close(&mysql);
   */
   
-  write_image(filename, TEXTURE_WIDTH, TEXTURE_HEIGHT);
-  fprintf(stderr, "%s: %dx%d bmp created named '%s'\n", argv[0], TEXTURE_WIDTH, TEXTURE_HEIGHT, filename);
 }
 
 
