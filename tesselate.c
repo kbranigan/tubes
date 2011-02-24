@@ -85,7 +85,7 @@ void beginCallback(GLenum which)
   
   struct VertexArray * va = &out_shape->vertex_arrays[0];
   memset(va, 0, sizeof(struct VertexArray));
-  va->num_dimensions = 2;
+  va->num_dimensions = 3;
   va->array_type = GL_VERTEX_ARRAY;
 }
 
@@ -112,10 +112,19 @@ void endCallback(void)
     {
       if (j >= 3)
       {
-        new_vertexs[j*3+0] = va->vertexs[(i-2)*3+0]; new_vertexs[j*3+1] = va->vertexs[(i-2)*3+1]; new_vertexs[j*3+2] = va->vertexs[(i-2)*3+2]; j++;
-        new_vertexs[j*3+0] = va->vertexs[(i-1)*3+0]; new_vertexs[j*3+1] = va->vertexs[(i-1)*3+1]; new_vertexs[j*3+2] = va->vertexs[(i-1)*3+2]; j++;
+        new_vertexs[j*3+0] = va->vertexs[(i-2)*3+0];
+        new_vertexs[j*3+1] = va->vertexs[(i-2)*3+1];
+        new_vertexs[j*3+2] = va->vertexs[(i-2)*3+2];
+        j++;
+        new_vertexs[j*3+0] = va->vertexs[(i-1)*3+0];
+        new_vertexs[j*3+1] = va->vertexs[(i-1)*3+1];
+        new_vertexs[j*3+2] = va->vertexs[(i-1)*3+2];
+        j++;
       }
-      new_vertexs[j*3+0] = va->vertexs[i*3+0]; new_vertexs[j*3+1] = va->vertexs[i*3+1]; new_vertexs[j*3+2] = va->vertexs[i*3+2]; j++;
+      new_vertexs[j*3+0] = va->vertexs[i*3+0];
+      new_vertexs[j*3+1] = va->vertexs[i*3+1];
+      new_vertexs[j*3+2] = va->vertexs[i*3+2];
+      j++;
     }
     
     free(va->vertexs);
