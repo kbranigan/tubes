@@ -69,15 +69,13 @@ void multiply_matrixes(struct matrix33 *m1, struct matrix33 *m2, struct matrix33
   *z = o33._13;
 }*/
 
+struct Shape * final_shape = NULL;
 struct Shape * out_shape = NULL;
-uint32_t unique_set_id = 0;
 void beginCallback(GLenum which)
 {
   out_shape = (struct Shape*)malloc(sizeof(struct Shape));
   memset(out_shape, 0, sizeof(struct Shape));
   
-  out_shape->unique_set_id = unique_set_id;
-  out_shape->num_attributes = 0;
   out_shape->gl_type = which;
   out_shape->num_vertexs = 0;
   out_shape->num_vertex_arrays = 1;
@@ -112,19 +110,10 @@ void endCallback(void)
     {
       if (j >= 3)
       {
-        new_vertexs[j*3+0] = va->vertexs[(i-2)*3+0];
-        new_vertexs[j*3+1] = va->vertexs[(i-2)*3+1];
-        new_vertexs[j*3+2] = va->vertexs[(i-2)*3+2];
-        j++;
-        new_vertexs[j*3+0] = va->vertexs[(i-1)*3+0];
-        new_vertexs[j*3+1] = va->vertexs[(i-1)*3+1];
-        new_vertexs[j*3+2] = va->vertexs[(i-1)*3+2];
-        j++;
+        new_vertexs[j*3+0] = va->vertexs[(i-2)*3+0]; new_vertexs[j*3+1] = va->vertexs[(i-2)*3+1]; new_vertexs[j*3+2] = va->vertexs[(i-2)*3+2]; j++;
+        new_vertexs[j*3+0] = va->vertexs[(i-1)*3+0]; new_vertexs[j*3+1] = va->vertexs[(i-1)*3+1]; new_vertexs[j*3+2] = va->vertexs[(i-1)*3+2]; j++;
       }
-      new_vertexs[j*3+0] = va->vertexs[i*3+0];
-      new_vertexs[j*3+1] = va->vertexs[i*3+1];
-      new_vertexs[j*3+2] = va->vertexs[i*3+2];
-      j++;
+      new_vertexs[j*3+0] = va->vertexs[i*3+0]; new_vertexs[j*3+1] = va->vertexs[i*3+1]; new_vertexs[j*3+2] = va->vertexs[i*3+2]; j++;
     }
     
     free(va->vertexs);
@@ -155,7 +144,12 @@ void endCallback(void)
     out_shape->gl_type = GL_TRIANGLES;
   }
   
-  write_shape(stdout, out_shape);
+  final_shape->num_vertexs += out_shape->num_vertexs;
+  struct VertexArray * va = &final_shape->vertex_arrays[0];
+  va->vertexs = (double*)realloc(va->vertexs, sizeof(double)*final_shape->num_vertexs*va->num_dimensions);
+  
+  memcpy(&va->vertexs[final_shape->num_vertexs*va->num_dimensions - out_shape->num_vertexs*va->num_dimensions], &out_shape->vertex_arrays[0].vertexs[0], sizeof(double)*va->num_dimensions*out_shape->num_vertexs);
+  
   free_shape(out_shape);
   out_shape = NULL;
 }
@@ -217,14 +211,27 @@ int main(int argc, char ** argv)
   long i=0, j=0, count=0;
   while ((shape = read_shape(stdin)))
   {
-    unique_set_id = shape->unique_set_id;
+    final_shape = (struct Shape*)malloc(sizeof(struct Shape));
+    memset(final_shape, 0, sizeof(struct Shape));
+    
+    final_shape->unique_set_id = shape->unique_set_id;
+    final_shape->gl_type = GL_TRIANGLES;
+    final_shape->num_vertexs = 0;
+    final_shape->num_vertex_arrays = 1;
+    final_shape->vertex_arrays = (struct VertexArray*)malloc(sizeof(struct VertexArray)*final_shape->num_vertex_arrays);
+    
+    struct VertexArray * va = &final_shape->vertex_arrays[0];
+    memset(va, 0, sizeof(struct VertexArray));
+    va->num_dimensions = 3;
+    va->array_type = GL_VERTEX_ARRAY;
+    
     if (shape->gl_type != GL_LINE_LOOP) { fprintf(stderr, "providing non line loop to tesselator. NO GOOD\n"); exit(1); }
     gluTessBeginPolygon(tobj, NULL);
     gluTessBeginContour(tobj);
     for (i = 0 ; i < shape->num_vertex_arrays ; i++)
     {
       struct VertexArray * va = &shape->vertex_arrays[i];
-      if (va->num_dimensions < 2) continue;
+      if (va->num_dimensions < 2 || va->num_dimensions > 3) { fprintf(stderr,"va->num_dimensions is %d", va->num_dimensions); continue; }
       for (j = 0 ; j < shape->num_vertexs ; j++)
       {
         double *vertex;
@@ -238,7 +245,10 @@ int main(int argc, char ** argv)
     }
     gluTessEndContour(tobj);
     gluTessEndPolygon(tobj);
+    
     count++;
+    write_shape(stdout, final_shape);
+    free_shape(final_shape);
   }
   gluDeleteTess(tobj);
   
