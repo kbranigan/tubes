@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
   
   va->shape = shape;
   va->array_type = GL_VERTEX_ARRAY;
-  va->num_dimensions = 3;
+  va->num_dimensions = (argc > 1) ? (atoi(argv[1]) == 3 ? 3 : 2) : 2;
   va->vertexs = (double*)malloc(sizeof(double)*va->num_dimensions*shape->num_vertex_arrays);
   
   long i;
