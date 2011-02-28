@@ -66,7 +66,7 @@ This produces: http://maps.google.com/maps?q=http://branigan.ca/toronto_ward_map
 
 The advantage with this process is that you can redirect any stage to a file and and inspect it such as:
 
-    ./read_shapefile icitw_wgs84.dbf > some_binary_data_file ; cat some_binary_data_file > ./inspect
+    ./read_shapefile icitw_wgs84.dbf > some_binary_data_file ; cat some_binary_data_file | ./inspect
 
 This will output something similar to:
 
@@ -74,22 +74,36 @@ This will output something similar to:
       unique_set_id: 0
       gl_type: 2
       num_attributes: 0
-      num_vertexs: 32
+      num_vertexs: 410
       num_vertex_arrays: 1
       vertex_arrays:
         array_type: 32884
-        num_dimensions: 3
+        num_dimensions: 2
         vertexs:
-          1.000000 0.000000 0.000000 
-          0.980785 0.195090 0.000000 
-          0.923880 0.382683 0.000000 
-          0.831470 0.555570 0.000000 
+          -79.264856 43.779556 
+          -79.264953 43.779541 
+          -79.266121 43.779358 
+          -79.266228 43.779343 
+          ...
+    shape:
+      unique_set_id: 1
+      gl_type: 2
+      num_attributes: 0
+      num_vertexs: 909
+      num_vertex_arrays: 1
+      vertex_arrays:
+        array_type: 32884
+        num_dimensions: 2
+        vertexs:
+          -79.170768 43.755638 
+          -79.170804 43.755717 
+          -79.170929 43.755827 
+          -79.171088 43.755951 
           ...
     {
-      "num_shapes": 1,
-      "num_vertexs": 32,
-      "num_each_gl_type": [0,0,1,0,0,0,0]
+      "num_shapes": 44,
+      "num_vertexs": 26787,
+      "num_each_gl_type": [0,0,44,0,0,0,0]
     }
 
-
-The raw vertex data is binary and can't be viewed on the terminal.
+The raw vertex data stream is binary and can't be viewed directly on the terminal.
