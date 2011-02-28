@@ -1,7 +1,10 @@
 
-all: read_mysql_shapes bbox write_bmp tesselate inspect add_random_colors group_shapes_on_unique_set_id read_shapefile produce_single_test_circle write_kml reduce_by_distance reduce_by_id coordinate_convert
+all: read_mysql_shapes bbox write_bmp tesselate inspect add_random_colors group_shapes_on_unique_set_id read_shapefile produce_single_test_circle write_kml reduce_by_distance reduce_by_id coordinate_convert unit_sphere
 
 therest: read_mysql_line_strips
+
+unit_sphere: scheme.o unit_sphere.c
+	gcc scheme.o unit_sphere.c -o unit_sphere
 
 produce_single_test_circle: scheme.o produce_single_test_circle.c
 	gcc scheme.o produce_single_test_circle.c -o produce_single_test_circle
