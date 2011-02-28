@@ -13,6 +13,7 @@ write_bmp
 write_kml
 coordinate_convert
 reduce_by_id
+unit_sphere
 a.out
 *.dbf
 *.shp
