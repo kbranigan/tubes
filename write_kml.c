@@ -41,7 +41,8 @@ int main(int argc, char ** argv)
   long i=0, j=0, count=0;
   while ((shape = read_shape(stdin)))
   {
-    char * name = "lolol";
+    char name[200];
+    sprintf(name, "shape %d", shape->unique_set_id);
     fprintf(fp, "    <Placemark>\n");
     fprintf(fp, "      <name>%s</name>\n", name);
     fprintf(fp, "      <Polygon>\n");
