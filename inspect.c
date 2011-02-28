@@ -27,7 +27,7 @@ int main(int argc, char ** argv)
     
     num_vertexs += shape->num_vertexs;
     num_shapes++;
-    if (num_shapes <= 4)
+    if (num_shapes <= 2)
       inspect_shape(stdout, shape);
   }
   
