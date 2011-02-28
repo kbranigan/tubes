@@ -34,7 +34,7 @@ int stdin_has_data()
   
   FD_ZERO(&rfds);
   FD_SET(0, &rfds);
-  tv.tv_sec = 1;
+  tv.tv_sec = 5;
   tv.tv_usec = 0;
   
   if (feof(stdin)) return 0;

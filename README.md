@@ -11,7 +11,7 @@ These programs produce raw vertex data which can be piped into one of the other 
 <dl>
   <dt>./produce_single_test_circle</dt>
     <dd>Outputs a single circle LINE_LOOP - for testing</dd>
-  <dt>./read_shapefile <i>[file]</i></dt>
+  <dt>./read_shapefile <i>[file] (id)</i></dt>
     <dd>reads shapefile format and produces the raw vertex data as line loops.  A lot of the features of shapefile are stripped out, but could be maintained if it mattered.</dd>
   <dt>./read_mysql_shapes <i>[database] [table] [group_field] [order_field] [x] [y] [z]</i></dt>
     <dd>selects from mysql, loading shapes out of the selected database.table. As follows:<br />
@@ -28,7 +28,7 @@ You can use these applications to modify and transform the raw vertex data and p
   <dt>./tesselate</dt>
   <dd>Translates LINE_LOOPS to TRIANGLES, uses gluTesselator (This is for rendering in OpenGL - it can only render convex polygons)</dd>
   <dt>./group_shapes_on_unique_set_id</dt>
-  <dd>The tesselator breaks an area into several TRIANGLE shapes, though they all have the same unique_set_id. This application merges the vertex arrays of the shapes for each unique_set_id.</dd>
+  <dd>This application merges the vertex arrays of the shapes for each unique_set_id, used to be needed when tesselating, but is no longer.</dd>
   <dt>./add_random_colors</dt>
   <dd>This application adds an additional vertex array for the colour data - it chooses a random colour for each shape.</dd>
   <dt>./reduce_by_distance <i>[distance]</i></dt>
@@ -56,7 +56,7 @@ Examples
 icitw_wgs84.dbf is available at http://www.toronto.ca/open/datasets/wards/<br />
 This repo only includes the source files, to create them, type 'make'
 
-    ./read_shapefile icitw_wgs84.dbf | ./tesselate | ./group_shapes_on_unique_set_id | ./add_random_colors | ./write_bmp toronto_ward_map.bmp
+    ./read_shapefile icitw_wgs84.dbf | ./tesselate | ./add_random_colors | ./write_bmp toronto_ward_map.bmp
 
 This produces: http://branigan.ca/toronto_ward_map.gif
 
@@ -66,7 +66,7 @@ This produces: http://maps.google.com/maps?q=http://branigan.ca/toronto_ward_map
 
 The advantage with this process is that you can redirect any stage to a file and and inspect it such as:
 
-    ./read_shapefile icitw_wgs84.dbf > basic_data ; cat basic_data > ./inspect
+    ./read_shapefile icitw_wgs84.dbf > some_binary_data_file ; cat some_binary_data_file > ./inspect
 
 This will output something similar to:
 
