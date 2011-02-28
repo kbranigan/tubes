@@ -83,7 +83,7 @@ void beginCallback(GLenum which)
   
   struct VertexArray * va = &out_shape->vertex_arrays[0];
   memset(va, 0, sizeof(struct VertexArray));
-  va->num_dimensions = 3;
+  va->num_dimensions = final_shape->vertex_arrays[0].num_dimensions;
   va->array_type = GL_VERTEX_ARRAY;
 }
 
@@ -92,28 +92,38 @@ void vertex3dv(const GLdouble * c)
   out_shape->num_vertexs++;
   struct VertexArray * va = &out_shape->vertex_arrays[0];
   va->vertexs = (double*)realloc(va->vertexs, sizeof(double)*out_shape->num_vertexs*va->num_dimensions);
-  va->vertexs[(out_shape->num_vertexs-1)*3] = c[0];
-  va->vertexs[(out_shape->num_vertexs-1)*3+1] = c[1];
-  va->vertexs[(out_shape->num_vertexs-1)*3+2] = c[2];
+  va->vertexs[(out_shape->num_vertexs-1)*va->num_dimensions] = c[0];
+  va->vertexs[(out_shape->num_vertexs-1)*va->num_dimensions+1] = c[1];
+  if (va->num_dimensions == 3) va->vertexs[(out_shape->num_vertexs-1)*va->num_dimensions+2] = c[2];
 }
 
 void endCallback(void)
 {
   if (out_shape->gl_type == GL_TRIANGLE_STRIP)
   {
-    int new_num_vertexs = ((out_shape->num_vertexs - 3) * 3) + 3;
-    double * new_vertexs = (double*)malloc(sizeof(double)*3*(new_num_vertexs));
-    
     struct VertexArray * va = &out_shape->vertex_arrays[0];
+    
+    int new_num_vertexs = ((out_shape->num_vertexs - 3) * 3) + 3;
+    double * new_vertexs = (double*)malloc(sizeof(double)*va->num_dimensions*(new_num_vertexs));
+    
     long i, j=0;
     for (i = 0 ; i < out_shape->num_vertexs ; i++)
     {
       if (j >= 3)
       {
-        new_vertexs[j*3+0] = va->vertexs[(i-2)*3+0]; new_vertexs[j*3+1] = va->vertexs[(i-2)*3+1]; new_vertexs[j*3+2] = va->vertexs[(i-2)*3+2]; j++;
-        new_vertexs[j*3+0] = va->vertexs[(i-1)*3+0]; new_vertexs[j*3+1] = va->vertexs[(i-1)*3+1]; new_vertexs[j*3+2] = va->vertexs[(i-1)*3+2]; j++;
+        new_vertexs[j*va->num_dimensions+0] = va->vertexs[(i-2)*va->num_dimensions+0];
+        new_vertexs[j*va->num_dimensions+1] = va->vertexs[(i-2)*va->num_dimensions+1];
+        if (va->num_dimensions == 3) new_vertexs[j*va->num_dimensions+2] = va->vertexs[(i-2)*va->num_dimensions+2];
+        j++;
+        new_vertexs[j*va->num_dimensions+0] = va->vertexs[(i-1)*va->num_dimensions+0];
+        new_vertexs[j*va->num_dimensions+1] = va->vertexs[(i-1)*va->num_dimensions+1];
+        if (va->num_dimensions == 3) new_vertexs[j*va->num_dimensions+2] = va->vertexs[(i-1)*va->num_dimensions+2];
+        j++;
       }
-      new_vertexs[j*3+0] = va->vertexs[i*3+0]; new_vertexs[j*3+1] = va->vertexs[i*3+1]; new_vertexs[j*3+2] = va->vertexs[i*3+2]; j++;
+      new_vertexs[j*va->num_dimensions+0] = va->vertexs[i*va->num_dimensions+0];
+      new_vertexs[j*va->num_dimensions+1] = va->vertexs[i*va->num_dimensions+1];
+      if (va->num_dimensions == 3) new_vertexs[j*va->num_dimensions+2] = va->vertexs[i*va->num_dimensions+2];
+      j++;
     }
     
     free(va->vertexs);
@@ -123,19 +133,28 @@ void endCallback(void)
   }
   else if (out_shape->gl_type == GL_TRIANGLE_FAN)
   {
-    int new_num_vertexs = ((out_shape->num_vertexs - 3) * 3) + 3;
-    double * new_vertexs = (double*)malloc(sizeof(double)*3*(new_num_vertexs));
-    
     struct VertexArray * va = &out_shape->vertex_arrays[0];
+    int new_num_vertexs = ((out_shape->num_vertexs - 3) * 3) + 3;
+    double * new_vertexs = (double*)malloc(sizeof(double)*va->num_dimensions*(new_num_vertexs));
+    
     long i, j=0;
     for (i = 0 ; i < out_shape->num_vertexs ; i++)
     {
       if (j >= 3)
       {
-        new_vertexs[j*3+0] = va->vertexs[0]; new_vertexs[j*3+1] = va->vertexs[1]; new_vertexs[j*3+2] = va->vertexs[2]; j++;
-        new_vertexs[j*3+0] = va->vertexs[(i-1)*3+0]; new_vertexs[j*3+1] = va->vertexs[(i-1)*3+1]; new_vertexs[j*3+2] = va->vertexs[(i-1)*3+2]; j++;
+        new_vertexs[j*va->num_dimensions+0] = va->vertexs[0];
+        new_vertexs[j*va->num_dimensions+1] = va->vertexs[1];
+        if (va->num_dimensions == 3) new_vertexs[j*va->num_dimensions+2] = va->vertexs[2];
+        j++;
+        new_vertexs[j*va->num_dimensions+0] = va->vertexs[(i-1)*va->num_dimensions+0];
+        new_vertexs[j*va->num_dimensions+1] = va->vertexs[(i-1)*va->num_dimensions+1];
+        if (va->num_dimensions == 3) new_vertexs[j*va->num_dimensions+2] = va->vertexs[(i-1)*va->num_dimensions+2];
+        j++;
       }
-      new_vertexs[j*3+0] = va->vertexs[i*3+0]; new_vertexs[j*3+1] = va->vertexs[i*3+1]; new_vertexs[j*3+2] = va->vertexs[i*3+2]; j++;
+      new_vertexs[j*va->num_dimensions+0] = va->vertexs[i*va->num_dimensions+0];
+      new_vertexs[j*va->num_dimensions+1] = va->vertexs[i*va->num_dimensions+1];
+      if (va->num_dimensions == 3) new_vertexs[j*va->num_dimensions+2] = va->vertexs[i*va->num_dimensions+2];
+      j++;
     }
     
     free(va->vertexs);
@@ -222,7 +241,7 @@ int main(int argc, char ** argv)
     
     struct VertexArray * va = &final_shape->vertex_arrays[0];
     memset(va, 0, sizeof(struct VertexArray));
-    va->num_dimensions = 3;
+    va->num_dimensions = 2;
     va->array_type = GL_VERTEX_ARRAY;
     
     if (shape->gl_type != GL_LINE_LOOP) { fprintf(stderr, "providing non line loop to tesselator. NO GOOD\n"); exit(1); }
