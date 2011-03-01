@@ -1,5 +1,5 @@
 
-all: read_mysql_shapes bbox write_bmp tesselate inspect add_random_colors group_shapes_on_unique_set_id read_shapefile produce_single_test_circle write_kml reduce_by_distance reduce_by_id coordinate_convert unit_sphere
+all: read_mysql_shapes bbox write_bmp write_bmp_sphere tesselate inspect add_random_colors group_shapes_on_unique_set_id read_shapefile produce_single_test_circle write_kml reduce_by_distance reduce_by_id coordinate_convert unit_sphere
 
 therest: read_mysql_line_strips
 
@@ -41,6 +41,9 @@ tesselate: scheme.o tesselate.c
 
 write_bmp: scheme.o write_bmp.c
 	gcc scheme.o write_bmp.c -o write_bmp -framework OpenGL
+
+write_bmp_sphere: scheme.o write_bmp_sphere.c
+	gcc scheme.o write_bmp_sphere.c -o write_bmp_sphere -framework OpenGL
 
 write_kml: scheme.o write_kml.c
 	gcc scheme.o write_kml.c -o write_kml

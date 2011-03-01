@@ -81,7 +81,7 @@ int main(int argc, char ** argv)
       
       for (j = 0 ; j < shape->num_vertexs ; j++)
       {
-        get_sphere_coords_from_latlng(va->vertexs[j*va->num_dimensions+0], va->vertexs[j*va->num_dimensions+1], &x, &y, &z);
+        get_sphere_coords_from_latlng(va->vertexs[j*va->num_dimensions+1], va->vertexs[j*va->num_dimensions+0], &x, &y, &z);
         new_vertex_data[j*num_new_dimensions+0] = x;
         new_vertex_data[j*num_new_dimensions+1] = y;
         new_vertex_data[j*num_new_dimensions+2] = z;
