@@ -39,7 +39,7 @@ int main(int argc, char ** argv)
       double r = rand() / (float)RAND_MAX / 2.0 + 0.2;
       double g = rand() / (float)RAND_MAX / 2.0 + 0.2;
       double b = rand() / (float)RAND_MAX / 2.0 + 0.5;
-      double a = rand() / (float)RAND_MAX / 4.0 + 0.75;
+      double a = rand() / (float)RAND_MAX / 4.0 + 0.5;
       for (i = 0 ; i < shape->num_vertexs ; i++)
       {
         va->vertexs[i*va->num_dimensions+0] = r;
