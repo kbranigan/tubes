@@ -263,32 +263,10 @@ int main(int argc, char ** argv)
   }
   glEnd();
   
-  /*glPushMatrix();
-  
-  int l, m;
-  for (m = -160 ; m <= 180 ; m += 20)
-  {
-    glRotatef(20, 0, 1, 0);
-    
-    glBegin(GL_LINE_STRIP);
-    for (l = -160 ; l < 180 ; l += 20)
-    {
-      glColor4f(0, 1, 0, 1); glVertex3f(cos(l/360.0*3.14159265)*0.9999, sin(l/360.0*3.14159265)*0.9999, 0.0);
-      glColor4f(1, 0, 0, 1); glVertex3f(cos(l/360.0*3.14159265)*0.9999, sin(l/360.0*3.14159265)*0.9999, 0.0);
-      
-      glColor4f(0, 1, 0, 1); glVertex3f(cos(l/360.0*3.14159265)*0.9999, sin(l/360.0*3.14159265)*0.9999, 0.0);
-      glColor4f(1, 0, 0, 1); glVertex3f(cos(l/360.0*3.14159265)*0.9999, sin(l/360.0*3.14159265)*0.9999, 0.0);
-    }
-    glEnd();
-  }
-  glPopMatrix();//*/
-  
-  glPushMatrix();
   long i, j, k;
   struct Shape * shape = NULL;
   while ((shape = read_shape(stdin)))
   {
-    //shape = shapes[i];
     glBegin(shape->gl_type);
     glColor3f(0,0,0);
     for (j = 0 ; j < shape->num_vertex_arrays ; j++)
@@ -314,15 +292,13 @@ int main(int argc, char ** argv)
       
       for (k = 0 ; k < shape->num_vertexs ; k++)
       {
-        if (va->array_type == GL_VERTEX_ARRAY && va->num_dimensions == 2) glVertex2dv(&va->vertexs[k*va->num_dimensions]);
-        if (va->array_type == GL_VERTEX_ARRAY && va->num_dimensions == 3) glVertex3dv(&va->vertexs[k*va->num_dimensions]);
-        if (va->array_type == GL_VERTEX_ARRAY && va->num_dimensions == 4) glVertex4dv(&va->vertexs[k*va->num_dimensions]);
+        get_sphere_coords_from_latlng(va->vertexs[k*va->num_dimensions+1], va->vertexs[k*va->num_dimensions+0], &x, &y, &z);
+        glVertex3f(x, y, z);
       }
     }
     glEnd();
     free_shape(shape);
   }
-  glPopMatrix();
   
   write_image(filename, TEXTURE_WIDTH, TEXTURE_HEIGHT);
   fprintf(stderr, "%s: %dx%d bmp created named '%s'\n", argv[0], TEXTURE_WIDTH, TEXTURE_HEIGHT, filename);
