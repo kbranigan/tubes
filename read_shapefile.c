@@ -117,7 +117,6 @@ int main(int argc, char *argv[])
         write_shape(stdout, shape);
         free_shape(shape);
         //if (iPart > 1) break;
-        break;
       }
     }
     else
