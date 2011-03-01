@@ -18,6 +18,8 @@ int main(int argc, char ** argv)
     exit(1);
   }
   
+  srand(time(NULL));
+  
   if (!read_header(stdin, CURRENT_VERSION)) { fprintf(stderr, "read header failed.\n"); exit(1); }
   if (!write_header(stdout, CURRENT_VERSION)) { fprintf(stderr, "write header failed.\n"); exit(1); }
   
@@ -30,18 +32,20 @@ int main(int argc, char ** argv)
       shape->vertex_arrays = (struct VertexArray*)realloc(shape->vertex_arrays, sizeof(struct VertexArray)*shape->num_vertex_arrays);
       struct VertexArray * va = &shape->vertex_arrays[shape->num_vertex_arrays-1];
       va->array_type = GL_COLOR_ARRAY;
-      va->num_dimensions = 3;
+      va->num_dimensions = 4;
       va->shape = shape;
       va->vertexs = (double*)malloc(sizeof(double)*va->num_dimensions*shape->num_vertexs);
       long i;
-      double r = rand()/(float)RAND_MAX;
-      double g = rand()/(float)RAND_MAX;
-      double b = rand()/(float)RAND_MAX;
+      double r = rand() / (float)RAND_MAX / 2.0 + 0.2;
+      double g = rand() / (float)RAND_MAX / 2.0 + 0.2;
+      double b = rand() / (float)RAND_MAX / 2.0 + 0.5;
+      double a = rand() / (float)RAND_MAX / 4.0 + 0.75;
       for (i = 0 ; i < shape->num_vertexs ; i++)
       {
-        va->vertexs[i*3+0] = r;
-        va->vertexs[i*3+1] = g;
-        va->vertexs[i*3+2] = b;
+        va->vertexs[i*va->num_dimensions+0] = r;
+        va->vertexs[i*va->num_dimensions+1] = g;
+        va->vertexs[i*va->num_dimensions+2] = b;
+        if (va->num_dimensions == 4) va->vertexs[i*va->num_dimensions+3] = a;
       }
     }
     write_shape(stdout, shape);
