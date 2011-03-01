@@ -253,10 +253,10 @@ int main(int argc, char ** argv)
   {
     for (b = -180 ; b <= 180 ; b += 5)
     {
-      glColor4f(0.8, 0.8, 0.8 + (180.0 - fabs(a)) / 180.0 * 0.2, 1);
+      glColor4f(0.7, 0.7, 0.7 + (180.0 - fabs(a)) / 180.0 * 0.3, 1);
       get_sphere_coords_from_latlng(a, b, &x, &y, &z);
       glVertex3f(x, y, z);
-      glColor4f(0.8, 0.8, 0.8 + (180.0 - fabs(a+5)) / 180.0 * 0.2, 1);
+      glColor4f(0.7, 0.7, 0.7 + (180.0 - fabs(a+5)) / 180.0 * 0.3, 1);
       get_sphere_coords_from_latlng(a+5, b, &x, &y, &z);
       glVertex3f(x, y, z);
     }
