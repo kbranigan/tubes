@@ -29,7 +29,7 @@ int main(int argc, char **argv)
     sleep(1);
     ret = mg_set_option(ctx, "ports", "2222");
   }
-  mg_set_uri_callback(ctx, "/list", &list, NULL);
+  mg_set_uri_callback(ctx, "/", &list, NULL);
   mg_set_uri_callback(ctx, "/fields", &fields, NULL);
   mg_set_uri_callback(ctx, "/records", &records, NULL);
   mg_set_uri_callback(ctx, "/shapes", &shapes, NULL);
@@ -242,7 +242,7 @@ void image(struct mg_connection *conn, const struct mg_request_info *ri, void *d
   
   mg_printf(conn, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n");
   
-  mg_printf(conn, "<a href='/list'>back to list</a><br />\n");
+  mg_printf(conn, "<a href='/'>back to list</a><br />\n");
   
   FILE * fp = NULL;
   char image_filename[300];
