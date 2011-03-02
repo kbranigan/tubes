@@ -84,7 +84,7 @@ void fields(struct mg_connection *conn, const struct mg_request_info *ri, void *
   if (file == NULL) { mg_printf(conn, "You need to specify a file."); return; }
   
   char filename[100];
-  sprintf(filename, "/Users/kevin/data/%s", file);
+  sprintf(filename, "/work/data/%s", file);
   
   DBFHandle d = DBFOpen(filename, "rb");
   if (d == NULL) { mg_printf(conn, "DBFOpen error (%s)\n", filename); return; }
@@ -128,7 +128,7 @@ void records(struct mg_connection *conn, const struct mg_request_info *ri, void 
   free(id_c);
   
   char filename[100];
-  sprintf(filename, "/Users/kevin/data/%s", file);
+  sprintf(filename, "/work/data/%s", file);
   
   DBFHandle d = DBFOpen(filename, "rb");
   if (d == NULL) { mg_printf(conn, "DBFOpen error (%s)\n", filename); return; }
@@ -188,7 +188,7 @@ void shapes(struct mg_connection *conn, const struct mg_request_info *ri, void *
   free(id_c);
   
   char filename[100];
-  sprintf(filename, "/Users/kevin/data/%s", file);
+  sprintf(filename, "/work/data/%s", file);
   
 	SHPHandle h = SHPOpen(filename, "rb");
   if (h == NULL) { mg_printf(conn, "SHPOpen error (%s)\n", filename); return; }
@@ -230,7 +230,7 @@ void image(struct mg_connection *conn, const struct mg_request_info *ri, void *d
   long id = (id_c == NULL) ? -1 : atoi(id_c);
   
   char dbf_filename[200];
-  sprintf(dbf_filename, "/Users/kevin/data%s.dbf", file);
+  sprintf(dbf_filename, "/work/data%s.dbf", file);
   
 	SHPHandle h = SHPOpen(dbf_filename, "rb");
   if (h == NULL) { mg_printf(conn, "SHPOpen error (%s)\n", dbf_filename); return; }
@@ -257,15 +257,15 @@ void image(struct mg_connection *conn, const struct mg_request_info *ri, void *d
     sprintf(command, "mkdir -p cache_images%s", file);
     system(command);
     
-    sprintf(command, "/Users/kevin/work/pipes/read_shapefile %s %ld ", dbf_filename, id);
+    sprintf(command, "/work/pipes/read_shapefile %s %ld ", dbf_filename, id);
     
     SHPObject	*psShape = SHPReadObject(h, 0);
     if(psShape->nSHPType == SHPT_POLYGON)
     {
-      strcat(command, "| /Users/kevin/work/pipes/tesselate ");
+      strcat(command, "| /work/pipes/tesselate ");
     }
-    strcat(command, "| /Users/kevin/work/pipes/add_random_colors ");
-    strcat(command, "| /Users/kevin/work/pipes/write_bmp ");
+    strcat(command, "| /work/pipes/add_random_colors ");
+    strcat(command, "| /work/pipes/write_bmp ");
     strcat(command, image_filename);
     strcat(command, ".bmp");
     printf("%s\n", command);
