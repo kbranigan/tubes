@@ -12,9 +12,14 @@
 
 #include "scheme.h"
 
+#ifdef __APPLE__
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
+#else
+#include <GL/gl.h>
+#include <GL/glu.h>
+#endif
 
 //GLuint textureId;
 //GLuint rboId;
