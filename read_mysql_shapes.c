@@ -19,7 +19,6 @@ group_field becomes the unique_id, it currently needs to be an integer
 */
 
 #include "scheme.h"
-#include <OpenGL/gl.h>
 
 int main(int argc, char *argv[])
 {
