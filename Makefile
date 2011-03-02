@@ -24,7 +24,7 @@ reduce_by_id: scheme.o reduce_by_id.c
 	gcc scheme.o reduce_by_id.c -o reduce_by_id
 
 bbox: scheme.o bbox.c
-	gcc scheme.o bbox.c -o bbox
+	gcc scheme.o bbox.c -o bbox -DMAIN -DFUNC=bbox
 
 coordinate_convert: scheme.o coordinate_convert.c
 	gcc scheme.o coordinate_convert.c -o coordinate_convert
