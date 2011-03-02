@@ -2,7 +2,7 @@
 mysql= -DUSING_MYSQL -I/usr/local/mysql/include/mysql -I/usr/include/mysql -L/usr/local/mysql/lib/mysql -lmysqlclient
 
 applegl= -framework OpenGL
-linuxgl= -lGL -lGLU -lOSMesa
+linuxgl= -lOSMesa -lGL -lGLU
 
 whichgl= $(applegl)
 
