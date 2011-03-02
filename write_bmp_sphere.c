@@ -18,6 +18,7 @@
 #else
 #include <GL/gl.h>
 #include <GL/glu.h>
+#include <GL/osmesa.h>
 #endif
 
 GLuint textureId;
@@ -68,10 +69,12 @@ void get_sphere_coords_from_latlng(float lat, float lng, float *x, float *y, flo
   *z = o33._13;
 }
 
-void setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, float min_z, float max_z)
+int setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, float min_z, float max_z)
 {
   TEXTURE_HEIGHT = TEXTURE_WIDTH * ((max_y - min_y) / (max_x - min_x));
   if (TEXTURE_HEIGHT > TEXTURE_WIDTH * 1.5) TEXTURE_HEIGHT = TEXTURE_WIDTH * 1.5;
+  
+  #ifdef __APPLE__
   
   CGLContextObj contextObj;
   CGLError err;
@@ -94,6 +97,15 @@ void setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, 
   if (err != 0) fprintf(stderr, "CGL error: %d - %s\n", err, CGLErrorString((CGLError)err));
   err = CGLSetCurrentContext(contextObj);
   if (err != 0) fprintf(stderr, "CGL error: %d - %s\n", err, CGLErrorString((CGLError)err));
+  
+  #else
+  
+  OSMesaContext ctx = OSMesaCreateContextExt(OSMESA_RGBA, 16, 0, 0, NULL);
+  if (!ctx) { fprintf(stderr, "OSMesaCreateContext failed!\n"); return EXIT_FAILURE; }
+  void *buffer = malloc(TEXTURE_WIDTH * TEXTURE_HEIGHT * 4 * sizeof(GLubyte));
+  if (!OSMesaMakeCurrent(ctx, buffer, GL_UNSIGNED_BYTE, TEXTURE_WIDTH, TEXTURE_HEIGHT)) { printf("OSMesaMakeCurrent failed!\n"); return EXIT_FAILURE; }
+  
+  #endif
   
   // create a texture object
   glGenTextures(1, &textureId);
@@ -173,6 +185,8 @@ void setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, 
   //glRotatef(min_x + (max_x-min_x)/2.0, 0, -1, 0);
   //glRotatef(90, 0, 0, -1);
   //gluLookAt(0,0,50, 0,0,0, 0,1,0);
+  
+  return EXIT_SUCCESS;
 }
 
 int write_image(char * file_name, unsigned int width, unsigned int height)
