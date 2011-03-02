@@ -11,9 +11,15 @@
 
 #include "scheme.h"
 
+#ifdef __APPLE__
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
+#else
+#include <GL/gl.h>
+#include <GL/glu.h>
+#include <GL/osmesa.h>
+#endif
 
 GLuint textureId;
 GLuint rboId;
@@ -70,10 +76,12 @@ void multiply_matrixes(struct matrix33 *m1, struct matrix33 *m2, struct matrix33
   *z = o33._13;
 }*/
 
-void setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, float min_z, float max_z)
+int setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, float min_z, float max_z)
 {
   TEXTURE_HEIGHT = TEXTURE_WIDTH * ((max_y - min_y) / (max_x - min_x));
   if (TEXTURE_HEIGHT > TEXTURE_WIDTH * 1.5) TEXTURE_HEIGHT = TEXTURE_WIDTH * 1.5;
+  
+  #ifdef __APPLE__
   
   CGLContextObj contextObj;
   CGLError err;
@@ -96,6 +104,15 @@ void setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, 
   if (err != 0) fprintf(stderr, "CGL error: %d - %s\n", err, CGLErrorString((CGLError)err));
   err = CGLSetCurrentContext(contextObj);
   if (err != 0) fprintf(stderr, "CGL error: %d - %s\n", err, CGLErrorString((CGLError)err));
+  
+  #else
+  
+  OSMesaContext ctx = OSMesaCreateContextExt(OSMESA_RGBA, 16, 0, 0, NULL);
+  if (!ctx) { fprintf(stderr, "OSMesaCreateContext failed!\n"); return EXIT_FAILURE; }
+  void *buffer = malloc(TEXTURE_WIDTH * TEXTURE_HEIGHT * 4 * sizeof(GLubyte));
+  if (!OSMesaMakeCurrent(ctx, buffer, GL_UNSIGNED_BYTE, TEXTURE_WIDTH, TEXTURE_HEIGHT)) { printf("OSMesaMakeCurrent failed!\n"); return EXIT_FAILURE; }
+  
+  #endif
   
   // create a texture object
   glGenTextures(1, &textureId);
@@ -171,6 +188,8 @@ void setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, 
   //glRotatef(min_x + (max_x-min_x)/2.0, 0, -1, 0);
   //glRotatef(90, 0, 0, -1);
   //gluLookAt(0,0,50, 0,0,0, 0,1,0);
+  
+  return EXIT_SUCCESS;
 }
 
 int write_image(char * file_name, unsigned int width, unsigned int height)
@@ -344,17 +363,16 @@ int main(int argc, char ** argv)
   }
   
   if (!draw_individual_shapes)
-  {
-    setup_offscreen_render(b[0][0], b[0][1], b[1][0], b[1][1], b[2][0], b[2][1]);
-  }
+    if (setup_offscreen_render(b[0][0], b[0][1], b[1][0], b[1][1], b[2][0], b[2][1]) != EXIT_SUCCESS)
+      return EXIT_FAILURE;
   
   long i, j, k;
   for (i = 0 ; i < num_shapes ; i++)
   {
     if (draw_individual_shapes)
-    {
-      setup_offscreen_render(b[0][0], b[0][1], b[1][0], b[1][1], b[2][0], b[2][1]);
-    }
+      if (setup_offscreen_render(b[0][0], b[0][1], b[1][0], b[1][1], b[2][0], b[2][1]) != EXIT_SUCCESS)
+        return EXIT_FAILURE;
+    
     shape = shapes[i];
     glBegin(shape->gl_type);
     glColor3f(0,0,0);
