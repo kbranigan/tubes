@@ -32,7 +32,7 @@ bbox: scheme.o bbox.c
 	gcc scheme.o bbox.c -o bbox -DMAIN -DFUNC=bbox
 
 coordinate_convert: scheme.o coordinate_convert.c
-	gcc scheme.o coordinate_convert.c -o coordinate_convert
+	gcc scheme.o coordinate_convert.c -o coordinate_convert -lm
 
 add_random_colors: scheme.o add_random_colors.c
 	gcc scheme.o add_random_colors.c -o add_random_colors
