@@ -11,7 +11,7 @@ all: read_mysql_shapes bbox write_bmp write_bmp_sphere tesselate inspect add_ran
 therest: read_mysql_line_strips
 
 produce_single_test_circle: scheme.o produce_single_test_circle.c
-	gcc scheme.o produce_single_test_circle.c -o produce_single_test_circle
+	gcc scheme.o produce_single_test_circle.c -o produce_single_test_circle -lm
 
 read_mysql_line_strips: scheme.o read_mysql_line_strips.c
 	gcc scheme.o read_mysql_line_strips.c -o read_mysql_line_strips $(mysql) 
