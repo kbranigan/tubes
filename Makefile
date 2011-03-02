@@ -1,6 +1,11 @@
 
 mysql= -DUSING_MYSQL -I/usr/local/mysql/include/mysql -I/usr/include/mysql -L/usr/local/mysql/lib/mysql -lmysqlclient
 
+applegl= -framework OpenGL
+linuxgl= -lGL -lGLU -lOSMesa
+
+whichgl= $(applegl)
+
 all: read_mysql_shapes bbox write_bmp write_bmp_sphere tesselate inspect add_random_colors group_shapes_on_unique_set_id read_shapefile produce_single_test_circle write_kml reduce_by_distance reduce_by_id coordinate_convert
 
 therest: read_mysql_line_strips
@@ -36,13 +41,13 @@ inspect: scheme.o inspect.c
 	gcc scheme.o inspect.c -o inspect
 
 tesselate: scheme.o tesselate.c
-	gcc scheme.o tesselate.c -o tesselate -framework OpenGL
+	gcc scheme.o tesselate.c -o tesselate $(whichgl)
 
 write_bmp: scheme.o write_bmp.c
-	gcc scheme.o write_bmp.c -o write_bmp -framework OpenGL
+	gcc scheme.o write_bmp.c -o write_bmp $(whichgl)
 
 write_bmp_sphere: scheme.o write_bmp_sphere.c
-	gcc scheme.o write_bmp_sphere.c -o write_bmp_sphere -framework OpenGL
+	gcc scheme.o write_bmp_sphere.c -o write_bmp_sphere $(whichgl)
 
 write_kml: scheme.o write_kml.c
 	gcc scheme.o write_kml.c -o write_kml
