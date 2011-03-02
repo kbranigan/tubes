@@ -23,7 +23,7 @@ group_shapes_on_unique_set_id: scheme.o group_shapes_on_unique_set_id.c
 	gcc scheme.o group_shapes_on_unique_set_id.c -o group_shapes_on_unique_set_id
 
 reduce_by_distance: scheme.o reduce_by_distance.c
-	gcc scheme.o reduce_by_distance.c -o reduce_by_distance
+	gcc scheme.o reduce_by_distance.c -o reduce_by_distance -lm
 
 reduce_by_id: scheme.o reduce_by_id.c
 	gcc scheme.o reduce_by_id.c -o reduce_by_id
@@ -47,7 +47,7 @@ write_bmp: scheme.o write_bmp.c
 	gcc scheme.o write_bmp.c -o write_bmp $(whichgl)
 
 write_bmp_sphere: scheme.o write_bmp_sphere.c
-	gcc scheme.o write_bmp_sphere.c -o write_bmp_sphere $(whichgl)
+	gcc scheme.o write_bmp_sphere.c -o write_bmp_sphere $(whichgl) -lm
 
 write_kml: scheme.o write_kml.c
 	gcc scheme.o write_kml.c -o write_kml
