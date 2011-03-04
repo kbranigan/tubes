@@ -154,9 +154,6 @@ int main(int argc, char ** argv)
   for (i = 0 ; i < num_shapes ; i++)
   {
     shape = shapes[i];
-    if (shape->num_vertexs <= 3) continue;
-    //if (i != 0) continue;
-    
     glBegin(shape->gl_type);
     glColor3f(0,0,0);
     for (j = 0 ; j < shape->num_vertex_arrays ; j++)
@@ -193,7 +190,7 @@ int main(int argc, char ** argv)
       
       insetPolygon(x, y, shape->num_vertexs-1, 0.001);
       printf("\n");//*/
-
+      
       if (va->array_type == GL_VERTEX_ARRAY && va->num_dimensions == 2)
         for (k = 0 ; k < shape->num_vertexs ; k++)
           glVertex2dv(&va->vertexs[k*va->num_dimensions]);
