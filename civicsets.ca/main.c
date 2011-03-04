@@ -271,13 +271,13 @@ void image(struct mg_connection *conn, const struct mg_request_info *ri, void *d
     printf("%s\n", command);
     system(command);
     
-    sprintf(command, "convert /Users/kevin/work/shapefile_browser/%s.bmp /Users/kevin/work/shapefile_browser/%s.jpg", image_filename, image_filename);
+    /*sprintf(command, "convert /Users/kevin/work/shapefile_browser/%s.bmp /Users/kevin/work/shapefile_browser/%s.jpg", image_filename, image_filename);
     printf("%s\n", command);
     system(command);
     
     sprintf(command, "rm /Users/kevin/work/shapefile_browser/%s.bmp", image_filename);
     printf("%s\n", command);
-    system(command);
+    system(command);//*/
   }
   else fclose(fp);
   
