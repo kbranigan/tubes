@@ -248,9 +248,9 @@ void image(struct mg_connection *conn, const struct mg_request_info *ri, void *d
   char image_filename[300];
   sprintf(image_filename, "cache_images%s/%ld", file, id);
   
-  char jpg_filename[350];
-  sprintf(jpg_filename, "%s.jpg", image_filename);
-  fp = fopen(jpg_filename, "r");
+  char png_filename[350];
+  sprintf(png_filename, "%s.png", image_filename);
+  fp = fopen(png_filename, "r");
   if (fp == NULL)
   {
     char command[1000];
@@ -265,23 +265,16 @@ void image(struct mg_connection *conn, const struct mg_request_info *ri, void *d
       strcat(command, "| /work/pipes/tesselate ");
     }
     strcat(command, "| /work/pipes/add_random_colors ");
-    strcat(command, "| /work/pipes/write_bmp ");
+    strcat(command, "| /work/pipes/write_png ");
     strcat(command, image_filename);
-    strcat(command, ".bmp");
+    strcat(command, ".png");
     printf("%s\n", command);
     system(command);
     
-    /*sprintf(command, "convert /Users/kevin/work/shapefile_browser/%s.bmp /Users/kevin/work/shapefile_browser/%s.jpg", image_filename, image_filename);
-    printf("%s\n", command);
-    system(command);
-    
-    sprintf(command, "rm /Users/kevin/work/shapefile_browser/%s.bmp", image_filename);
-    printf("%s\n", command);
-    system(command);//*/
   }
   else fclose(fp);
   
-  mg_printf(conn, "<img src='%s.jpg' />", image_filename, image_filename);
+  mg_printf(conn, "<img src='%s.png' />", image_filename, image_filename);
   
   if (h != NULL) SHPClose(h);
 	if (d != NULL) DBFClose(d);
