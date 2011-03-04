@@ -11,7 +11,9 @@
 
 #include "scheme.h"
 
-#ifdef __APPLE__
+#include "setup_opengl.c"
+
+/*#ifdef __APPLE__
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
@@ -25,7 +27,7 @@ GLuint textureId;
 GLuint rboId;
 GLuint fboId;
 int TEXTURE_WIDTH = 1024;
-int TEXTURE_HEIGHT = 0;
+int TEXTURE_HEIGHT = 0;*/
 
 struct matrix33
 {
@@ -69,7 +71,7 @@ void get_sphere_coords_from_latlng(float lat, float lng, float *x, float *y, flo
   *z = o33._13;
 }
 
-int setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, float min_z, float max_z)
+/*int setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, float min_z, float max_z)
 {
   TEXTURE_HEIGHT = TEXTURE_WIDTH * ((max_y - min_y) / (max_x - min_x));
   if (TEXTURE_HEIGHT > TEXTURE_WIDTH * 1.5) TEXTURE_HEIGHT = TEXTURE_WIDTH * 1.5;
@@ -187,7 +189,7 @@ int setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, f
   //gluLookAt(0,0,50, 0,0,0, 0,1,0);
   
   return EXIT_SUCCESS;
-}
+}*/
 
 int write_image(char * file_name, unsigned int width, unsigned int height)
 {

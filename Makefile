@@ -6,7 +6,7 @@ linuxgl= -lOSMesa -lGL -lGLU
 
 whichgl= $(applegl)
 
-all: read_mysql_shapes bbox write_bmp write_bmp_sphere tesselate inspect add_random_colors group_shapes_on_unique_set_id read_shapefile produce_single_test_circle write_kml reduce_by_distance reduce_by_id coordinate_convert
+all: read_mysql_shapes bbox write_png write_bmp write_bmp_sphere tesselate inspect add_random_colors group_shapes_on_unique_set_id read_shapefile produce_single_test_circle write_kml reduce_by_distance reduce_by_id coordinate_convert
 
 therest: read_mysql_line_strips
 
@@ -43,10 +43,13 @@ inspect: scheme.o inspect.c
 tesselate: scheme.o tesselate.c
 	gcc scheme.o tesselate.c -o tesselate $(whichgl)
 
-write_bmp: scheme.o write_bmp.c
+write_png: scheme.o write_png.c setup_opengl.c
+	gcc scheme.o write_png.c -o write_png $(whichgl) -lpng
+
+write_bmp: scheme.o write_bmp.c setup_opengl.c
 	gcc scheme.o write_bmp.c -o write_bmp $(whichgl)
 
-write_bmp_sphere: scheme.o write_bmp_sphere.c
+write_bmp_sphere: scheme.o write_bmp_sphere.c setup_opengl.c
 	gcc scheme.o write_bmp_sphere.c -o write_bmp_sphere $(whichgl) -lm
 
 write_kml: scheme.o write_kml.c
@@ -54,7 +57,6 @@ write_kml: scheme.o write_kml.c
 
 read_shapefile: scheme.o shapefile_src/shpopen.o shapefile_src/dbfopen.o read_shapefile.c
 	gcc scheme.o shapefile_src/shpopen.o shapefile_src/dbfopen.o read_shapefile.c -o read_shapefile
-
 
 scheme.o: scheme.c scheme.h
 	gcc scheme.c -c -o scheme.o -Wall
