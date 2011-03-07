@@ -86,41 +86,44 @@ int read_header(FILE * fp, uint32_t req_file_version)
 void inspect_shape(FILE * fp, struct Shape * shape)
 {
   long count_zero = 0;
+  long i;
   
   fprintf(stderr, "shape:\n");
   fprintf(stderr, "  unique_set_id: %d\n", shape->unique_set_id);
   fprintf(stderr, "  gl_type: %d\n", shape->gl_type);
   fprintf(stderr, "  num_attributes: %d\n", shape->num_attributes);
+  if (shape->num_attributes) fprintf(stderr, "  attributes:\n");
+  for (i = 0 ; i < shape->num_attributes ; i++)
+  {
+    struct Attribute * attribute = &shape->attributes[i];
+    fprintf(stderr, "    %s(%d): '%s'\n", attribute->name, attribute->value_length, attribute->value);
+  }
   fprintf(stderr, "  num_vertexs: %d\n", shape->num_vertexs);
   fprintf(stderr, "  num_vertex_arrays: %d\n", shape->num_vertex_arrays);
-  if (shape->num_vertex_arrays > 0)
+  if (shape->num_vertex_arrays) fprintf(stderr, "  vertex_arrays:\n");
+  for (i = 0 ; i < shape->num_vertex_arrays ; i++)
   {
-    long i;
-    for (i = 0 ; i < shape->num_vertex_arrays ; i++)
+    fprintf(stderr, "    array_type: %d\n", shape->vertex_arrays[i].array_type);
+    fprintf(stderr, "    num_dimensions: %d\n", shape->vertex_arrays[i].num_dimensions);
+    fprintf(stderr, "    vertexs:\n");
+    if (shape->num_vertexs > 0 && shape->vertex_arrays[i].num_dimensions > 0)
     {
-      fprintf(stderr, "  vertex_arrays:\n");
-      fprintf(stderr, "    array_type: %d\n", shape->vertex_arrays[i].array_type);
-      fprintf(stderr, "    num_dimensions: %d\n", shape->vertex_arrays[i].num_dimensions);
-      fprintf(stderr, "    vertexs:\n");
-      if (shape->num_vertexs > 0 && shape->vertex_arrays[i].num_dimensions > 0)
+      long j,k;
+      for (k = 0 ; k < shape->num_vertexs ; k++)
       {
-        long j,k;
-        for (k = 0 ; k < shape->num_vertexs ; k++)
+        if (k < 4) fprintf(stderr, "      ");
+        int is_zero = 1;
+        for (j = 0 ; j < shape->vertex_arrays[i].num_dimensions ; j++)
         {
-          if (k < 4) fprintf(stderr, "      ");
-          int is_zero = 1;
-          for (j = 0 ; j < shape->vertex_arrays[i].num_dimensions ; j++)
-          {
-            if (shape->vertex_arrays[i].vertexs[k*shape->vertex_arrays[i].num_dimensions + j] != 0.0) is_zero = 0;
-            if (k < 4) fprintf(stderr, "%f ", shape->vertex_arrays[i].vertexs[k*shape->vertex_arrays[i].num_dimensions + j]);
-          }
-          if (is_zero) count_zero ++;
-          if (k < 4) fprintf(stderr, "\n");
-          else if (k == 4) fprintf(stderr, "      ...\n");
+          if (shape->vertex_arrays[i].vertexs[k*shape->vertex_arrays[i].num_dimensions + j] != 0.0) is_zero = 0;
+          if (k < 4) fprintf(stderr, "%f ", shape->vertex_arrays[i].vertexs[k*shape->vertex_arrays[i].num_dimensions + j]);
         }
+        if (is_zero) count_zero ++;
+        if (k < 4) fprintf(stderr, "\n");
+        else if (k == 4) fprintf(stderr, "      ...\n");
       }
-      if (i == 4) fprintf(stderr, "    [...]\n");
     }
+    if (i == 4) fprintf(stderr, "    [...]\n");
   }
   if (count_zero > 0) fprintf(stderr, "  count_zero: %ld\n", count_zero);
 }
@@ -135,7 +138,10 @@ int write_shape(FILE * fp, struct Shape * shape)
   long i;
   for (i = 0 ; i < shape->num_attributes ; i++)
   {
-    
+    struct Attribute * attribute = &shape->attributes[i];
+    fwrite(attribute->name, sizeof(attribute->name), 1, fp);
+    fwrite(&attribute->value_length, sizeof(attribute->value_length), 1, fp);
+    fwrite(attribute->value, attribute->value_length, 1, fp);
   }
   
   if (fwrite(&shape->gl_type, sizeof(shape->gl_type), 1, fp) != 1) return 0;
@@ -173,15 +179,11 @@ struct Shape * read_shape(FILE * fp)
     {
       struct Attribute * attribute = &shape->attributes[i];
       
-      if (fread(&attribute->key_length, sizeof(attribute->key_length), 1, fp) != 1) { fprintf(stderr, "fread attribute %d key length error\n", i); return NULL; }
-      attribute->value = malloc(attribute->key_length);
-      if (fread(&attribute->key, attribute->key_length, 1, fp) != 1) { fprintf(stderr, "fread attribute %d key error\n", i); return NULL; }
-      
+      if (fread(&attribute->name, sizeof(attribute->name), 1, fp) != 1) { fprintf(stderr, "fread attribute %d key error\n", i); return NULL; }
       if (fread(&attribute->value_length, sizeof(attribute->value_length), 1, fp) != 1) { fprintf(stderr, "fread attribute %d value length error\n", i); return NULL; }
-      attribute->value = malloc(attribute->value_length);
-      if (fread(&attribute->value, attribute->value_length, 1, fp) != 1) { fprintf(stderr, "fread attribute %d value error\n", i); return NULL; }
-      
-      //fprintf(stderr, "%d: %s: %s\n", i, attribute->key, attribute->value);
+      attribute->value = malloc(attribute->value_length+1);
+      if (fread(attribute->value, attribute->value_length, 1, fp) != 1) { fprintf(stderr, "fread attribute %d value error\n", i); return NULL; }
+      attribute->value[attribute->value_length] = 0;
     }
   }
   

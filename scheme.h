@@ -84,8 +84,7 @@ struct VertexArray {
 };
 
 struct Attribute {
-  uint32_t key_length;
-  char * key;
+  char name[20];
   uint32_t value_length;
   char * value;
 };

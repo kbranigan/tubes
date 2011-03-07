@@ -99,7 +99,36 @@ int main(int argc, char *argv[])
         
         shape->num_vertexs = end - start;
         if (shape->num_vertexs <= 0) { fprintf(stderr, "shape->num_vertexs = %d", shape->num_vertexs); return 0; }
+        
+        shape->attributes = NULL;
         shape->num_attributes = 0;
+        
+        for (j = 0 ; j < nFieldCount ; j++)
+        {
+          char name[12];
+          int value_length;
+          DBFFieldType field_type = DBFGetFieldInfo(d, j, name, &value_length, NULL);
+          switch (field_type) {
+            case FTString:
+            {
+              shape->num_attributes ++;
+              shape->attributes = (struct Attribute*)realloc(shape->attributes, shape->num_attributes*sizeof(struct Attribute));
+              struct Attribute * attribute = &shape->attributes[shape->num_attributes-1];
+              strcpy(attribute->name, name);
+              attribute->value_length = value_length;
+              attribute->value = malloc(attribute->value_length+1);
+              strcpy(attribute->value, (char *)DBFReadStringAttribute(d, i, j));
+              //fprintf(stderr, "%d: %s: %s\n", j, name, (char *)DBFReadStringAttribute(d, i, j));
+              break;
+            }
+            /*case FTInteger:
+              fprintf(stderr, "%d: %s: %d\n", j, name, DBFReadIntegerAttribute(d, i, j));
+              break;
+            case FTDouble:
+              fprintf(stderr, "%d: %s: %f\n", j, name, DBFReadDoubleAttribute(d, i, j));
+              break;//*/
+          }
+        }
         
         //fprintf(stderr, "%d: %d %d (%d)\n", iPart, start, end, shape->num_vertexs);
         
