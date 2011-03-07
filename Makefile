@@ -6,7 +6,7 @@ linuxgl= -lOSMesa -lGL -lGLU
 
 whichgl= $(applegl)
 
-all: civicsets read_mysql_shapes bbox write_png write_bmp write_bmp_sphere tesselate inspect add_random_colors group_shapes_on_unique_set_id read_shapefile produce_single_test_circle write_kml reduce_by_distance reduce_by_id coordinate_convert
+all: civicsets read_mysql_shapes bbox write_png write_bmp write_bmp_sphere tesselate inspect add_random_colors group_shapes_on_unique_set_id read_shapefile produce_single_test_circle write_kml reduce_by_distance reduce_by_attribute reduce_by_id coordinate_convert
 
 therest: read_mysql_line_strips
 
@@ -27,6 +27,9 @@ group_shapes_on_unique_set_id: scheme.o group_shapes_on_unique_set_id.c
 
 reduce_by_distance: scheme.o reduce_by_distance.c
 	gcc scheme.o reduce_by_distance.c -o reduce_by_distance -lm
+
+reduce_by_attribute: scheme.o reduce_by_attribute.c
+	gcc scheme.o reduce_by_attribute.c -o reduce_by_attribute
 
 reduce_by_id: scheme.o reduce_by_id.c
 	gcc scheme.o reduce_by_id.c -o reduce_by_id
