@@ -6,9 +6,12 @@ linuxgl= -lOSMesa -lGL -lGLU
 
 whichgl= $(applegl)
 
-all: read_mysql_shapes bbox write_png write_bmp write_bmp_sphere tesselate inspect add_random_colors group_shapes_on_unique_set_id read_shapefile produce_single_test_circle write_kml reduce_by_distance reduce_by_id coordinate_convert
+all: civicsets read_mysql_shapes bbox write_png write_bmp write_bmp_sphere tesselate inspect add_random_colors group_shapes_on_unique_set_id read_shapefile produce_single_test_circle write_kml reduce_by_distance reduce_by_id coordinate_convert
 
 therest: read_mysql_line_strips
+
+civicsets: shapefile_src/shpopen.o shapefile_src/dbfopen.o mongoose.o
+	g++ -Wall civicsets.c shapefile_src/shpopen.o shapefile_src/dbfopen.o mongoose.o -ldl -lpthread -o civicsets.ca
 
 produce_single_test_circle: scheme.o produce_single_test_circle.c
 	gcc scheme.o produce_single_test_circle.c -o produce_single_test_circle -lm

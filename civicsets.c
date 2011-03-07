@@ -7,7 +7,7 @@
 #include <ftw.h>
 #include <stdint.h>
 
-#include "../shapefile_src/shapefil.h"
+#include "shapefile_src/shapefil.h"
 #include "mongoose.h"
 
 void list(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
@@ -123,8 +123,8 @@ void records(struct mg_connection *conn, const struct mg_request_info *ri, void 
   if (file == NULL) { mg_printf(conn, "You need to specify a file."); return; }
   
   char * id_c = mg_get_var(conn, "id");
-  if (id_c == NULL) { mg_printf(conn, "You need to specify an id."); return; }
-  long id = atoi(id_c);
+  //if (id_c == NULL) { mg_printf(conn, "You need to specify an id."); return; }
+  long id = (id_c != NULL) ? atoi(id_c) : -1;
   free(id_c);
   
   char filename[100];
@@ -139,38 +139,42 @@ void records(struct mg_connection *conn, const struct mg_request_info *ri, void 
   mg_printf(conn, "{\n");
   mg_printf(conn, "  \"file\": \"%s\",\n", file);
   mg_printf(conn, "  \"num_records\": \"%d\",\n", nRecordCount);
-  mg_printf(conn, "  \"record_id\": \"%d\",\n", id);
-  mg_printf(conn, "  \"record\": {\n");
-  for (int j = 0 ; j < nFieldCount ; j++)
+  for (int i = 0 ; i < nRecordCount ; i++)
   {
-    unsigned int k;
-    char pszFieldName[12];
-    int pnWidth;
-    char *cStr;
-    
-    DBFFieldType ft = DBFGetFieldInfo(d, j, pszFieldName, &pnWidth, NULL);
-    mg_printf(conn, "    \"%d\":{\"field\":\"%s\", \"value\":", j, pszFieldName);
-    switch (ft)
+    mg_printf(conn, "  \"record_id\": \"%d\",\n", i);
+    mg_printf(conn, "  \"record\": {\n");
+    if (id != -1 && id != i) continue;
+    for (int j = 0 ; j < nFieldCount ; j++)
     {
-      case FTString:
-        cStr = (char *)DBFReadStringAttribute(d, id, j);
-        for (k = 0 ; k < strlen(cStr) ; k++) if (cStr[k] == '"') cStr[k] = '\'';
-        mg_printf(conn, "\"%s\"", cStr);
-        break;
-      case FTInteger:
-        mg_printf(conn, "\"%d\"", DBFReadIntegerAttribute(d, id, j));
-        break;
-      case FTDouble:
-        mg_printf(conn, "\"%f\"", DBFReadDoubleAttribute(d, id, j));
-        break;
-      case FTLogical:
-        break;
-      case FTInvalid:
-        break;
+      unsigned int k;
+      char pszFieldName[12];
+      int pnWidth;
+      char *cStr;
+    
+      DBFFieldType ft = DBFGetFieldInfo(d, j, pszFieldName, &pnWidth, NULL);
+      mg_printf(conn, "    \"%d\":{\"field\":\"%s\", \"value\":", j, pszFieldName);
+      switch (ft)
+      {
+        case FTString:
+          cStr = (char *)DBFReadStringAttribute(d, i, j);
+          for (k = 0 ; k < strlen(cStr) ; k++) if (cStr[k] == '"') cStr[k] = '\'';
+          mg_printf(conn, "\"%s\"", cStr);
+          break;
+        case FTInteger:
+          mg_printf(conn, "\"%d\"", DBFReadIntegerAttribute(d, i, j));
+          break;
+        case FTDouble:
+          mg_printf(conn, "\"%f\"", DBFReadDoubleAttribute(d, i, j));
+          break;
+        case FTLogical:
+          break;
+        case FTInvalid:
+          break;
+      }
+      mg_printf(conn, "}%s\n", (j==nFieldCount-1)?"":",");
     }
-    mg_printf(conn, "}%s\n", (j==nFieldCount-1)?"":",");
+    mg_printf(conn, "  }\n");
   }
-  mg_printf(conn, "  }\n");
   mg_printf(conn, "}\n");
 	
 	if (d != NULL) DBFClose(d);
@@ -226,8 +230,11 @@ void image(struct mg_connection *conn, const struct mg_request_info *ri, void *d
   char * file = mg_get_var(conn, "file");
   if (file == NULL) { mg_printf(conn, "You need to specify a file."); return; }
   
-  char * id_c = mg_get_var(conn, "id");
-  long id = (id_c == NULL) ? -1 : atoi(id_c);
+  char * row_id_c = mg_get_var(conn, "id");
+  long row_id = (row_id_c == NULL) ? -1 : atoi(row_id_c);
+  
+  char * part_id_c = mg_get_var(conn, "part");
+  long part_id = (part_id_c == NULL) ? -1 : atoi(part_id_c);
   
   char dbf_filename[200];
   sprintf(dbf_filename, "/work/data%s.dbf", file);
@@ -246,7 +253,7 @@ void image(struct mg_connection *conn, const struct mg_request_info *ri, void *d
   
   FILE * fp = NULL;
   char image_filename[300];
-  sprintf(image_filename, "cache_images%s/%ld", file, id);
+  sprintf(image_filename, "civicsets.ca/cache_images%s/%ld", file, row_id);
   
   char png_filename[350];
   sprintf(png_filename, "%s.png", image_filename);
@@ -254,10 +261,10 @@ void image(struct mg_connection *conn, const struct mg_request_info *ri, void *d
   if (fp == NULL)
   {
     char command[1000];
-    sprintf(command, "mkdir -p cache_images%s", file);
+    sprintf(command, "mkdir -p civicsets.ca/cache_images%s", file);
     system(command);
     
-    sprintf(command, "/work/pipes/read_shapefile %s %ld ", dbf_filename, id);
+    sprintf(command, "/work/pipes/read_shapefile %s %ld %ld ", dbf_filename, row_id, part_id);
     
     SHPObject	*psShape = SHPReadObject(h, 0);
     if(psShape->nSHPType == SHPT_POLYGON)
@@ -278,5 +285,6 @@ void image(struct mg_connection *conn, const struct mg_request_info *ri, void *d
   
   if (h != NULL) SHPClose(h);
 	if (d != NULL) DBFClose(d);
-  free(id_c);
+  free(row_id_c);
+  free(part_id_c);
 }

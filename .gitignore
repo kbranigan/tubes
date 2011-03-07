@@ -14,7 +14,7 @@ write_kml
 coordinate_convert
 reduce_by_id
 write_bmp_sphere
-civicsets.ca/civicsets.ca
+civicsets.ca
 a.out
 *.dbf
 *.shp
