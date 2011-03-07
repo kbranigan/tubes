@@ -96,7 +96,7 @@ void vertex3dv(const GLdouble * c)
 {
   out_shape->num_vertexs++;
   struct VertexArray * va = &out_shape->vertex_arrays[0];
-  va->vertexs = (double*)realloc(va->vertexs, sizeof(double)*out_shape->num_vertexs*va->num_dimensions);
+  va->vertexs = (float*)realloc(va->vertexs, sizeof(float)*out_shape->num_vertexs*va->num_dimensions);
   va->vertexs[(out_shape->num_vertexs-1)*va->num_dimensions] = c[0];
   va->vertexs[(out_shape->num_vertexs-1)*va->num_dimensions+1] = c[1];
   if (va->num_dimensions == 3) va->vertexs[(out_shape->num_vertexs-1)*va->num_dimensions+2] = c[2];
@@ -109,7 +109,7 @@ void endCallback(void)
     struct VertexArray * va = &out_shape->vertex_arrays[0];
     
     int new_num_vertexs = ((out_shape->num_vertexs - 3) * 3) + 3;
-    double * new_vertexs = (double*)malloc(sizeof(double)*va->num_dimensions*(new_num_vertexs));
+    float * new_vertexs = (float*)malloc(sizeof(float)*va->num_dimensions*(new_num_vertexs));
     
     long i, j=0;
     for (i = 0 ; i < out_shape->num_vertexs ; i++)
@@ -140,7 +140,7 @@ void endCallback(void)
   {
     struct VertexArray * va = &out_shape->vertex_arrays[0];
     int new_num_vertexs = ((out_shape->num_vertexs - 3) * 3) + 3;
-    double * new_vertexs = (double*)malloc(sizeof(double)*va->num_dimensions*(new_num_vertexs));
+    float * new_vertexs = (float*)malloc(sizeof(float)*va->num_dimensions*(new_num_vertexs));
     
     long i, j=0;
     for (i = 0 ; i < out_shape->num_vertexs ; i++)
@@ -170,9 +170,9 @@ void endCallback(void)
   
   final_shape->num_vertexs += out_shape->num_vertexs;
   struct VertexArray * va = &final_shape->vertex_arrays[0];
-  va->vertexs = (double*)realloc(va->vertexs, sizeof(double)*final_shape->num_vertexs*va->num_dimensions);
+  va->vertexs = (float*)realloc(va->vertexs, sizeof(float)*final_shape->num_vertexs*va->num_dimensions);
   
-  memcpy(&va->vertexs[final_shape->num_vertexs*va->num_dimensions - out_shape->num_vertexs*va->num_dimensions], &out_shape->vertex_arrays[0].vertexs[0], sizeof(double)*va->num_dimensions*out_shape->num_vertexs);
+  memcpy(&va->vertexs[final_shape->num_vertexs*va->num_dimensions - out_shape->num_vertexs*va->num_dimensions], &out_shape->vertex_arrays[0].vertexs[0], sizeof(float)*va->num_dimensions*out_shape->num_vertexs);
   
   free_shape(out_shape);
   out_shape = NULL;
@@ -258,8 +258,8 @@ int main(int argc, char ** argv)
       if (va->num_dimensions < 2 || va->num_dimensions > 3) { fprintf(stderr,"va->num_dimensions is %d", va->num_dimensions); continue; }
       for (j = 0 ; j < shape->num_vertexs ; j++)
       {
-        double *vertex;
-        vertex = (double *) malloc(3 * sizeof(double));
+        GLdouble *vertex;
+        vertex = (GLdouble *) malloc(3 * sizeof(GLdouble));
         vertex[0] = va->vertexs[j*va->num_dimensions];
         vertex[1] = va->vertexs[j*va->num_dimensions+1];
         vertex[2] = (va->num_dimensions == 3) ? va->vertexs[j*va->num_dimensions+2] : 0;

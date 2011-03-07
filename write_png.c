@@ -104,13 +104,13 @@ int main(int argc, char ** argv)
     exit(1);
   }
   
-  double b[3][2] = {
+  float b[3][2] = {
     {10000000, -10000000},
     {10000000, -10000000},
     {10000000, -10000000}
   };
   
-  double x,y,z;
+  float x,y,z;
   int num_shapes = 0;
   struct Shape ** shapes = NULL;
   
@@ -165,11 +165,11 @@ int main(int argc, char ** argv)
       
       if (va->array_type == GL_COLOR_ARRAY && va->num_dimensions == 3)
         for (k = 0 ; k < shape->num_vertexs ; k++)
-          glColor3dv(&va->vertexs[k*va->num_dimensions]);
+          glColor3fv(&va->vertexs[k*va->num_dimensions]);
       
       else if (va->array_type == GL_COLOR_ARRAY && va->num_dimensions == 4)
         for (k = 0 ; k < shape->num_vertexs ; k++)
-          glColor4dv(&va->vertexs[k*va->num_dimensions]);
+          glColor4fv(&va->vertexs[k*va->num_dimensions]);
     }
     
     for (j = 0 ; j < shape->num_vertex_arrays ; j++)
@@ -179,8 +179,8 @@ int main(int argc, char ** argv)
       if (va->num_dimensions < 2) fprintf(stderr, "vertex_array has %d dimensions (expected at least 2)\n", va->num_dimensions);
       if (va->vertexs == NULL) { fprintf(stderr, "vertex array %ld is NULL\n", j); exit(1); }
       
-      /*double *x = (double*)malloc(sizeof(double)*shape->num_vertexs);
-      double *y = (double*)malloc(sizeof(double)*shape->num_vertexs);
+      /*float *x = (float*)malloc(sizeof(float)*shape->num_vertexs);
+      float *y = (float*)malloc(sizeof(float)*shape->num_vertexs);
       
       for (k = 0 ; k < shape->num_vertexs ; k++)
       {
@@ -193,15 +193,15 @@ int main(int argc, char ** argv)
       
       if (va->array_type == GL_VERTEX_ARRAY && va->num_dimensions == 2)
         for (k = 0 ; k < shape->num_vertexs ; k++)
-          glVertex2dv(&va->vertexs[k*va->num_dimensions]);
+          glVertex2fv(&va->vertexs[k*va->num_dimensions]);
       
       else if (va->array_type == GL_VERTEX_ARRAY && va->num_dimensions == 3)
         for (k = 0 ; k < shape->num_vertexs ; k++)
-          glVertex3dv(&va->vertexs[k*va->num_dimensions]);
+          glVertex3fv(&va->vertexs[k*va->num_dimensions]);
       
       else if (va->array_type == GL_VERTEX_ARRAY && va->num_dimensions == 4)
         for (k = 0 ; k < shape->num_vertexs ; k++)
-          glVertex4dv(&va->vertexs[k*va->num_dimensions]);
+          glVertex4fv(&va->vertexs[k*va->num_dimensions]);
     }
     
     glEnd();

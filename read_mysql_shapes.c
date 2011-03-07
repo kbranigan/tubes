@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
         
         va->array_type = GL_VERTEX_ARRAY;
         va->num_dimensions = 3;
-        va->vertexs = (double*)malloc(sizeof(double) * shape->num_vertexs * va->num_dimensions);
+        va->vertexs = (float*)malloc(sizeof(float) * shape->num_vertexs * va->num_dimensions);
         
         { // num_vertex_arrays = 1;
           

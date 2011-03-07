@@ -30,6 +30,11 @@ typedef double vec3d[3];
 typedef double mat2d[2][2];
 typedef double mat3d[3][3];
 
+typedef float vec2f[2];
+typedef float vec3f[3];
+typedef float mat2f[2][2];
+typedef float mat3f[3][3];
+
 #endif  /* ! _vectdefs_h */
 
 

@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
     	  MYSQL_RES * res2 = mysql_store_result(&mysql);
         MYSQL_ROW row2;
         
-        double inf = 1.0 / 0.0;
+        float inf = 1.0 / 0.0;
         assert(fwrite(&inf, sizeof(inf), 1, stdout) == 1);
         assert(fwrite(&unique_set_id, sizeof(unique_set_id), 1, stdout) == 1);
         
@@ -109,13 +109,13 @@ int main(int argc, char *argv[])
         
         while ((row2 = mysql_fetch_row(res2)))
         {
-          double x = atof(row2[0]);
-          double y = atof(row2[1]);
-          double z = 0.0;
+          float x = atof(row2[0]);
+          float y = atof(row2[1]);
+          float z = 0.0;
           
-          assert(fwrite(&x, sizeof(double), 1, stdout) == 1);
-          assert(fwrite(&y, sizeof(double), 1, stdout) == 1);
-          assert(fwrite(&z, sizeof(double), 1, stdout) == 1);
+          assert(fwrite(&x, sizeof(float), 1, stdout) == 1);
+          assert(fwrite(&y, sizeof(float), 1, stdout) == 1);
+          assert(fwrite(&z, sizeof(float), 1, stdout) == 1);
         }
         mysql_free_result(res2);
       }

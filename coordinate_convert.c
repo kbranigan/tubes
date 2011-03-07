@@ -374,7 +374,7 @@ int main(int argc, char ** argv)
       struct VertexArray * va = &shape->vertex_arrays[i];
       for (j = 0 ; j < shape->num_vertexs ; j++)
       {
-        double * vertex = &va->vertexs[j*3];
+        float * vertex = &va->vertexs[j*3];
         
         struct xtmcoord c;
         c.easting = vertex[0];

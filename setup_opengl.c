@@ -109,9 +109,9 @@ int setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, f
   //gluPerspective(60.0f, (float)(TEXTURE_WIDTH)/TEXTURE_HEIGHT, 1.0f, 100.0f);
   //glOrtho(TEXTURE_WIDTH, -TEXTURE_WIDTH, TEXTURE_HEIGHT, -TEXTURE_HEIGHT, -100, 100);
   
-  double diff_x = max_x - min_x;
-  double diff_y = max_y - min_y;
-  double diff_z = max_z - min_z;
+  float diff_x = max_x - min_x;
+  float diff_y = max_y - min_y;
+  float diff_z = max_z - min_z;
   
   glOrtho(min_x-diff_x*0.01, max_x+diff_x*0.01, min_y-diff_y*0.01, max_y+diff_y*0.01, min_z-diff_z*0.01, max_z+diff_z*0.01);
   //glOrtho(-1.5, 1.5, 1.5, -1.5, -1.5, 1.5);

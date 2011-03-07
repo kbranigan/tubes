@@ -24,8 +24,8 @@ int bbox(FILE * fin, FILE * fout, FILE * ferr)
     
     int num_dimensions = 0;
     struct minmax {
-      double min;
-      double max;
+      float min;
+      float max;
     };
     struct minmax *bbox = NULL;
     

@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
       struct VertexArray *va = &shape->vertex_arrays[0];
       va->num_dimensions = 2;
       va->array_type = GL_VERTEX_ARRAY;
-      va->vertexs = (double*)malloc(sizeof(double)*shape->num_vertexs*va->num_dimensions);
+      va->vertexs = (float*)malloc(sizeof(float)*shape->num_vertexs*va->num_dimensions);
       //fprintf(stderr, "%ld: %d\n", i, psShape->nSHPType);
       for (j = 0 ; j < shape->num_vertexs ; j++)
       {
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
         struct VertexArray *va = &shape->vertex_arrays[0];
         va->num_dimensions = 2;
         va->array_type = GL_VERTEX_ARRAY;
-        va->vertexs = (double*)malloc(sizeof(double)*shape->num_vertexs*va->num_dimensions);
+        va->vertexs = (float*)malloc(sizeof(float)*shape->num_vertexs*va->num_dimensions);
         //fprintf(stderr, "%ld: %d\n", i, psShape->nSHPType);
         for (j = start ; j < end ; j++)
         {

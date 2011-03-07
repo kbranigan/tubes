@@ -85,7 +85,7 @@ int main(int argc, char ** argv)
     struct VertexArray * nva = &nshape->vertex_arrays[0];
     nva->array_type = shape->vertex_arrays[0].array_type;
     nva->num_dimensions = shape->vertex_arrays[0].num_dimensions;
-    nva->vertexs = (double*)malloc(sizeof(double)*nva->num_dimensions*nshape->num_vertexs);
+    nva->vertexs = (float*)malloc(sizeof(float)*nva->num_dimensions*nshape->num_vertexs);
     
     new_num_vertexs = 0;
     for (i = 0 ; i < num_shapes ; i++)
@@ -94,7 +94,7 @@ int main(int argc, char ** argv)
       {
         shape = shapes[i];
         struct VertexArray * ova = &shape->vertex_arrays[0];
-        memcpy(&nva->vertexs[ova->num_dimensions*new_num_vertexs], ova->vertexs, sizeof(double)*ova->num_dimensions*shape->num_vertexs);
+        memcpy(&nva->vertexs[ova->num_dimensions*new_num_vertexs], ova->vertexs, sizeof(float)*ova->num_dimensions*shape->num_vertexs);
         new_num_vertexs += shape->num_vertexs;
       }
     }
@@ -125,8 +125,8 @@ int main(int argc, char ** argv)
         if (pva->array_type != va->array_type) { fprintf(stderr, "trying to group two vertex arrays with a different array type\n"); exit(1); }
         if (pva->num_dimensions != va->num_dimensions) { fprintf(stderr, "trying to group two vertex arrays with a different number of dimensions\n"); exit(1); }
         
-        va->vertexs = (double*)realloc(va->vertexs, sizeof(double)*va->num_dimensions*(shape->num_vertexs + prev_shape->num_vertexs));
-        memcpy(&va->vertexs[va->num_dimensions*shape->num_vertexs], pva->vertexs, sizeof(double)*pva->num_dimensions*prev_shape->num_vertexs);
+        va->vertexs = (float*)realloc(va->vertexs, sizeof(float)*va->num_dimensions*(shape->num_vertexs + prev_shape->num_vertexs));
+        memcpy(&va->vertexs[va->num_dimensions*shape->num_vertexs], pva->vertexs, sizeof(float)*pva->num_dimensions*prev_shape->num_vertexs);
         shape->num_vertexs += prev_shape->num_vertexs;
       }
     }

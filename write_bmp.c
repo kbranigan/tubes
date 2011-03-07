@@ -87,13 +87,13 @@ int main(int argc, char ** argv)
     exit(1);
   }
   
-  double b[3][2] = {
+  float b[3][2] = {
     {10000000, -10000000},
     {10000000, -10000000},
     {10000000, -10000000}
   };
   
-  double x,y,z;
+  float x,y,z;
   int num_shapes = 0;
   struct Shape ** shapes = NULL;
   
@@ -148,8 +148,8 @@ int main(int argc, char ** argv)
       
       for (k = 0 ; k < shape->num_vertexs ; k++)
       {
-        if (va->array_type == GL_COLOR_ARRAY && va->num_dimensions == 3) glColor3dv(&va->vertexs[k*va->num_dimensions]);
-        if (va->array_type == GL_COLOR_ARRAY && va->num_dimensions == 4) glColor4dv(&va->vertexs[k*va->num_dimensions]);
+        if (va->array_type == GL_COLOR_ARRAY && va->num_dimensions == 3) glColor3fv(&va->vertexs[k*va->num_dimensions]);
+        if (va->array_type == GL_COLOR_ARRAY && va->num_dimensions == 4) glColor4fv(&va->vertexs[k*va->num_dimensions]);
       }
     }
     
@@ -162,9 +162,9 @@ int main(int argc, char ** argv)
       
       for (k = 0 ; k < shape->num_vertexs ; k++)
       {
-        if (va->array_type == GL_VERTEX_ARRAY && va->num_dimensions == 2) glVertex2dv(&va->vertexs[k*va->num_dimensions]);
-        if (va->array_type == GL_VERTEX_ARRAY && va->num_dimensions == 3) glVertex3dv(&va->vertexs[k*va->num_dimensions]);
-        if (va->array_type == GL_VERTEX_ARRAY && va->num_dimensions == 4) glVertex4dv(&va->vertexs[k*va->num_dimensions]);
+        if (va->array_type == GL_VERTEX_ARRAY && va->num_dimensions == 2) glVertex2fv(&va->vertexs[k*va->num_dimensions]);
+        if (va->array_type == GL_VERTEX_ARRAY && va->num_dimensions == 3) glVertex3fv(&va->vertexs[k*va->num_dimensions]);
+        if (va->array_type == GL_VERTEX_ARRAY && va->num_dimensions == 4) glVertex4fv(&va->vertexs[k*va->num_dimensions]);
       }
     }
     glEnd();

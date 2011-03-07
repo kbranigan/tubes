@@ -127,7 +127,7 @@ void inspect_shape(FILE * fp, struct Shape * shape)
 
 int write_shape(FILE * fp, struct Shape * shape)
 {
-  double inf = 1.0 / 0.0;
+  float inf = 1.0 / 0.0;
   if (fwrite(&inf, sizeof(inf), 1, fp) != 1) return 0;
   if (fwrite(&shape->unique_set_id, sizeof(shape->unique_set_id), 1, fp) != 1) return 0;
   if (fwrite(&shape->num_attributes, sizeof(shape->num_attributes), 1, fp) != 1) return 0;
@@ -147,14 +147,14 @@ int write_shape(FILE * fp, struct Shape * shape)
     struct VertexArray * va = &shape->vertex_arrays[i];
     if (fwrite(&va->array_type, sizeof(va->array_type), 1, fp) != 1) return 0;
     if (fwrite(&va->num_dimensions, sizeof(va->num_dimensions), 1, fp) != 1) return 0;
-    if (fwrite(va->vertexs, sizeof(double)*va->num_dimensions*shape->num_vertexs, 1, fp) != 1) return 0;
+    if (fwrite(va->vertexs, sizeof(float)*va->num_dimensions*shape->num_vertexs, 1, fp) != 1) return 0;
   }
   return 0;
 }
 
 struct Shape * read_shape(FILE * fp)
 {
-  double shape_header;
+  float shape_header;
   if (fread(&shape_header, sizeof(shape_header), 1, fp) != 1) return NULL;
   if (shape_header != INFINITY) { fprintf(stderr, "shape header (%f) is not infinity\n", shape_header); return NULL; }
   
@@ -202,9 +202,9 @@ struct Shape * read_shape(FILE * fp)
       if (fread(&va->num_dimensions, sizeof(va->num_dimensions), 1, fp) != 1) { fprintf(stderr, "fread vertex_array %d num_dimensions error\n", i); return NULL; }
       //if (va->num_dimensions != 3) fprintf(stderr, "va->num_dimensions = %d\n", va->num_dimensions);
       
-      va->vertexs = (double*)malloc(sizeof(double)*shape->num_vertexs*va->num_dimensions);
+      va->vertexs = (float*)malloc(sizeof(float)*shape->num_vertexs*va->num_dimensions);
       
-      if (fread(va->vertexs, sizeof(double)*va->num_dimensions*shape->num_vertexs, 1, fp) != 1) { fprintf(stderr, "fread vertex_array %d vertexs error\n", i); return NULL; }
+      if (fread(va->vertexs, sizeof(float)*va->num_dimensions*shape->num_vertexs, 1, fp) != 1) { fprintf(stderr, "fread vertex_array %d vertexs error\n", i); return NULL; }
     }
   }
   
@@ -225,15 +225,15 @@ int point_in_triangle(vec2d A, vec2d B, vec2d C, vec2d P)
   vec2d v1; SUBV(v1, B, A);
   vec2d v2; SUBV(v2, P, A);
   
-  double dot00; DOTVP(dot00, v0, v0);
-  double dot01; DOTVP(dot01, v0, v1);
-  double dot02; DOTVP(dot02, v0, v2);
-  double dot11; DOTVP(dot11, v1, v1);
-  double dot12; DOTVP(dot12, v1, v2);
+  float dot00; DOTVP(dot00, v0, v0);
+  float dot01; DOTVP(dot01, v0, v1);
+  float dot02; DOTVP(dot02, v0, v2);
+  float dot11; DOTVP(dot11, v1, v1);
+  float dot12; DOTVP(dot12, v1, v2);
   
-  double invDenom = 1.0 / (dot00 * dot11 - dot01 * dot01);
-  double u = (dot11 * dot02 - dot01 * dot12) * invDenom;
-  double v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+  float invDenom = 1.0 / (dot00 * dot11 - dot01 * dot01);
+  float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+  float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
   
   return (u > 0.0) && (v > 0.0) && (u + v < 1.0);
 }

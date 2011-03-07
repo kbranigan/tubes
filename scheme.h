@@ -40,7 +40,7 @@
   uint32_t         file header          42
   uint32_t         file version         2
   [ // shapes (read until feof or fread error)
-    double         shape header         INFINITY
+    float          shape header         INFINITY
     uint32_t       unique_set_id
     uint32_t       num_attributes
     [ // num_attributes
@@ -69,7 +69,7 @@
       uint32_t     num_dimensions
       [ // num_vertexs
         [ // num_dimensions
-          double
+          float
         ]
       ]
     ]
@@ -80,7 +80,7 @@ struct VertexArray {
   struct Shape * shape;
   uint32_t array_type;
   uint32_t num_dimensions;
-  double * vertexs; // shape->num_vertexs * num_dimensions
+  float * vertexs; // shape->num_vertexs * num_dimensions
 };
 
 struct Attribute {

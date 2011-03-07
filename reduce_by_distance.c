@@ -37,16 +37,16 @@ int main(int argc, char ** argv)
       struct VertexArray * va = &shape->vertex_arrays[i];
       if (va->array_type != GL_VERTEX_ARRAY) continue;
       
-      double * prev_vertex = NULL;
+      float * prev_vertex = NULL;
       for (j = 0 ; j < shape->num_vertexs ; j++)
       {
-        double * vertex = &va->vertexs[j*va->num_dimensions];
+        float * vertex = &va->vertexs[j*va->num_dimensions];
         
-        double distance = 0.0;
+        float distance = 0.0;
         if (prev_vertex != NULL)
         {
-          double x_diff = fabs(vertex[0] - prev_vertex[0]);
-          double y_diff = fabs(vertex[1] - prev_vertex[1]);
+          float x_diff = fabs(vertex[0] - prev_vertex[0]);
+          float y_diff = fabs(vertex[1] - prev_vertex[1]);
           distance = sqrt(x_diff*x_diff + y_diff*y_diff);
         }
         
@@ -54,7 +54,7 @@ int main(int argc, char ** argv)
         {
           j--;
           shape->num_vertexs--;
-          memmove(vertex, vertex+va->num_dimensions, sizeof(double)*(shape->num_vertexs-j)*va->num_dimensions);
+          memmove(vertex, vertex+va->num_dimensions, sizeof(float)*(shape->num_vertexs-j)*va->num_dimensions);
           vertexes_reduced++;
         }
         else
