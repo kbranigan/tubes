@@ -138,12 +138,20 @@ void records(struct mg_connection *conn, const struct mg_request_info *ri, void 
   
   mg_printf(conn, "{\n");
   mg_printf(conn, "  \"file\": \"%s\",\n", file);
-  mg_printf(conn, "  \"num_records\": \"%d\",\n", nRecordCount);
+  
+  if (id == -1)
+  {
+    mg_printf(conn, "  \"num_records\": \"%d\",\n", nRecordCount);
+    mg_printf(conn, "  \"records\":\n  [\n");
+  }
+  else
+    mg_printf(conn, "  \"record\":\n");
+  
   for (int i = 0 ; i < nRecordCount ; i++)
   {
-    mg_printf(conn, "  \"record_id\": \"%d\",\n", i);
-    mg_printf(conn, "  \"record\": {\n");
     if (id != -1 && id != i) continue;
+    mg_printf(conn, "    {\n");
+    mg_printf(conn, "      \"id\": \"%d\",\n", i);
     for (int j = 0 ; j < nFieldCount ; j++)
     {
       unsigned int k;
@@ -152,7 +160,7 @@ void records(struct mg_connection *conn, const struct mg_request_info *ri, void 
       char *cStr;
     
       DBFFieldType ft = DBFGetFieldInfo(d, j, pszFieldName, &pnWidth, NULL);
-      mg_printf(conn, "    \"%d\":{\"field\":\"%s\", \"value\":", j, pszFieldName);
+      mg_printf(conn, "      \"%s\":", pszFieldName);
       switch (ft)
       {
         case FTString:
@@ -171,10 +179,13 @@ void records(struct mg_connection *conn, const struct mg_request_info *ri, void 
         case FTInvalid:
           break;
       }
-      mg_printf(conn, "}%s\n", (j==nFieldCount-1)?"":",");
+      mg_printf(conn, "%s\n", (j == nFieldCount-1)?"":",");
     }
-    mg_printf(conn, "  }\n");
+    mg_printf(conn, "    }%s\n", (id != -1 || i == nRecordCount-1)?"":",");
   }
+  if (id == -1)
+    mg_printf(conn, "  ]\n");
+  
   mg_printf(conn, "}\n");
 	
 	if (d != NULL) DBFClose(d);
@@ -249,11 +260,13 @@ void image(struct mg_connection *conn, const struct mg_request_info *ri, void *d
   
   mg_printf(conn, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n");
   
-  mg_printf(conn, "<a href='/'>back to list</a><br />\n");
+  mg_printf(conn, "<html>\n<head>\n<title>Civicsets.ca</title>\n</head>\n<body>\n<a href='/'>back to list</a><br />\n");
+  
+  char dir[] = ".";
   
   FILE * fp = NULL;
   char image_filename[300];
-  sprintf(image_filename, "civicsets.ca/cache_images%s/%ld", file, row_id);
+  sprintf(image_filename, "cache_images%s/%ld.%ld", file, row_id, part_id);
   
   char png_filename[350];
   sprintf(png_filename, "%s.png", image_filename);
@@ -261,27 +274,28 @@ void image(struct mg_connection *conn, const struct mg_request_info *ri, void *d
   if (fp == NULL)
   {
     char command[1000];
-    sprintf(command, "mkdir -p civicsets.ca/cache_images%s", file);
+    sprintf(command, "mkdir -p cache_images%s", file);
     system(command);
     
-    sprintf(command, "/work/pipes/read_shapefile %s %ld %ld ", dbf_filename, row_id, part_id);
+    sprintf(command, "%s/read_shapefile %s %ld %ld | ", dir, dbf_filename, row_id, part_id);
     
     SHPObject	*psShape = SHPReadObject(h, 0);
     if(psShape->nSHPType == SHPT_POLYGON)
     {
-      strcat(command, "| /work/pipes/tesselate ");
+      strcat(command, dir); strcat(command, "/tesselate | ");
     }
-    strcat(command, "| /work/pipes/add_random_colors ");
-    strcat(command, "| /work/pipes/write_png ");
-    strcat(command, image_filename);
-    strcat(command, ".png");
+    strcat(command, dir); strcat(command, "/add_random_colors | ");
+    strcat(command, dir); strcat(command, "/write_png "); strcat(command, image_filename); strcat(command, ".png");
+    
     printf("%s\n", command);
     system(command);
     
   }
   else fclose(fp);
   
-  mg_printf(conn, "<img src='%s.png' />", image_filename, image_filename);
+  mg_printf(conn, "<img src='%s.png' />\n", image_filename, image_filename);
+  
+  mg_printf(conn, "</body>\n</html>\n");
   
   if (h != NULL) SHPClose(h);
 	if (d != NULL) DBFClose(d);
