@@ -10,7 +10,8 @@
 int main(int argc, char *argv[])
 {
   char * filename = (argc > 1) ? argv[1] : "prov_ab_p_geo83_e.dbf";
-  int id          = (argc > 2) ? atoi(argv[2]) : -1;
+  int row_id      = (argc > 2) ? atoi(argv[2]) : -1;
+  int part_id     = (argc > 3) ? atoi(argv[3]) : -1;
   
   FILE * fp = fopen(filename, "r");
   if (!fp)
@@ -40,7 +41,7 @@ int main(int argc, char *argv[])
   long i;
   for (i = 0 ; i < nRecordCount ; i++)
   {
-    if (id != -1 && id != i) continue;
+    if (row_id != -1 && row_id != i) continue;
     SHPObject	*psShape = SHPReadObject(h, i);
     int j;
     if (psShape->nSHPType == SHPT_POINT)
@@ -79,6 +80,7 @@ int main(int argc, char *argv[])
       int j, iPart;
       for (iPart = 0 ; iPart < psShape->nParts ; iPart++)
       {
+        if (part_id != -1 && part_id != iPart) continue;
         int start = psShape->panPartStart[iPart];
         int end = psShape->nVertices;
         
