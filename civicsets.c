@@ -7,6 +7,8 @@
 #include <ftw.h>
 #include <stdint.h>
 
+#include <mysql.h>
+
 #include "shapefile_src/shapefil.h"
 #include "mongoose.h"
 
@@ -15,6 +17,7 @@ void fields(struct mg_connection *conn, const struct mg_request_info *ri, void *
 void records(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
 void shapes(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
 void image(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
+void record_a_position(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
 
 const char *port = "2222";
 
@@ -34,6 +37,7 @@ int main(int argc, char **argv)
   mg_set_uri_callback(ctx, "/records", &records, NULL);
   mg_set_uri_callback(ctx, "/shapes", &shapes, NULL);
   mg_set_uri_callback(ctx, "/image", &image, NULL);
+  mg_set_uri_callback(ctx, "/record_a_position", &record_a_position, NULL);
   
   printf("-------------------------------------------------------------------------\n");
   
@@ -63,6 +67,36 @@ static int display_info(const char *fpath, const struct stat *sb, int tflag, str
   
   //mg_printf(dconn, "%s (%d) (%s)<br />\n", fpath + strlen(fpath) - 4);
   return 0;           /* To tell nftw() to continue */
+}
+
+void record_a_position(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
+{
+  char * recorded_at_c = mg_get_var(conn, "recorded_at");
+  long recorded_at = atoi(recorded_at_c);
+  
+  char * source_c = mg_get_var(conn, "source");
+  
+  char * lat_c = mg_get_var(conn, "lat");
+  double lat = atof(lat_c);
+  
+  char * lon_c = mg_get_var(conn, "lon");
+  double lon = atof(lon_c);
+  
+  MYSQL mysql;
+  //MYSQL_ROW row;
+  
+  if ((mysql_init(&mysql) == NULL)) { printf("mysql_init error\n"); }
+  if (!mysql_real_connect(&mysql, "localhost", "root", "", "civicsets", 0, NULL, 0)) { printf("mysql_real_connect error\n"); }
+  
+  char query[1000];
+  sprintf(query, "INSERT INTO points (created_at, recorded_at, lat, lon) values (NOW(), %ld, '%s', %f, %f)", recorded_at, source_c, lat, lon);
+  mysql_query(&mysql, query);
+  mysql_close(&mysql);
+  
+  free(source_c);
+  free(recorded_at_c);
+  free(lat_c);
+  free(lon_c);
 }
 
 void list(struct mg_connection *conn, const struct mg_request_info *ri, void *data)

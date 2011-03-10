@@ -11,7 +11,7 @@ all: civicsets read_mysql_shapes bbox write_png write_bmp write_bmp_sphere tesse
 therest: read_mysql_line_strips
 
 civicsets: shapefile_src/shpopen.o shapefile_src/dbfopen.o mongoose.o
-	g++ -Wall civicsets.c shapefile_src/shpopen.o shapefile_src/dbfopen.o mongoose.o -ldl -lpthread -o civicsets.ca
+	g++ -Wall civicsets.c shapefile_src/shpopen.o shapefile_src/dbfopen.o mongoose.o -ldl -lpthread -o civicsets.ca $(mysql)
 
 produce_single_test_circle: scheme.o produce_single_test_circle.c
 	gcc scheme.o produce_single_test_circle.c -o produce_single_test_circle -lm
