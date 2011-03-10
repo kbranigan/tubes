@@ -89,7 +89,7 @@ void record_a_position(struct mg_connection *conn, const struct mg_request_info 
   if (!mysql_real_connect(&mysql, "localhost", "root", "", "civicsets", 0, NULL, 0)) { printf("mysql_real_connect error\n"); }
   
   char query[1000];
-  sprintf(query, "INSERT INTO points (created_at, recorded_at, lat, lon) values (NOW(), %ld, '%s', %f, %f)", recorded_at, source_c, lat, lon);
+  sprintf(query, "INSERT INTO points (created_at, recorded_at, source, lat, lon) values (NOW(), %ld, '%s', %f, %f)", recorded_at, source_c, lat, lon);
   mg_printf(conn, "%s", query);
   mysql_query(&mysql, query);
   mysql_close(&mysql);
