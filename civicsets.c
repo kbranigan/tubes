@@ -72,15 +72,30 @@ static int display_info(const char *fpath, const struct stat *sb, int tflag, str
 void record_a_position(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
 {
   char * recorded_at_c = mg_get_var(conn, "recorded_at");
-  long recorded_at = atoi(recorded_at_c);
+  long recorded_at = (recorded_at_c == NULL) ? 0 : atoi(recorded_at_c);
   
   char * source_c = mg_get_var(conn, "source");
   
   char * lat_c = mg_get_var(conn, "lat");
-  double lat = atof(lat_c);
+  double lat = (lat_c == NULL) ? 0 : atof(lat_c);
   
   char * lon_c = mg_get_var(conn, "lon");
-  double lon = atof(lon_c);
+  double lon = (lon_c == NULL) ? 0 : atof(lon_c);
+  
+  char * altitude_c = mg_get_var(conn, "altitude");
+  double altitude = (altitude_c == NULL) ? 0 : atof(altitude_c);
+  
+  char * speed_c = mg_get_var(conn, "speed");
+  double speed = (speed_c == NULL) ? 0 : atof(speed_c);
+  
+  char * course_c = mg_get_var(conn, "course");
+  double course = (course_c == NULL) ? 0 : atof(course_c);
+  
+  char * haccuracy_c = mg_get_var(conn, "haccuracy");
+  double haccuracy = (haccuracy_c == NULL) ? 0 : atof(haccuracy_c);
+  
+  char * vaccuracy_c = mg_get_var(conn, "vaccuracy");
+  double vaccuracy = (vaccuracy_c == NULL) ? 0 : atof(vaccuracy_c);
   
   MYSQL mysql;
   //MYSQL_ROW row;
@@ -89,7 +104,7 @@ void record_a_position(struct mg_connection *conn, const struct mg_request_info 
   if (!mysql_real_connect(&mysql, "localhost", "root", "", "civicsets", 0, NULL, 0)) { printf("mysql_real_connect error\n"); }
   
   char query[1000];
-  sprintf(query, "INSERT INTO points (created_at, recorded_at, source, lat, lon) values (NOW(), %ld, '%s', %f, %f)", recorded_at, source_c, lat, lon);
+  sprintf(query, "INSERT INTO points (created_at, recorded_at, source, lat, lon, altitude, speed, course, haccuracy, vacuracy) values (NOW(), %ld, '%s', %f, %f, %f, %f, %f, %f, %f)", recorded_at, source_c, lat, lon, altitude, speed, course, haccuracy, vacuracy);
   mg_printf(conn, "%s", query);
   mysql_query(&mysql, query);
   mysql_close(&mysql);
