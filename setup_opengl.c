@@ -113,7 +113,8 @@ int setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, f
   float diff_y = max_y - min_y;
   float diff_z = max_z - min_z;
   
-  glOrtho(min_x-diff_x*0.01, max_x+diff_x*0.01, min_y-diff_y*0.01, max_y+diff_y*0.01, min_z-diff_z*0.01, max_z+diff_z*0.01);
+  //glOrtho(min_x-diff_x*0.01, max_x+diff_x*0.01, min_y-diff_y*0.01, max_y+diff_y*0.01, min_z-diff_z*0.01, max_z+diff_z*0.01);
+  glOrtho(min_x-diff_x*0.01, max_x+diff_x*0.01, min_y-diff_y*0.01, max_y+diff_y*0.01, 1, -1);
   //glOrtho(-1.5, 1.5, 1.5, -1.5, -1.5, 1.5);
   
   //printf("[%f, %f], [%f, %f], [%f, %f]\n", min_x, max_x, min_y, max_y, min_z, max_z);

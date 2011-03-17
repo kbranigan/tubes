@@ -89,9 +89,11 @@ void inspect_shape(FILE * fp, struct Shape * shape)
   long count_zero = 0;
   long i;
   
+  char gl_types_c[8][20] = {"GL_POINTS", "GL_LINES", "GL_LINE_LOOP", "GL_LINE_STRIP", "GL_TRIANGLES", "GL_TRIANGLE_STRIP", "GL_TRIANGLE_FAN"};
+  
   fprintf(stderr, "shape:\n");
   fprintf(stderr, "  unique_set_id: %d\n", shape->unique_set_id);
-  fprintf(stderr, "  gl_type: %d\n", shape->gl_type);
+  fprintf(stderr, "  gl_type: %s\n", (shape->gl_type >= 0 && shape->gl_type < 8) ? gl_types_c[shape->gl_type] : "????");
   fprintf(stderr, "  num_attributes: %d\n", shape->num_attributes);
   if (shape->num_attributes) fprintf(stderr, "  attributes:\n");
   for (i = 0 ; i < shape->num_attributes ; i++)

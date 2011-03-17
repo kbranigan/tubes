@@ -154,6 +154,9 @@ int main(int argc, char ** argv)
   for (i = 0 ; i < num_shapes ; i++)
   {
     shape = shapes[i];
+    if (shape->num_vertexs == 1)
+      shape->gl_type = GL_POINTS;
+    
     glBegin(shape->gl_type);
     glColor3f(0,0,0);
     for (j = 0 ; j < shape->num_vertex_arrays ; j++)
@@ -202,8 +205,8 @@ int main(int argc, char ** argv)
       else if (va->array_type == GL_VERTEX_ARRAY && va->num_dimensions == 4)
         for (k = 0 ; k < shape->num_vertexs ; k++)
           glVertex4fv(&va->vertexs[k*va->num_dimensions]);
+      
     }
-    
     glEnd();
     free_shape(shape);
   }
