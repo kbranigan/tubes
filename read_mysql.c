@@ -11,7 +11,7 @@
 
 int main(int argc, char *argv[])
 {
-  char * sql = (argc > 1) ? argv[1] : "SELECT lon AS y, lat AS x, id AS unique_set_id FROM civicsets.points where created_at > '2011-03-16 20:00:00' and source = 'gps_reporter' ORDER BY unique_set_id";
+  char * sql = (argc > 1) ? argv[1] : "SELECT lon AS x, lat AS y, id AS unique_set_id FROM civicsets.points where created_at > '2011-03-16 20:00:00' and source = 'gps_reporter' ORDER BY unique_set_id";
   
   if (!stdout_is_piped())
   {
