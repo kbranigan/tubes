@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
   if (mysql_query(&mysql, query) == 0)
   {
     MYSQL_RES * res = mysql_store_result(&mysql);
-    if (mysql_num_rows(res) != 2)
+    if (!(mysql_num_rows(res) == 2 || (mysql_num_rows(res) == 1 && strcmp(group_field, order_field)==0)))
     {
       fprintf(stderr, "%s\n%s.%s.%s or .%s does not exist in mysql.\n", query, database, table, group_field, order_field);
       exit(1);
@@ -89,6 +89,8 @@ int main(int argc, char *argv[])
         shape->num_attributes = 0;
         shape->num_vertexs = mysql_num_rows(res2);
         shape->num_vertex_arrays = 1;
+        
+        if (shape->num_vertexs == 1) shape->gl_type = GL_POINTS;
         
         shape->attributes = NULL;
         shape->vertex_arrays = (struct VertexArray*)malloc(sizeof(struct VertexArray));
