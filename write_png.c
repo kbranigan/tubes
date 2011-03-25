@@ -215,6 +215,13 @@ int main(int argc, char ** argv)
   png.width = TEXTURE_WIDTH;
   png.height = TEXTURE_HEIGHT;
   
+  if (TEXTURE_WIDTH <= 0 || TEXTURE_WIDTH >= 100000 || 
+      TEXTURE_HEIGHT <= 0 || TEXTURE_HEIGHT >= 100000)
+      {
+        fprintf(stderr, "generated image size is definitely wrong (%dx%d)\n", TEXTURE_WIDTH, TEXTURE_HEIGHT);
+        exit(0);
+      }
+  
   png.pixels = calloc(sizeof(pixel_t), TEXTURE_WIDTH*TEXTURE_HEIGHT);
   glReadBuffer((GLenum)GL_COLOR_ATTACHMENT0_EXT);
   glReadPixels(0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)png.pixels);
