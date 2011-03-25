@@ -84,6 +84,28 @@ int read_header(FILE * fp, uint32_t req_file_version)
   return 1;
 }
 
+struct Shape * new_shape()
+{
+  struct Shape * shape = (struct Shape*)malloc(sizeof(struct Shape));
+  memset(shape, 0, sizeof(struct Shape));
+  shape->unique_set_id = 0;
+  shape->num_attributes = 0;
+  shape->attributes = NULL;
+  shape->gl_type = GL_POINTS;
+  shape->num_vertexs = 0;
+  shape->num_vertex_arrays = 1;
+  shape->vertex_arrays = (struct VertexArray*)malloc(sizeof(struct VertexArray));
+  
+  struct VertexArray * va = &shape->vertex_arrays[0];
+  memset(va, 0, sizeof(struct VertexArray));
+  va->shape = shape;
+  va->array_type = GL_VERTEX_ARRAY;
+  va->num_dimensions = 2;
+  va->vertexs = NULL;
+  
+  return shape;
+}
+
 void inspect_shape(FILE * fp, struct Shape * shape)
 {
   long count_zero = 0;

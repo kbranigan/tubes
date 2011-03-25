@@ -110,6 +110,7 @@ extern int stdin_has_data();
 extern int write_header(FILE * fp, uint32_t file_version);
 extern int read_header(FILE * fp, uint32_t req_file_version);
 
+extern struct Shape * new_shape();
 extern void inspect_shape(FILE * fp, struct Shape * shape);
 extern struct Shape * read_shape(FILE * fp);
 extern int write_shape(FILE * fp, struct Shape * shape);
