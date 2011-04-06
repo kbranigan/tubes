@@ -26,6 +26,24 @@ int stdout_is_piped()
   return (memcmp(&outstat, &errstat, sizeof outstat) != 0);
 }
 
+void assert_stdin_is_piped()
+{
+  if (!stdin_is_piped())
+  {
+    fprintf(stderr, "needs a data source. (redirected pipe, using |)\n");
+    exit(1);
+  }
+}
+  
+void assert_stdout_is_piped()
+{
+  if (!stdout_is_piped())
+  {
+    fprintf(stderr, "needs a data source. (redirected pipe, using |)\n");
+    exit(1);
+  }
+}
+
 int stdin_has_data()
 {
   fd_set rfds;
@@ -84,9 +102,62 @@ int read_header(FILE * fp, uint32_t req_file_version)
   return 1;
 }
 
+struct VertexArray * get_array(struct Shape * shape, int array_type)
+{
+  if (shape == NULL) shape = new_shape();
+  if (shape->vertex_arrays == NULL) return NULL;
+  int i = 0;
+  for ( ; i < shape->num_vertex_arrays ; i++)
+    if (shape->vertex_arrays[i].array_type == array_type)
+      return &shape->vertex_arrays[i];
+  
+  shape->num_vertex_arrays++;
+  shape->vertex_arrays = realloc(shape->vertex_arrays, shape->num_vertex_arrays*sizeof(struct VertexArray));
+  if (shape->vertex_arrays == NULL) { fprintf(stderr, "malloc failed in read_shape()\n"); exit(1); }
+  
+  struct VertexArray * va = &shape->vertex_arrays[shape->num_vertex_arrays-1];
+  va->shape = shape;
+  va->array_type = array_type;
+  va->num_dimensions = 2;
+  va->vertexs = malloc(sizeof(float)*shape->num_vertexs*va->num_dimensions);
+  if (va->vertexs == NULL) { fprintf(stderr, "malloc failed in get_array()\n"); exit(1); }
+  
+  return va;
+}
+
+void append_vertex2f(struct VertexArray * va, float x, float y)
+{
+  if (va == NULL) { fprintf(stderr, "append_vertex2f called on a NULL vertex array\n"); exit(1); }
+  if (va->shape == NULL) { fprintf(stderr, "append_vertex2f called on a vertex array with no associated shape\n"); exit(1); }
+  if (va->num_dimensions != 2) { fprintf(stderr, "append_vertex2f called on a vertex array with %d dimensions\n", va->num_dimensions); exit(1); }
+  
+  va->vertexs = realloc(va->vertexs, sizeof(float)*(va->shape->num_vertexs+1)*va->num_dimensions);
+  if (va->vertexs == NULL) { fprintf(stderr, "malloc failed in append_vertex2f()\n"); exit(1); }
+  
+  va->vertexs[va->num_dimensions*va->shape->num_vertexs+0] = x;
+  va->vertexs[va->num_dimensions*va->shape->num_vertexs+1] = y;
+  va->shape->num_vertexs++;
+}
+
+void append_vertex3f(struct VertexArray * va, float x, float y, float z)
+{
+  if (va == NULL) { fprintf(stderr, "append_vertex3f called on a NULL vertex array\n"); exit(1); }
+  if (va->shape == NULL) { fprintf(stderr, "append_vertex3f called on a vertex array with no associated shape\n"); exit(1); }
+  if (va->num_dimensions != 3) { fprintf(stderr, "append_vertex3f called on a vertex array with %d dimensions\n", va->num_dimensions); exit(1); }
+  
+  va->vertexs = realloc(va->vertexs, sizeof(float)*(va->shape->num_vertexs+1)*va->num_dimensions);
+  if (va->vertexs == NULL) { fprintf(stderr, "malloc failed in append_vertex3f()\n"); exit(1); }
+  
+  va->vertexs[va->num_dimensions*va->shape->num_vertexs+0] = x;
+  va->vertexs[va->num_dimensions*va->shape->num_vertexs+1] = y;
+  va->vertexs[va->num_dimensions*va->shape->num_vertexs+2] = z;
+  va->shape->num_vertexs++;
+}
+
 struct Shape * new_shape()
 {
   struct Shape * shape = (struct Shape*)malloc(sizeof(struct Shape));
+  if (shape == NULL) { fprintf(stderr, "malloc failed in new_shape()\n"); exit(1); }
   memset(shape, 0, sizeof(struct Shape));
   shape->unique_set_id = 0;
   shape->num_attributes = 0;
@@ -95,6 +166,7 @@ struct Shape * new_shape()
   shape->num_vertexs = 0;
   shape->num_vertex_arrays = 1;
   shape->vertex_arrays = (struct VertexArray*)malloc(sizeof(struct VertexArray));
+  if (shape->vertex_arrays == NULL) { fprintf(stderr, "malloc failed in new_shape()\n"); exit(1); }
   
   struct VertexArray * va = &shape->vertex_arrays[0];
   memset(va, 0, sizeof(struct VertexArray));
@@ -190,6 +262,7 @@ struct Shape * read_shape(FILE * fp)
   if (shape_header != INFINITY) { fprintf(stderr, "shape header (%f) is not infinity\n", shape_header); return NULL; }
   
   struct Shape * shape = (struct Shape *)malloc(sizeof(struct Shape));
+  if (shape == NULL) { fprintf(stderr, "malloc failed in read_shape()\n"); exit(1); }
   memset(shape, 0, sizeof(struct Shape));
   
   if (fread(&shape->unique_set_id, sizeof(shape->unique_set_id), 1, fp) != 1) { fprintf(stderr, "fread unique_set_id error\n"); return NULL; }
@@ -198,6 +271,7 @@ struct Shape * read_shape(FILE * fp)
   if (shape->num_attributes > 0)
   {
     shape->attributes = (struct Attribute *)malloc(sizeof(struct Attribute)*shape->num_attributes);
+    if (shape->attributes == NULL) { fprintf(stderr, "malloc failed in read_shape()\n"); exit(1); }
     
     int i;
     for (i = 0 ; i < shape->num_attributes ; i++)
@@ -207,6 +281,7 @@ struct Shape * read_shape(FILE * fp)
       if (fread(&attribute->name, sizeof(attribute->name), 1, fp) != 1) { fprintf(stderr, "fread attribute %d key error\n", i); return NULL; }
       if (fread(&attribute->value_length, sizeof(attribute->value_length), 1, fp) != 1) { fprintf(stderr, "fread attribute %d value length error\n", i); return NULL; }
       attribute->value = malloc(attribute->value_length+1);
+      if (attribute->value == NULL) { fprintf(stderr, "malloc failed in read_shape()\n"); exit(1); }
       if (fread(attribute->value, attribute->value_length, 1, fp) != 1) { fprintf(stderr, "fread attribute %d value error\n", i); return NULL; }
       attribute->value[attribute->value_length] = 0;
     }
@@ -219,6 +294,7 @@ struct Shape * read_shape(FILE * fp)
   if (shape->num_vertex_arrays > 0)
   {
     shape->vertex_arrays = (struct VertexArray *)malloc(sizeof(struct VertexArray)*shape->num_vertex_arrays);
+    if (shape->vertex_arrays == NULL) { fprintf(stderr, "malloc failed in read_shape()\n"); exit(1); }
     
     int i;
     for (i = 0 ; i < shape->num_vertex_arrays ; i++)
@@ -230,6 +306,7 @@ struct Shape * read_shape(FILE * fp)
       //if (va->num_dimensions != 3) fprintf(stderr, "va->num_dimensions = %d\n", va->num_dimensions);
       
       va->vertexs = (float*)malloc(sizeof(float)*shape->num_vertexs*va->num_dimensions);
+      if (va->vertexs == NULL) { fprintf(stderr, "malloc failed in read_shape()\n"); exit(1); }
       
       if (fread(va->vertexs, sizeof(float)*va->num_dimensions*shape->num_vertexs, 1, fp) != 1) { fprintf(stderr, "fread vertex_array %d vertexs error\n", i); return NULL; }
     }
@@ -240,8 +317,15 @@ struct Shape * read_shape(FILE * fp)
 
 int free_shape(struct Shape * shape)
 {
-  free(shape->vertex_arrays);
-  free(shape->attributes);
+  int i = 0;
+  for (i = 0 ; i < shape->num_vertex_arrays ; i++)
+    free(shape->vertex_arrays[i].vertexs);
+    
+  for (i = 0 ; i < shape->num_attributes ; i++)
+    free(shape->attributes[i].value);
+    
+  if (shape->num_vertex_arrays) free(shape->vertex_arrays);
+  if (shape->num_attributes) free(shape->attributes);
   free(shape);
   return 1;
 }

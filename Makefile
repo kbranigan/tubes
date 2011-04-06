@@ -6,9 +6,25 @@ linuxgl= -lOSMesa -lGL -lGLU
 
 whichgl= $(applegl)
 
-all: civicsets read_mysql read_mysql_shapes bbox write_png write_bmp write_bmp_sphere tesselate inspect add_random_colors group_shapes_on_unique_set_id read_shapefile produce_single_test_circle write_kml reduce_by_distance reduce_by_attribute reduce_by_id coordinate_convert
-
-therest: read_mysql_line_strips
+all: civicsets \
+	read_mysql \
+	read_mysql_shapes \
+	bbox \
+	append \
+	write_png \
+	write_bmp \
+	write_bmp_sphere \
+	tesselate \
+	inspect \
+	add_random_colors \
+	group_shapes_on_unique_set_id \
+	read_shapefile \
+	produce_single_test_circle \
+	write_kml \
+	reduce_by_distance \
+	reduce_by_attribute \
+	reduce_by_id \
+	coordinate_convert
 
 civicsets: shapefile_src/shpopen.o shapefile_src/dbfopen.o mongoose.o
 	g++ -Wall civicsets.c shapefile_src/shpopen.o shapefile_src/dbfopen.o mongoose.o -ldl -lpthread -o civicsets.ca $(mysql)
@@ -39,6 +55,9 @@ reduce_by_id: scheme.o reduce_by_id.c
 
 bbox: scheme.o bbox.c
 	gcc scheme.o bbox.c -o bbox -DMAIN -DFUNC=bbox
+
+append: scheme.o append.c
+	gcc scheme.o append.c -o append
 
 coordinate_convert: scheme.o coordinate_convert.c
 	gcc scheme.o coordinate_convert.c -o coordinate_convert -lm

@@ -15,7 +15,7 @@
 GLuint textureId;
 GLuint rboId;
 GLuint fboId;
-int TEXTURE_WIDTH = 1024;
+int TEXTURE_WIDTH = 1600;
 int TEXTURE_HEIGHT = 0;
 
 int setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, float min_z, float max_z)

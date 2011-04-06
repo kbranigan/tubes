@@ -65,52 +65,44 @@ int main(int argc, char *argv[])
     }
     
     struct Shape * shape = NULL;
+    int prev_unique_set_id = -1;
     
     while ((row = mysql_fetch_row(res)))
     {
-      if (shape == NULL || shape->unique_set_id != atol(row[unique_set_field_id]))
+      if (atol(row[unique_set_field_id]) != prev_unique_set_id)
       {
-        if (shape != NULL && shape->unique_set_id != atol(row[unique_set_field_id]))
+        if (shape != NULL)
         {
           write_shape(stdout, shape);
           free_shape(shape);
+          shape = NULL;
         }
+        shape = new_shape();
+        shape->gl_type = GL_LINE_STRIP;
         
-        shape = (struct Shape*)malloc(sizeof(struct Shape));
-        memset(shape, 0, sizeof(struct Shape));
-        shape->unique_set_id = atoi(row[unique_set_field_id]);
-        shape->num_vertex_arrays = 1;
-        shape->vertex_arrays = (struct VertexArray*)malloc(sizeof(struct VertexArray));
-        memset(shape->vertex_arrays, 0, sizeof(struct VertexArray));
-        shape->vertex_arrays[0].vertexs = NULL;
-        shape->vertex_arrays[0].num_dimensions = 2;
+        shape->unique_set_id = atol(row[unique_set_field_id]);
         if (z_field_id != -1) shape->vertex_arrays[0].num_dimensions++;
       }
+      struct VertexArray * va = get_array(shape, GL_VERTEX_ARRAY);
       
-      shape->num_vertexs++;
-      struct VertexArray * va = &shape->vertex_arrays[0];
-      va->array_type = GL_VERTEX_ARRAY;
-      va->vertexs = realloc(va->vertexs, shape->num_vertexs * va->num_dimensions * sizeof(float));
-      va->vertexs[sizeof(float)*va->num_dimensions*(shape->num_vertexs-1)+0] = atof(row[x_field_id]);
-      va->vertexs[sizeof(float)*va->num_dimensions*(shape->num_vertexs-1)+1] = atof(row[y_field_id]);
-      if (z_field_id != -1) va->vertexs[sizeof(float)*va->num_dimensions*(shape->num_vertexs-1)+2] = atof(row[z_field_id]);
+      if (z_field_id != -1)
+        append_vertex3f(va, atof(row[x_field_id]), atof(row[y_field_id]), atof(row[z_field_id]));
+      else
+        append_vertex2f(va, atof(row[x_field_id]), atof(row[y_field_id]));
+      
+      prev_unique_set_id = atol(row[unique_set_field_id]);
     }
     if (shape != NULL)
     {
       write_shape(stdout, shape);
       free_shape(shape);
+      shape = NULL;
     }
+    mysql_free_result(res);
   }
   else
   {
     fprintf(stderr, "Error: %s\n", mysql_error(&mysql));
   }
+  mysql_close(&mysql);
 }
-
-
-
-
-
-
-
-
