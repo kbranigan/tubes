@@ -113,7 +113,7 @@ extern int stdin_has_data();
 extern int write_header(FILE * fp, uint32_t file_version);
 extern int read_header(FILE * fp, uint32_t req_file_version);
 
-extern struct VertexArray* get_array(struct Shape * shape, int array_type);
+extern struct VertexArray* get_or_add_array(struct Shape * shape, int array_type);
 extern void append_vertex2f(struct VertexArray * va, float x, float y);
 extern void append_vertex3f(struct VertexArray * va, float x, float y, float z);
 

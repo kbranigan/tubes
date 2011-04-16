@@ -102,7 +102,7 @@ int read_header(FILE * fp, uint32_t req_file_version)
   return 1;
 }
 
-struct VertexArray * get_array(struct Shape * shape, int array_type)
+struct VertexArray * get_or_add_array(struct Shape * shape, int array_type)
 {
   if (shape == NULL) shape = new_shape();
   if (shape->vertex_arrays == NULL) return NULL;

@@ -13,6 +13,8 @@ These programs produce raw vertex data which can be piped into one of the other 
     <dd>Outputs a single circle LINE_LOOP - for testing</dd>
   <dt>./read_shapefile <i>[file] (id)</i></dt>
     <dd>reads shapefile format and produces the raw vertex data as line loops.  A lot of the features of shapefile are stripped out, but could be maintained if it mattered.</dd>
+  <dt>./read_mysql <i>[sql]</i></dt>
+    <dd>selects from mysql, loading shapes out of the returned rows - must select fields named 'x', 'y' and 'unique_set_id'</dd>
   <dt>./read_mysql_shapes <i>[database] [table] [group_field] [order_field] [x] [y] [z]</i></dt>
     <dd>selects from mysql, loading shapes out of the selected database.table. As follows:<br />
         SELECT [group_field], [x], [y], [z] FROM [database].[table] GROUP BY [group_field] ORDER BY [order_field], id</dd>
@@ -43,6 +45,8 @@ Consume
 These are applications at the end of the chain, they make something real out of all the processing.
     
 <dl>
+  <dt>./write_png <i>[file]</i></dt>
+  <dd>Makes a PNG file - rendered off screen by OpenGL.</dd>
   <dt>./write_bmp <i>[file]</i></dt>
   <dd>Makes a BMP file - rendered off screen by OpenGL.</dd>
   <dt>./write_kml <i>[file]</i></dt>

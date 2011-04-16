@@ -11,13 +11,24 @@
 
 int main(int argc, char *argv[])
 {
-  char * sql = (argc > 1) ? argv[1] : "SELECT lon AS x, lat AS y, id AS unique_set_id FROM civicsets.points where created_at > '2011-03-16 20:00:00' and source = 'gps_reporter' ORDER BY unique_set_id";
+  char * sql = (argc > 1) ? argv[1] : "SELECT lon AS x, lat AS y, id AS unique_set_id FROM civicsets.points where created_at > '2011-03-16 15:00:00' and source = 'gps_reporter' ORDER BY unique_set_id";
   
   if (!stdout_is_piped())
   {
     fprintf(stderr, "%s outputs binary content. Pipe it to something that can read it.\n", argv[0]);
     exit(1);
   }
+  
+  char sql_log_filename[100];
+  sprintf(sql_log_filename, "%s.sql.log", argv[0]);
+  FILE * sql_log = fopen(sql_log_filename, "a");
+  if (sql_log != NULL)
+  {
+    fprintf(sql_log, "%s\n", sql);
+    fclose(sql_log);
+  }
+  else
+    fprintf(stderr, "failed to open sql log file '%s'\n", sql_log_filename);
   
   MYSQL mysql;
   
@@ -73,6 +84,7 @@ int main(int argc, char *argv[])
       {
         if (shape != NULL)
         {
+          if (shape->num_vertexs == 1) shape->gl_type = GL_POINTS;
           write_shape(stdout, shape);
           free_shape(shape);
           shape = NULL;
@@ -83,7 +95,7 @@ int main(int argc, char *argv[])
         shape->unique_set_id = atol(row[unique_set_field_id]);
         if (z_field_id != -1) shape->vertex_arrays[0].num_dimensions++;
       }
-      struct VertexArray * va = get_array(shape, GL_VERTEX_ARRAY);
+      struct VertexArray * va = get_or_add_array(shape, GL_VERTEX_ARRAY);
       
       if (z_field_id != -1)
         append_vertex3f(va, atof(row[x_field_id]), atof(row[y_field_id]), atof(row[z_field_id]));
@@ -94,6 +106,7 @@ int main(int argc, char *argv[])
     }
     if (shape != NULL)
     {
+      if (shape->num_vertexs == 1) shape->gl_type = GL_POINTS;
       write_shape(stdout, shape);
       free_shape(shape);
       shape = NULL;
