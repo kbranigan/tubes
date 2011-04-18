@@ -4,16 +4,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define SCHEME_CREATE_MAIN
+#define SCHEME_ASSERT_STDIN_IS_PIPED
+#define SCHEME_FUNCTION write_kml
 #include "scheme.h"
 
-int main(int argc, char ** argv)
+int write_kml(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
-  if (!stdin_is_piped())
-  {
-    fprintf(stderr, "%s needs a data source. (redirected pipe, using |)\n", argv[0]);
-    exit(1);
-  }
-  
   char * filename = argc > 1 ? argv[1] : "output.kml";
   if (argc == 1)
   {
@@ -27,19 +24,13 @@ int main(int argc, char ** argv)
     exit(1);
   }
   
-  if (!read_header(stdin, CURRENT_VERSION))
-  {
-    fprintf(stderr, "read header failed.\n");
-    exit(1);
-  }
-  
   fprintf(fp, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
   fprintf(fp, "<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n");
   
   fprintf(fp, "  <Document>\n");
   struct Shape * shape = NULL;
   long i=0, j=0, count=0;
-  while ((shape = read_shape(stdin)))
+  while ((shape = read_shape(pipe_in)))
   {
     char name[200];
     sprintf(name, "shape %d", shape->unique_set_id);

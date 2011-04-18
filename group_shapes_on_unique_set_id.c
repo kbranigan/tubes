@@ -2,30 +2,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define SCHEME_CREATE_MAIN
+#define SCHEME_ASSERT_STDINOUT_ARE_PIPED
+#define SCHEME_FUNCTION group_shapes_on_unique_set_id
 #include "scheme.h"
 
-int main(int argc, char ** argv)
+int group_shapes_on_unique_set_id(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
-  if (!stdin_is_piped())
-  {
-    fprintf(stderr, "%s needs a data source. (redirected pipe, using |)\n", argv[0]);
-    exit(1);
-  }
-  
-  if (!stdout_is_piped())
-  {
-    fprintf(stderr, "%s outputs binary content. Pipe it to something that can read it.\n", argv[0]);
-    //exit(1);
-  }
-  
-  if (!read_header(stdin, CURRENT_VERSION)) { fprintf(stderr, "read header failed.\n"); exit(1); }
-  if (!write_header(stdout, CURRENT_VERSION)) { fprintf(stderr, "write header failed.\n"); exit(1); }
-  
   int num_shapes = 0;
   struct Shape ** shapes = NULL;
   struct Shape * shape = NULL;
   
-  while ((shape = read_shape(stdin)))
+  while ((shape = read_shape(pipe_in)))
   {
     num_shapes++;
     shapes = (struct Shape**)realloc(shapes, sizeof(struct Shape*)*num_shapes);
@@ -99,49 +88,10 @@ int main(int argc, char ** argv)
       }
     }
     
-    write_shape(stdout, nshape);
+    write_shape(pipe_out, nshape);
   }
   
   for (i = 0 ; i < num_shapes ; i++)
     free_shape(shapes[i]);
   free(shapes);
-  
-  /*struct Shape * prev_shape = NULL;
-  struct Shape * shape = NULL;
-  while ((shape = read_shape(stdin)))
-  {
-    long i, j, k, l;
-    if (prev_shape != NULL && prev_shape->unique_set_id == shape->unique_set_id)
-    {
-      if (prev_shape->gl_type != shape->gl_type) { fprintf(stderr, "tryed to group two shapes with a different gl_type\n"); exit(1); }
-      if (prev_shape->num_vertex_arrays != shape->num_vertex_arrays) { fprintf(stderr, "tryed to group two shapes with a different number of vertex arrays\n"); exit(1); }
-      
-      //fprintf(stderr, "merge %d %d\n", shape->num_vertexs, prev_shape->num_vertexs);
-      for (i = 0 ; i < shape->num_vertex_arrays ; i++)
-      {
-        struct VertexArray * pva = &prev_shape->vertex_arrays[i];
-        struct VertexArray * va = &shape->vertex_arrays[i];
-        
-        if (pva->array_type != va->array_type) { fprintf(stderr, "trying to group two vertex arrays with a different array type\n"); exit(1); }
-        if (pva->num_dimensions != va->num_dimensions) { fprintf(stderr, "trying to group two vertex arrays with a different number of dimensions\n"); exit(1); }
-        
-        va->vertexs = (float*)realloc(va->vertexs, sizeof(float)*va->num_dimensions*(shape->num_vertexs + prev_shape->num_vertexs));
-        memcpy(&va->vertexs[va->num_dimensions*shape->num_vertexs], pva->vertexs, sizeof(float)*pva->num_dimensions*prev_shape->num_vertexs);
-        shape->num_vertexs += prev_shape->num_vertexs;
-      }
-    }
-    else if (prev_shape != NULL)
-    {
-      write_shape(stdout, prev_shape);
-      free_shape(prev_shape);
-      //fprintf(stderr, "write\n");
-    }
-    prev_shape = shape;
-  }
-  
-  if (prev_shape != NULL)
-  {
-    write_shape(stdout, prev_shape);
-  }*/
-  
 }

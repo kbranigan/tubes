@@ -4,31 +4,19 @@
 #include <string.h>
 #include <math.h>
 
+#define SCHEME_CREATE_MAIN
+#define SCHEME_ASSERT_STDINOUT_ARE_PIPED
+#define SCHEME_FUNCTION reduce_by_distance
 #include "scheme.h"
 
-int main(int argc, char ** argv)
+int reduce_by_distance(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
   float min_distance = (argc == 1) ? 0.5 : atof(argv[1]);
-  
-  if (!stdin_is_piped())
-  {
-    fprintf(stderr, "%s needs a data source. (redirected pipe, using |)\n", argv[0]);
-    exit(1);
-  }
-  
-  if (!stdout_is_piped())
-  {
-    fprintf(stderr, "%s outputs binary content. Pipe it to something that can read it.\n", argv[0]);
-    exit(1);
-  }
-  
-  if (!read_header(stdin, CURRENT_VERSION)) { fprintf(stderr, "read header failed.\n"); exit(1); }
-  if (!write_header(stdout, CURRENT_VERSION)) { fprintf(stderr, "write header failed.\n"); exit(1); }
   
   long vertexes_reduced = 0;
   
   struct Shape * shape = NULL;
-  while ((shape = read_shape(stdin)))
+  while ((shape = read_shape(pipe_in)))
   {
     long i,j;
     if (shape->num_vertex_arrays > 1) { fprintf(stderr, "reduce only handles one vertex array at the moment.\n"); exit(1); }
@@ -64,7 +52,7 @@ int main(int argc, char ** argv)
       }
     }
     
-    write_shape(stdout, shape);
+    write_shape(pipe_out, shape);
     free_shape(shape);
   }
   

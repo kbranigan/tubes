@@ -1,9 +1,13 @@
 
 #include <png.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 
+#define SCHEME_CREATE_MAIN
+#define SCHEME_ASSERT_STDIN_IS_PIPED
+#define SCHEME_FUNCTION write_png
 #include "scheme.h"
 
 #include "setup_opengl.c"
@@ -26,7 +30,7 @@ static pixel_t * pixel_at(bitmap_t * bitmap, int x, int y)
   return bitmap->pixels + bitmap->width * y + x;
 }
 
-static int write_png(bitmap_t *bitmap, const char *path)
+static int _write_png(bitmap_t *bitmap, const char *path)
 {
   FILE * fp;
   png_structp png_ptr = NULL;
@@ -88,21 +92,9 @@ static int write_png(bitmap_t *bitmap, const char *path)
   return status;
 }
 
-int main(int argc, char ** argv)
+int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
   char * filename = argc > 1 ? argv[1] : "output.png";
-  
-  if (!stdin_is_piped())
-  {
-    fprintf(stderr, "%s needs a data source. (redirected pipe, using |)\n", argv[0]);
-    exit(1);
-  }
-  
-  if (!read_header(stdin, CURRENT_VERSION))
-  {
-    fprintf(stderr, "read header failed.\n");
-    exit(1);
-  }
   
   float b[3][2] = {
     {10000000, -10000000},
@@ -115,7 +107,7 @@ int main(int argc, char ** argv)
   struct Shape ** shapes = NULL;
   
   struct Shape * shape = NULL;
-  while ((shape = read_shape(stdin)))
+  while ((shape = read_shape(pipe_in)))
   {
     num_shapes++;
     shapes = (struct Shape **)realloc(shapes, sizeof(struct Shape*)*num_shapes);
@@ -168,8 +160,17 @@ int main(int argc, char ** argv)
       
       if (va->array_type == GL_COLOR_ARRAY && va->num_dimensions == 3)
         for (k = 0 ; k < shape->num_vertexs ; k++)
+        {
+          if (va->vertexs[k*va->num_dimensions+0] != 1.0 || 
+              va->vertexs[k*va->num_dimensions+1] != 0.0 ||
+              va->vertexs[k*va->num_dimensions+2] != 0.0)
+              {
+                va->vertexs[k*va->num_dimensions+0] = 1 - log(1+va->vertexs[k*va->num_dimensions+0]*5959.0) / log(5959.0)/2;
+                va->vertexs[k*va->num_dimensions+1] = 1 - log(1+va->vertexs[k*va->num_dimensions+1]*5959.0) / log(5959.0)/2;
+                va->vertexs[k*va->num_dimensions+2] = 1 - log(1+va->vertexs[k*va->num_dimensions+2]*5959.0) / log(5959.0)/2;
+              }
           glColor3fv(&va->vertexs[k*va->num_dimensions]);
-      
+        }
       else if (va->array_type == GL_COLOR_ARRAY && va->num_dimensions == 4)
         for (k = 0 ; k < shape->num_vertexs ; k++)
           glColor4fv(&va->vertexs[k*va->num_dimensions]);
@@ -226,7 +227,7 @@ int main(int argc, char ** argv)
   glReadBuffer((GLenum)GL_COLOR_ATTACHMENT0_EXT);
   glReadPixels(0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)png.pixels);
   
-  write_png(&png, filename);
+  _write_png(&png, filename);
   fprintf(stderr, "%s: %dx%d bmp created named '%s'\n", argv[0], TEXTURE_WIDTH, TEXTURE_HEIGHT, filename);
 }
 

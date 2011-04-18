@@ -9,6 +9,9 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#define SCHEME_CREATE_MAIN
+#define SCHEME_ASSERT_STDIN_IS_PIPED
+#define SCHEME_FUNCTION write_bmp_sphere
 #include "scheme.h"
 
 #include "setup_opengl.c"
@@ -112,21 +115,9 @@ int write_image(char * file_name, unsigned int width, unsigned int height)
   free(image_data);
 }
 
-int main(int argc, char ** argv)
+int write_bmp_sphere(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
   char * filename = argc > 1 ? argv[1] : "output_sphere.bmp";
-  
-  if (!stdin_is_piped())
-  {
-    fprintf(stderr, "%s needs a data source. (redirected pipe, using |)\n", argv[0]);
-    exit(1);
-  }
-  
-  if (!read_header(stdin, CURRENT_VERSION))
-  {
-    fprintf(stderr, "read header failed.\n");
-    exit(1);
-  }
   
   float x,y,z;
   
@@ -150,7 +141,7 @@ int main(int argc, char ** argv)
   
   long i, j, k;
   struct Shape * shape = NULL;
-  while ((shape = read_shape(stdin)))
+  while ((shape = read_shape(pipe_in)))
   {
     glBegin(shape->gl_type);
     glColor3f(0,0,0);

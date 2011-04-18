@@ -1,28 +1,51 @@
 
+#include <ftw.h>
+#include <time.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
-#include <time.h>
-#include <ftw.h>
-#include <stdint.h>
 
 #include <mysql.h>
 
 #include "shapefile_src/shapefil.h"
 #include "mongoose.h"
 
+int file_exists(const char * fmt, ...)
+{
+  char filename[1000];
+  
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(filename, sizeof(filename), fmt, ap);
+  va_end(ap);
+  
+  FILE * fp;
+  fp = fopen(filename, "r");
+  fclose(fp);
+  return (fp != NULL);
+}
+
 void list(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
-void fields(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
-void records(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
-void shapes(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
 void image(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
+void fields(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
+void shapes(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
+void records(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
 void record_a_position(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
 
 const char *port = "2222";
 
+MYSQL mysql;
+
 int main(int argc, char **argv)
 {
+  if ((mysql_init(&mysql) == NULL)) { printf("mysql_init error\n"); }
+  if (!mysql_real_connect(&mysql, "localhost", "root", "", "civicsets", 0, NULL, 0)) { printf("mysql_real_connect error\n"); }
+  
+  mysql_query(&mysql, "TRUNCATE TABLE datasets");
+  
   struct mg_context *ctx = mg_start();
   mg_set_option(ctx, "dir_list", "no");  // Set document root
   int ret = 0;
@@ -33,17 +56,16 @@ int main(int argc, char **argv)
     ret = mg_set_option(ctx, "ports", "2222");
   }
   mg_set_uri_callback(ctx, "/", &list, NULL);
-  mg_set_uri_callback(ctx, "/fields", &fields, NULL);
-  mg_set_uri_callback(ctx, "/records", &records, NULL);
-  mg_set_uri_callback(ctx, "/shapes", &shapes, NULL);
   mg_set_uri_callback(ctx, "/image", &image, NULL);
+  mg_set_uri_callback(ctx, "/fields", &fields, NULL);
+  mg_set_uri_callback(ctx, "/shapes", &shapes, NULL);
+  mg_set_uri_callback(ctx, "/records", &records, NULL);
   mg_set_uri_callback(ctx, "/record_a_position", &record_a_position, NULL);
   
   printf("-------------------------------------------------------------------------\n");
   
   for (;;) sleep(10000);
   mg_stop(ctx);
-  
 }
 
 char data_path[] = "/work/data";
@@ -56,6 +78,26 @@ static int display_info(const char *fpath, const struct stat *sb, int tflag, str
   char file[200];
   strncpy(file, fpath + strlen(data_path), 200);
   file[strlen(file)-4] = 0;
+  
+  char query[1000];
+  if (file_exists("%s%s.shp", data_path, file))
+  {
+    sprintf(query, "INSERT INTO datasets (filename, name) VALUES (\"%s%s.shp\", \"%s%s\")", data_path, file, data_path, file);
+    mysql_query(&mysql, query);
+    printf("%s\n", query);
+  }
+  if (file_exists("%s%s.dbf", data_path, file))
+  {
+    sprintf(query, "INSERT INTO datasets (filename, name) VALUES (\"%s%s.dbf\", \"%s%s\")", data_path, file, data_path, file);
+    mysql_query(&mysql, query);
+    printf("%s\n", query);
+  }
+  if (file_exists("%s%s.prj", data_path, file))
+  {
+    sprintf(query, "INSERT INTO datasets (filename, name) VALUES (\"%s%s.prj\", \"%s%s\")", data_path, file, data_path, file);
+    mysql_query(&mysql, query);
+    printf("%s\n", query);
+  }//*/
   
   mg_printf(dconn, "<tr><td>%s</td>", file);
   mg_printf(dconn, "<td><a href='/fields?file=%s'>fields</a></td>", file);
@@ -100,17 +142,11 @@ void record_a_position(struct mg_connection *conn, const struct mg_request_info 
   char * vaccuracy_c = mg_get_var(conn, "vaccuracy");
   double vaccuracy = (vaccuracy_c == NULL) ? 0 : atof(vaccuracy_c);
   
-  MYSQL mysql;
-  //MYSQL_ROW row;
-  
-  if ((mysql_init(&mysql) == NULL)) { printf("mysql_init error\n"); }
-  if (!mysql_real_connect(&mysql, "localhost", "root", "", "civicsets", 0, NULL, 0)) { printf("mysql_real_connect error\n"); }
-  
   char query[1000];
   sprintf(query, "INSERT INTO points (created_at, recorded_at, source, lat, lon, altitude, speed, course, haccuracy, vaccuracy, heading) values (NOW(), %ld, '%s', %f, %f, %f, %f, %f, %f, %f, %f)", recorded_at, source_c, lat, lon, altitude, speed, course, haccuracy, vaccuracy, heading);
   mg_printf(conn, "%s", query);
   mysql_query(&mysql, query);
-  mysql_close(&mysql);
+  //mysql_close(&mysql);
   
   free(source_c);
   free(recorded_at_c);

@@ -7,17 +7,16 @@
 
 #include <mysql.h>
 
+#define SCHEME_CREATE_MAIN
+#define SCHEME_ASSERT_STDOUT_IS_PIPED
+#define SCHEME_FUNCTION read_mysql
 #include "scheme.h"
 
-int main(int argc, char *argv[])
+int read_mysql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
   char * sql = (argc > 1) ? argv[1] : "SELECT lon AS x, lat AS y, id AS unique_set_id FROM civicsets.points where created_at > '2011-03-16 15:00:00' and source = 'gps_reporter' ORDER BY unique_set_id";
   
-  if (!stdout_is_piped())
-  {
-    fprintf(stderr, "%s outputs binary content. Pipe it to something that can read it.\n", argv[0]);
-    exit(1);
-  }
+  //exec("tail -n1 read_mysql.sql.log");
   
   char sql_log_filename[100];
   sprintf(sql_log_filename, "%s.sql.log", argv[0]);
@@ -44,8 +43,6 @@ int main(int argc, char *argv[])
 	  MYSQL_RES * res = mysql_store_result(&mysql);
     MYSQL_ROW row;
     MYSQL_FIELD *field;
-    
-    if (!write_header(stdout, CURRENT_VERSION)) exit(1);
     
     int x_field_id = -1;
     int y_field_id = -1;
@@ -85,7 +82,7 @@ int main(int argc, char *argv[])
         if (shape != NULL)
         {
           if (shape->num_vertexs == 1) shape->gl_type = GL_POINTS;
-          write_shape(stdout, shape);
+          write_shape(pipe_out, shape);
           free_shape(shape);
           shape = NULL;
         }
@@ -97,17 +94,19 @@ int main(int argc, char *argv[])
       }
       struct VertexArray * va = get_or_add_array(shape, GL_VERTEX_ARRAY);
       
+      float v[3] = { atof(row[x_field_id]), atof(row[y_field_id]), 0.0 };
+      
       if (z_field_id != -1)
-        append_vertex3f(va, atof(row[x_field_id]), atof(row[y_field_id]), atof(row[z_field_id]));
-      else
-        append_vertex2f(va, atof(row[x_field_id]), atof(row[y_field_id]));
+        v[2] = atof(row[z_field_id]);
+      
+      append_vertex(shape, v);
       
       prev_unique_set_id = atol(row[unique_set_field_id]);
     }
     if (shape != NULL)
     {
       if (shape->num_vertexs == 1) shape->gl_type = GL_POINTS;
-      write_shape(stdout, shape);
+      write_shape(pipe_out, shape);
       free_shape(shape);
       shape = NULL;
     }

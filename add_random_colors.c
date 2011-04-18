@@ -1,53 +1,46 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+
+#define SCHEME_CREATE_MAIN
+#define SCHEME_ASSERT_STDINOUT_ARE_PIPED
+#define SCHEME_FUNCTION add_random_colors
 #include "scheme.h"
 
-int main(int argc, char ** argv)
+void set_random_color(float * v)
 {
-  if (!stdin_is_piped())
-  {
-    fprintf(stderr, "%s needs a data source. (redirected pipe, using |)\n", argv[0]);
-    exit(1);
-  }
-  
-  if (!stdout_is_piped())
-  {
-    fprintf(stderr, "%s outputs binary content. Pipe it to something that can read it.\n", argv[0]);
-    exit(1);
-  }
-  
+  v[0] = rand() / (float)RAND_MAX;// / 2.0 + 0.2;
+  v[1] = rand() / (float)RAND_MAX;// / 2.0 + 0.2;
+  v[2] = rand() / (float)RAND_MAX;// / 2.0 + 0.5;
+  v[3] = rand() / (float)RAND_MAX;// / 4.0 + 0.5;
+}
+
+int add_random_colors(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
+{
+  int per_shape_or_vertex = argc < 2 ? 0 : atoi(argv[1]);
+  int num_dimensions      = argc < 3 ? 4 : atoi(argv[2]);
+  if (num_dimensions != 3 && num_dimensions != 4) { fprintf(pipe_err, "num_dimensions (%d) is invalid, defaulting to 4\n", num_dimensions); num_dimensions = 4; }
   srand(time(NULL));
   
-  if (!read_header(stdin, CURRENT_VERSION)) { fprintf(stderr, "read header failed.\n"); exit(1); }
-  if (!write_header(stdout, CURRENT_VERSION)) { fprintf(stderr, "write header failed.\n"); exit(1); }
-  
   struct Shape * shape = NULL;
-  while ((shape = read_shape(stdin)))
+  while ((shape = read_shape(pipe_in)))
   {
     if (shape->num_vertex_arrays == 1 && shape->vertex_arrays[0].array_type == GL_VERTEX_ARRAY)
     {
-      shape->num_vertex_arrays++;
-      shape->vertex_arrays = (struct VertexArray*)realloc(shape->vertex_arrays, sizeof(struct VertexArray)*shape->num_vertex_arrays);
-      struct VertexArray * va = &shape->vertex_arrays[shape->num_vertex_arrays-1];
-      va->array_type = GL_COLOR_ARRAY;
-      va->num_dimensions = 4;
-      va->shape = shape;
-      va->vertexs = (float*)malloc(sizeof(float)*va->num_dimensions*shape->num_vertexs);
+      struct VertexArray * cva = get_or_add_array(shape, GL_COLOR_ARRAY);
+      cva->num_dimensions = num_dimensions;
+      
       long i;
-      float r = rand() / (float)RAND_MAX / 2.0 + 0.2;
-      float g = rand() / (float)RAND_MAX / 2.0 + 0.2;
-      float b = rand() / (float)RAND_MAX / 2.0 + 0.5;
-      float a = rand() / (float)RAND_MAX / 4.0 + 0.5;
+      float color[4];
+      set_random_color(color);
+      
       for (i = 0 ; i < shape->num_vertexs ; i++)
       {
-        va->vertexs[i*va->num_dimensions+0] = r;
-        va->vertexs[i*va->num_dimensions+1] = g;
-        va->vertexs[i*va->num_dimensions+2] = b;
-        if (va->num_dimensions == 4) va->vertexs[i*va->num_dimensions+3] = a;
+        if (per_shape_or_vertex == 1) set_random_color(color);
+        set_vertex2(shape, i, get_vertex(shape, i, 0), color);
       }
     }
-    write_shape(stdout, shape);
+    write_shape(pipe_out, shape);
+    free_shape(shape);
   }
 }

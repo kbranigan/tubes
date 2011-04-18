@@ -9,6 +9,9 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#define SCHEME_CREATE_MAIN
+#define SCHEME_ASSERT_STDIN_IS_PIPED
+#define SCHEME_FUNCTION write_bmp
 #include "scheme.h"
 
 #include "setup_opengl.c"
@@ -70,22 +73,10 @@ int write_image(char * file_name, unsigned int width, unsigned int height)
   free(image_data);
 }
 
-int main(int argc, char ** argv)
+int write_bmp(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
   char * filename = argc > 1 ? argv[1] : "output.bmp";
   int draw_individual_shapes = 0;
-  
-  if (!stdin_is_piped())
-  {
-    fprintf(stderr, "%s needs a data source. (redirected pipe, using |)\n", argv[0]);
-    exit(1);
-  }
-  
-  if (!read_header(stdin, CURRENT_VERSION))
-  {
-    fprintf(stderr, "read header failed.\n");
-    exit(1);
-  }
   
   float b[3][2] = {
     {10000000, -10000000},
@@ -98,7 +89,7 @@ int main(int argc, char ** argv)
   struct Shape ** shapes = NULL;
   
   struct Shape * shape = NULL;
-  while ((shape = read_shape(stdin)))
+  while ((shape = read_shape(pipe_in)))
   {
     num_shapes++;
     shapes = (struct Shape **)realloc(shapes, sizeof(struct Shape*)*num_shapes);

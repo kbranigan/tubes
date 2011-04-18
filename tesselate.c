@@ -10,6 +10,9 @@
 #include <unistd.h>
 #include <assert.h>
 
+#define SCHEME_CREATE_MAIN
+#define SCHEME_ASSERT_STDINOUT_ARE_PIPED
+#define SCHEME_FUNCTION tesselate
 #include "scheme.h"
 
 #ifdef __APPLE__
@@ -78,28 +81,20 @@ struct Shape * final_shape = NULL;
 struct Shape * out_shape = NULL;
 void beginCallback(GLenum which)
 {
-  out_shape = (struct Shape*)malloc(sizeof(struct Shape));
-  memset(out_shape, 0, sizeof(struct Shape));
-  
+  out_shape = new_shape();
   out_shape->gl_type = which;
-  out_shape->num_vertexs = 0;
-  out_shape->num_vertex_arrays = 1;
-  out_shape->vertex_arrays = (struct VertexArray*)malloc(sizeof(struct VertexArray)*out_shape->num_vertex_arrays);
-  
-  struct VertexArray * va = &out_shape->vertex_arrays[0];
-  memset(va, 0, sizeof(struct VertexArray));
-  va->num_dimensions = final_shape->vertex_arrays[0].num_dimensions;
-  va->array_type = GL_VERTEX_ARRAY;
+  out_shape->vertex_arrays[0].num_dimensions = final_shape->vertex_arrays[0].num_dimensions;
 }
 
 void vertex3dv(const GLdouble * c)
 {
-  out_shape->num_vertexs++;
+  append_vertex(out_shape, c);
+  /*out_shape->num_vertexs++;
   struct VertexArray * va = &out_shape->vertex_arrays[0];
   va->vertexs = (float*)realloc(va->vertexs, sizeof(float)*out_shape->num_vertexs*va->num_dimensions);
   va->vertexs[(out_shape->num_vertexs-1)*va->num_dimensions] = c[0];
   va->vertexs[(out_shape->num_vertexs-1)*va->num_dimensions+1] = c[1];
-  if (va->num_dimensions == 3) va->vertexs[(out_shape->num_vertexs-1)*va->num_dimensions+2] = c[2];
+  if (va->num_dimensions == 3) va->vertexs[(out_shape->num_vertexs-1)*va->num_dimensions+2] = c[2];*/
 }
 
 void endCallback(void)
@@ -206,23 +201,8 @@ void combineCallback(GLdouble coords[3],
   *dataOut = vertex;
 }
 
-int main(int argc, char ** argv)
+int tesselate(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
-  if (!stdin_is_piped())
-  {
-    fprintf(stderr, "%s needs a data source. (redirected pipe, using |)\n", argv[0]);
-    exit(1);
-  }
-  
-  if (!stdout_is_piped())
-  {
-    fprintf(stderr, "%s outputs binary content. Pipe it to something that can read it.\n", argv[0]);
-    exit(1);
-  }
-  
-  if (!read_header(stdin, CURRENT_VERSION)) { fprintf(stderr, "read header failed.\n"); exit(1); }
-  if (!write_header(stdout, CURRENT_VERSION)) { fprintf(stderr, "write header failed.\n"); exit(1); }
-  
   GLUtesselator * tobj = NULL;
   tobj = gluNewTess();
   gluTessCallback(tobj, GLU_TESS_VERTEX, (GLvoid (*) ()) &vertex3dv);
@@ -233,7 +213,7 @@ int main(int argc, char ** argv)
   
   struct Shape * shape = NULL;
   long i=0, j=0, count=0;
-  while ((shape = read_shape(stdin)))
+  while ((shape = read_shape(pipe_in)))
   {
     final_shape = (struct Shape*)malloc(sizeof(struct Shape));
     memset(final_shape, 0, sizeof(struct Shape));
@@ -249,13 +229,13 @@ int main(int argc, char ** argv)
     va->num_dimensions = 2;
     va->array_type = GL_VERTEX_ARRAY;
     
-    if (shape->gl_type != GL_LINE_LOOP) { fprintf(stderr, "providing non line loop to tesselator. NO GOOD\n"); exit(1); }
+    if (shape->gl_type != GL_LINE_LOOP) { fprintf(pipe_err, "providing non line loop to tesselator. NO GOOD\n"); exit(1); }
     gluTessBeginPolygon(tobj, NULL);
     gluTessBeginContour(tobj);
     for (i = 0 ; i < shape->num_vertex_arrays ; i++)
     {
       struct VertexArray * va = &shape->vertex_arrays[i];
-      if (va->num_dimensions < 2 || va->num_dimensions > 3) { fprintf(stderr,"va->num_dimensions is %d", va->num_dimensions); continue; }
+      if (va->num_dimensions < 2 || va->num_dimensions > 3) { fprintf(pipe_err,"va->num_dimensions is %d", va->num_dimensions); continue; }
       for (j = 0 ; j < shape->num_vertexs ; j++)
       {
         GLdouble *vertex;
@@ -271,13 +251,13 @@ int main(int argc, char ** argv)
     gluTessEndPolygon(tobj);
     
     count++;
-    write_shape(stdout, final_shape);
+    write_shape(pipe_out, final_shape);
     free_shape(final_shape);
   }
   gluDeleteTess(tobj);
   
   if (count == 0)
   {
-    fprintf(stderr, "There were no line loops to tesselate.\n");
+    fprintf(pipe_err, "There were no line loops to tesselate.\n");
   }
 }

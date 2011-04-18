@@ -4,10 +4,14 @@
 #include <string.h>
 #include <assert.h>
 
-#include "scheme.h"
 #include "shapefile_src/shapefil.h"
 
-int main(int argc, char *argv[])
+#define SCHEME_CREATE_MAIN
+#define SCHEME_ASSERT_STDOUT_IS_PIPED
+#define SCHEME_FUNCTION read_shapefile
+#include "scheme.h"
+
+int read_shapefile(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
   char * filename = (argc > 1) ? argv[1] : "prov_ab_p_geo83_e.dbf";
   int row_id      = (argc > 2) ? atoi(argv[2]) : -1;
@@ -20,12 +24,6 @@ int main(int argc, char *argv[])
     exit(1);
   }
   
-  if (!stdout_is_piped())
-  {
-    fprintf(stderr, "%s outputs binary content. Pipe it to something that can read it.\n", argv[0]);
-    exit(1);
-  }
-  
   DBFHandle d = DBFOpen(filename, "rb");
   if (d == NULL) { fprintf(stderr, "DBFOpen error (%s.dbf)\n", filename); exit(1); }
 	
@@ -34,8 +32,6 @@ int main(int argc, char *argv[])
 	
   long nRecordCount = DBFGetRecordCount(d);
   long nFieldCount = DBFGetFieldCount(d);
-  
-  if (!write_header(stdout, CURRENT_VERSION)) { fprintf(stderr, "write header failed.\n"); exit(1); }
   
   long t=0;
   long i;
@@ -68,7 +64,7 @@ int main(int argc, char *argv[])
         va->vertexs[j*va->num_dimensions+0] = psShape->padfX[j];
         va->vertexs[j*va->num_dimensions+1] = psShape->padfY[j];
       }
-      write_shape(stdout, shape);
+      write_shape(pipe_out, shape);
       free_shape(shape);
     }
     else if (psShape->nSHPType == SHPT_ARC || psShape->nSHPType == SHPT_POLYGON)
@@ -145,7 +141,7 @@ int main(int argc, char *argv[])
           va->vertexs[(j-start)*va->num_dimensions+0] = psShape->padfX[j];
           va->vertexs[(j-start)*va->num_dimensions+1] = psShape->padfY[j];
         }
-        write_shape(stdout, shape);
+        write_shape(pipe_out, shape);
         free_shape(shape);
         //if (iPart > 1) break;
       }
