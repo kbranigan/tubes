@@ -1,42 +1,43 @@
 
-mysql= -DUSING_MYSQL -I/usr/local/mysql/include/mysql -I/usr/include/mysql -L/usr/local/mysql/lib/mysql -lmysqlclient
+mysql= -I/usr/local/mysql/include/mysql -I/usr/include/mysql -L/usr/local/mysql/lib/mysql -lmysqlclient
 
 applegl= -framework OpenGL
 linuxgl= -lOSMesa -lGL -lGLU
 
 whichgl= $(applegl)
 
-all: civicsets \
-	read_mysql \
-	read_mysql_shapes \
+all: pipe_in  pipe_out  pipe_inout
+
+pipe_in: \
 	bbox \
-	append \
+	inspect \
 	write_png \
 	write_bmp \
-	write_bmp_sphere \
-	tesselate \
-	inspect \
-	add_random_colors \
-	group_shapes_on_unique_set_id \
-	read_shapefile \
-	produce_single_test_circle \
 	write_kml \
+	write_bmp_sphere \
+	pass_through
+
+pipe_out: \
+	read_shapefile \
+	read_mysql \
+	produce_random_data \
+	produce_single_test_circle
+
+pipe_inout: \
+	tesselate \
+	reduce_by_id \
 	reduce_by_distance \
 	reduce_by_attribute \
-	reduce_by_id \
-	coordinate_convert
+	coordinate_convert \
+	add_random_colors \
+	add_color_from_mysql \
+	group_shapes_on_unique_set_id
 
 civicsets: shapefile_src/shpopen.o shapefile_src/dbfopen.o mongoose.o
 	g++ -Wall civicsets.c shapefile_src/shpopen.o shapefile_src/dbfopen.o mongoose.o -ldl -lpthread -o civicsets.ca $(mysql)
 
 produce_single_test_circle: scheme.o produce_single_test_circle.c
 	gcc scheme.o produce_single_test_circle.c -o produce_single_test_circle -lm
-
-read_mysql_line_strips: scheme.o read_mysql_line_strips.c
-	gcc scheme.o read_mysql_line_strips.c -o read_mysql_line_strips $(mysql) 
-
-read_mysql_shapes: scheme.o read_mysql_shapes.c
-	gcc scheme.o read_mysql_shapes.c -o read_mysql_shapes $(mysql)
 
 read_mysql: scheme.o read_mysql.c
 	gcc scheme.o read_mysql.c -o read_mysql $(mysql)
@@ -53,14 +54,20 @@ reduce_by_attribute: scheme.o reduce_by_attribute.c
 reduce_by_id: scheme.o reduce_by_id.c
 	gcc scheme.o reduce_by_id.c -o reduce_by_id
 
-bbox: scheme.o bbox.c
-	gcc scheme.o bbox.c -o bbox -DMAIN -DFUNC=bbox
+pass_through: scheme.o pass_through.c
+	gcc scheme.o pass_through.c -o pass_through
+	
+produce_random_data: scheme.o produce_random_data.c
+	gcc scheme.o produce_random_data.c -o produce_random_data
 
-append: scheme.o append.c
-	gcc scheme.o append.c -o append
+bbox: scheme.o bbox.c
+	gcc scheme.o bbox.c -o bbox
 
 coordinate_convert: scheme.o coordinate_convert.c
 	gcc scheme.o coordinate_convert.c -o coordinate_convert -lm
+
+add_color_from_mysql: scheme.o add_color_from_mysql.c
+	gcc scheme.o add_color_from_mysql.c -o add_color_from_mysql $(mysql)
 
 add_random_colors: scheme.o add_random_colors.c
 	gcc scheme.o add_random_colors.c -o add_random_colors
@@ -88,3 +95,12 @@ read_shapefile: scheme.o shapefile_src/shpopen.o shapefile_src/dbfopen.o read_sh
 
 scheme.o: scheme.c scheme.h
 	gcc scheme.c -c -o scheme.o -Wall
+
+#read_mysql_line_strips: scheme.o read_mysql_line_strips.c
+#	gcc scheme.o read_mysql_line_strips.c -o read_mysql_line_strips $(mysql) 
+
+#read_mysql_shapes: scheme.o read_mysql_shapes.c
+#	gcc scheme.o read_mysql_shapes.c -o read_mysql_shapes $(mysql)
+
+#convert_to_voronoi: scheme.o convert_to_voronoi.c
+#	gcc scheme.o convert_to_voronoi.c -o convert_to_voronoi
