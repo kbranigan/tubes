@@ -14,6 +14,7 @@ pipe_in: \
 	write_png \
 	write_bmp \
 	write_kml \
+	write_json \
 	write_bmp_sphere \
 	pass_through
 
@@ -89,6 +90,9 @@ write_bmp_sphere: scheme.o write_bmp_sphere.c setup_opengl.c
 
 write_kml: scheme.o write_kml.c
 	gcc scheme.o write_kml.c -o write_kml
+
+write_json: scheme.o write_json.c
+	gcc scheme.o write_json.c -o write_json
 
 read_shapefile: scheme.o shapefile_src/shpopen.o shapefile_src/dbfopen.o read_shapefile.c
 	gcc scheme.o shapefile_src/shpopen.o shapefile_src/dbfopen.o read_shapefile.c -o read_shapefile

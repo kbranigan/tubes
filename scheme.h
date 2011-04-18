@@ -115,6 +115,7 @@ extern void set_vertex(struct Shape * shape, int index, float * v);
 extern void set_vertex2(struct Shape * shape, int index, float * v1, float * v2);
 extern float * get_vertex(struct Shape * shape, int index, int va_index);
 
+extern int clamp_int(int v, int min, int max);
 
 extern struct Shape * new_shape();
 extern void inspect_shape(FILE * fp, struct Shape * shape);

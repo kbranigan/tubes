@@ -309,6 +309,13 @@ struct Shape * read_shape(FILE * fp)
   return shape;
 }
 
+int clamp_int(int v, int min, int max)
+{
+  if (v > max) return max;
+  if (v < min) return min;
+  return v;
+}
+
 int free_shape(struct Shape * shape)
 {
   int i = 0;
