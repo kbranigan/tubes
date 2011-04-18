@@ -3,7 +3,7 @@ Pipes
 
 Pipes is just an idea for a series of smaller applications that produce, process and consume raw vertex data.
 
-Produce
+Pipe in
 -------
 
 These programs produce raw vertex data which can be piped into one of the other applications.
@@ -11,6 +11,8 @@ These programs produce raw vertex data which can be piped into one of the other 
 <dl>
   <dt>./produce_single_test_circle</dt>
     <dd>Outputs a single circle LINE_LOOP - for testing</dd>
+  <dt>./produce_random_data</dt>
+    <dd>Outputs random vertex data, x and y clamped to [0.0, 1.0]</dd>
   <dt>./read_shapefile <i>[file] (id)</i></dt>
     <dd>reads shapefile format and produces the raw vertex data as line loops.  A lot of the features of shapefile are stripped out, but could be maintained if it mattered.</dd>
   <dt>./read_mysql <i>[sql]</i></dt>
@@ -21,7 +23,7 @@ These programs produce raw vertex data which can be piped into one of the other 
 </dl>
 
 
-Process
+Pipe inout
 -------
 
 You can use these applications to modify and transform the raw vertex data and pipe the result to something else. With this concept you can chain multiple processes together - once a decent number of these are built, this tool set might actually be useful.
@@ -39,7 +41,7 @@ You can use these applications to modify and transform the raw vertex data and p
   <dd>Converts silly coordinate systems to lat/lng</dd>
 </dl>
 
-Consume
+Pipe out
 -------
 
 These are applications at the end of the chain, they make something real out of all the processing.
@@ -51,6 +53,8 @@ These are applications at the end of the chain, they make something real out of 
   <dd>Makes a BMP file - rendered off screen by OpenGL.</dd>
   <dt>./write_kml <i>[file]</i></dt>
   <dd>Makes a KML file - this'll work in google earth, or google maps provided you have a url for it.</dd>
+  <dt>./write_json <i>[file]</i></dt>
+  <dd>Outputs to a JSON file</dd>
 </dl>
 
 

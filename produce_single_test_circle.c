@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <math.h>
 
 #define SCHEME_CREATE_MAIN
@@ -11,10 +12,15 @@
 
 int produce_single_test_circle(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
-  int num_dimensions = argc < 2 ?  2 : atoi(argv[1]);
-  int num_vertexs    = argc < 3 ? 64 : atoi(argv[2]);
-  if (num_dimensions != 2 && num_dimensions != 3) { fprintf(pipe_err, "num_dimensions (%d) is invalid, defaulting to 2\n", num_dimensions); num_dimensions = 2; }
-  if (num_vertexs < 3 || num_vertexs > 10000) { fprintf(pipe_err, "num_vertexs (%d) is invalid, defaulting to 64\n", num_vertexs); num_vertexs = 64; }
+  int num_dimensions = 2;
+  int num_vertexs = 64;
+  int c;
+  while ((c = getopt(argc, argv, "d:v:")) != -1)
+  switch (c)
+  {
+    case 'd': num_dimensions = clamp_int(atoi(optarg), 2, 3); break;
+    case 'v': num_vertexs    = clamp_int(atoi(optarg), 3, 10000); break;
+  }
   
   struct Shape * shape = new_shape();
   shape->gl_type = GL_LINE_LOOP;
