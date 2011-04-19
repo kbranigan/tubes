@@ -9,17 +9,16 @@ Pipe in
 These programs produce raw vertex data which can be piped into one of the other applications.
 
 <dl>
-  <dt>./produce_single_test_circle</dt>
-    <dd>Outputs a single circle LINE_LOOP - for testing</dd>
+  <dt>./produce_unit_circle</dt>
+    <dd>Outputs a single circle LINE_LOOP - radius 1, centre at 0,0</dd>
+  <dt>./produce_unit_square</dt>
+    <dd>Outputs a single square LINE_LOOP - [0,0] - [1,1]</dd>
   <dt>./produce_random_data</dt>
-    <dd>Outputs random vertex data, x and y clamped to [0.0, 1.0]</dd>
-  <dt>./read_shapefile <i>[file] (id)</i></dt>
-    <dd>reads shapefile format and produces the raw vertex data as line loops.  A lot of the features of shapefile are stripped out, but could be maintained if it mattered.</dd>
+    <dd>Outputs random vertex data, x and y both clamped to [0.0, 1.0]</dd>
   <dt>./read_mysql <i>[sql]</i></dt>
     <dd>selects from mysql, loading shapes out of the returned rows - must select fields named 'x', 'y' and 'unique_set_id'</dd>
-  <dt>./read_mysql_shapes <i>[database] [table] [group_field] [order_field] [x] [y] [z]</i></dt>
-    <dd>selects from mysql, loading shapes out of the selected database.table. As follows:<br />
-        SELECT [group_field], [x], [y], [z] FROM [database].[table] GROUP BY [group_field] ORDER BY [order_field], id</dd>
+  <dt>./read_shapefile <i>[file] (id)</i></dt>
+    <dd>reads shapefile format and produces the raw vertex data as line loops.  A lot of the features of shapefile are stripped out, but could be maintained if it mattered.</dd>
 </dl>
 
 
@@ -35,6 +34,10 @@ You can use these applications to modify and transform the raw vertex data and p
   <dd>This application merges the vertex arrays of the shapes for each unique_set_id, used to be needed when tesselating, but is no longer.</dd>
   <dt>./add_random_colors</dt>
   <dd>This application adds an additional vertex array for the colour data - it chooses a random colour for each shape.</dd>
+  <dt>./reduce_by_id <i>[id]</i></dt>
+  <dd>This application drops shapes where unique_set_id != id.</dd>
+  <dt>./reduce_by_distance <i>[distance]</i></dt>
+  <dd>This application strips out vertexs that are too close to their previous vertex.</dd>
   <dt>./reduce_by_distance <i>[distance]</i></dt>
   <dd>This application strips out vertexs that are too close to their previous vertex.</dd>
   <dt>./coordinate_convert <i>[nad27/wgs84] [utm/mtm] [zone] (mrm)</i></dt>
