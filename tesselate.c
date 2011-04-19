@@ -99,7 +99,7 @@ void vertex3dv(const GLdouble * c)
 
 void endCallback(void)
 {
-  if (out_shape->gl_type == GL_TRIANGLE_STRIP)
+  /*if (out_shape->gl_type == GL_TRIANGLE_STRIP)
   {
     struct VertexArray * va = &out_shape->vertex_arrays[0];
     
@@ -161,13 +161,11 @@ void endCallback(void)
     out_shape->num_vertexs = new_num_vertexs;
     va->vertexs = new_vertexs;
     out_shape->gl_type = GL_TRIANGLES;
-  }
+  }*/
   
-  final_shape->num_vertexs += out_shape->num_vertexs;
-  struct VertexArray * va = &final_shape->vertex_arrays[0];
-  va->vertexs = (float*)realloc(va->vertexs, sizeof(float)*final_shape->num_vertexs*va->num_dimensions);
-  
-  memcpy(&va->vertexs[final_shape->num_vertexs*va->num_dimensions - out_shape->num_vertexs*va->num_dimensions], &out_shape->vertex_arrays[0].vertexs[0], sizeof(float)*va->num_dimensions*out_shape->num_vertexs);
+  int i;
+  for (i = 0 ; i < out_shape->num_vertexs ; i++)
+    append_vertex(final_shape, get_vertex(out_shape, 0, i));
   
   free_shape(out_shape);
   out_shape = NULL;
@@ -215,35 +213,24 @@ int tesselate(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
   long i=0, j=0, count=0;
   while ((shape = read_shape(pipe_in)))
   {
-    final_shape = (struct Shape*)malloc(sizeof(struct Shape));
-    memset(final_shape, 0, sizeof(struct Shape));
-    
+    final_shape = new_shape();
     final_shape->unique_set_id = shape->unique_set_id;
     final_shape->gl_type = GL_TRIANGLES;
-    final_shape->num_vertexs = 0;
-    final_shape->num_vertex_arrays = 1;
-    final_shape->vertex_arrays = (struct VertexArray*)malloc(sizeof(struct VertexArray)*final_shape->num_vertex_arrays);
     
-    struct VertexArray * va = &final_shape->vertex_arrays[0];
-    memset(va, 0, sizeof(struct VertexArray));
-    va->num_dimensions = 2;
-    va->array_type = GL_VERTEX_ARRAY;
-    
-    if (shape->gl_type != GL_LINE_LOOP) { fprintf(pipe_err, "providing non line loop to tesselator. NO GOOD\n"); exit(1); }
+    if (shape->gl_type != GL_LINE_LOOP) { fprintf(pipe_err, "providing non line loop to tesselator. CANT DO IT\n"); exit(1); }
     gluTessBeginPolygon(tobj, NULL);
     gluTessBeginContour(tobj);
     for (i = 0 ; i < shape->num_vertex_arrays ; i++)
     {
-      struct VertexArray * va = &shape->vertex_arrays[i];
+      struct VertexArray * va = get_or_add_array(final_shape, GL_VERTEX_ARRAY);
       if (va->num_dimensions < 2 || va->num_dimensions > 3) { fprintf(pipe_err,"va->num_dimensions is %d", va->num_dimensions); continue; }
       for (j = 0 ; j < shape->num_vertexs ; j++)
       {
-        GLdouble *vertex;
-        vertex = (GLdouble *) malloc(3 * sizeof(GLdouble));
-        vertex[0] = va->vertexs[j*va->num_dimensions];
-        vertex[1] = va->vertexs[j*va->num_dimensions+1];
-        vertex[2] = (va->num_dimensions == 3) ? va->vertexs[j*va->num_dimensions+2] : 0;
-        
+        GLdouble * vertex = (GLdouble*)malloc(3*sizeof(GLdouble));
+        float * v = get_vertex(shape, i, j);
+        vertex[0] = v[0];
+        vertex[1] = v[1];
+        if (va->num_dimensions == 3) vertex[2] = v[2];
         gluTessVertex(tobj, vertex, vertex);
       }
     }
