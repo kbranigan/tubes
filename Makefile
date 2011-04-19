@@ -25,6 +25,7 @@ pipe_out: \
 	produce_single_test_circle
 
 pipe_inout: \
+	clip \
 	tesselate \
 	reduce_by_id \
 	reduce_by_distance \
@@ -60,6 +61,9 @@ pass_through: scheme.o pass_through.c
 	
 produce_random_data: scheme.o produce_random_data.c
 	gcc scheme.o produce_random_data.c -o produce_random_data
+
+clip: scheme.o clip.c
+	gcc scheme.o clip.c gpc/gpc.c -o clip
 
 bbox: scheme.o bbox.c
 	gcc scheme.o bbox.c -o bbox
