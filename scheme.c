@@ -126,7 +126,7 @@ void set_vertex2(struct Shape * shape, int index, float * v1, float * v2)
   _set_vertex(&shape->vertex_arrays[1], index, v2);
 }
 
-float * get_vertex(struct Shape * shape, int index, int va_index)
+float * get_vertex(struct Shape * shape, int va_index, int index)
 {
   if (shape == NULL) { fprintf(stderr, "get_vertex called on a NULL shape\n"); exit(1); }
   if (index < 0 || index >= shape->num_vertexs) { fprintf(stderr, "get_vertex called with an index of %d (there are %d vertexs)\n", index, shape->num_vertexs); exit(1); }

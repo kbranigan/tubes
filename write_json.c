@@ -46,7 +46,7 @@ int write_json(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * p
         int j;
         for (j = 0 ; j < shape->num_vertexs ; j++)
         {
-          float * v = get_vertex(shape, j, i);
+          float * v = get_vertex(shape, i, j);
           if (va->num_dimensions == 2) fprintf(pipe_out, "[%f,%f]%s", v[0], v[1], j==shape->num_vertexs-1?"":",");
           else if (va->num_dimensions == 3) fprintf(pipe_out, "[%f,%f,%f]%s", v[0], v[1], v[2], j==shape->num_vertexs-1?"":",");
           else if (va->num_dimensions == 4) fprintf(pipe_out, "[%f,%f,%f,%f]%s", v[0], v[1], v[2], v[3], j==shape->num_vertexs-1?"":",");

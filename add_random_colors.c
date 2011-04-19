@@ -37,7 +37,7 @@ int add_random_colors(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, F
       for (i = 0 ; i < shape->num_vertexs ; i++)
       {
         if (per_shape_or_vertex == 1) set_random_color(color);
-        set_vertex2(shape, i, get_vertex(shape, i, 0), color);
+        set_vertex2(shape, i, get_vertex(shape, 0, i), color);
       }
     }
     write_shape(pipe_out, shape);

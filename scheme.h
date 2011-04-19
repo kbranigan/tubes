@@ -113,7 +113,7 @@ extern void append_vertex4f(struct VertexArray * va, float x, float y, float z, 
 
 extern void set_vertex(struct Shape * shape, int index, float * v);
 extern void set_vertex2(struct Shape * shape, int index, float * v1, float * v2);
-extern float * get_vertex(struct Shape * shape, int index, int va_index);
+extern float * get_vertex(struct Shape * shape, int va_index, int index);
 
 extern int clamp_int(int v, int min, int max);
 
