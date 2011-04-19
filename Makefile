@@ -22,7 +22,8 @@ pipe_out: \
 	read_shapefile \
 	read_mysql \
 	produce_random_data \
-	produce_single_test_circle
+	produce_unit_circle \
+	produce_unit_square
 
 pipe_inout: \
 	clip \
@@ -38,8 +39,11 @@ pipe_inout: \
 civicsets: shapefile_src/shpopen.o shapefile_src/dbfopen.o mongoose.o
 	g++ -Wall civicsets.c shapefile_src/shpopen.o shapefile_src/dbfopen.o mongoose.o -ldl -lpthread -o civicsets.ca $(mysql)
 
-produce_single_test_circle: scheme.o produce_single_test_circle.c
-	gcc scheme.o produce_single_test_circle.c -o produce_single_test_circle -lm
+produce_unit_circle: scheme.o produce_unit_circle.c
+	gcc scheme.o produce_unit_circle.c -o produce_unit_circle -lm
+
+produce_unit_square: scheme.o produce_unit_square.c
+	gcc scheme.o produce_unit_square.c -o produce_unit_square -lm
 
 read_mysql: scheme.o read_mysql.c
 	gcc scheme.o read_mysql.c -o read_mysql $(mysql)

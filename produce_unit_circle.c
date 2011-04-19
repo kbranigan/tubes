@@ -7,10 +7,10 @@
 
 #define SCHEME_CREATE_MAIN
 #define SCHEME_ASSERT_STDOUT_IS_PIPED
-#define SCHEME_FUNCTION produce_single_test_circle
+#define SCHEME_FUNCTION produce_unit_circle
 #include "scheme.h"
 
-int produce_single_test_circle(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
+int produce_unit_circle(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
   int num_dimensions = 2;
   int num_vertexs = 64;
