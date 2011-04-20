@@ -118,7 +118,6 @@ extern float * get_vertex(struct Shape * shape, int va_index, int index);
 extern int clamp_int(int v, int min, int max);
 
 extern struct Shape * new_shape();
-extern void inspect_shape(FILE * fp, struct Shape * shape);
 extern struct Shape * read_shape(FILE * fp);
 extern int write_shape(FILE * fp, struct Shape * shape);
 
