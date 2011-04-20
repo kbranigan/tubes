@@ -39,30 +39,16 @@ int read_shapefile(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE
   {
     if (row_id != -1 && row_id != i) continue;
     SHPObject	*psShape = SHPReadObject(h, i);
-    int j;
     if (psShape->nSHPType == SHPT_POINT)
     {
-      struct Shape * shape = (struct Shape*)malloc(sizeof(struct Shape));
-      memset(shape, 0, sizeof(struct Shape));
+      struct Shape * shape = new_shape();
       shape->unique_set_id = t++;
-      shape->gl_type = GL_POINTS;
       
-      shape->num_vertexs = psShape->nVertices;
-      if (shape->num_vertexs <= 0) { fprintf(stderr, "shape->num_vertexs = %d", shape->num_vertexs); return 0; }
-      shape->num_attributes = 0;
-      
-      shape->num_vertex_arrays = 1;
-      shape->vertex_arrays = (struct VertexArray*)malloc(sizeof(struct VertexArray)*shape->num_vertex_arrays);
-      
-      struct VertexArray *va = &shape->vertex_arrays[0];
-      va->num_dimensions = 2;
-      va->array_type = GL_VERTEX_ARRAY;
-      va->vertexs = (float*)malloc(sizeof(float)*shape->num_vertexs*va->num_dimensions);
-      //fprintf(stderr, "%ld: %d\n", i, psShape->nSHPType);
-      for (j = 0 ; j < shape->num_vertexs ; j++)
+      int j;
+      for (j = 0 ; j < psShape->nVertices ; j++)
       {
-        va->vertexs[j*va->num_dimensions+0] = psShape->padfX[j];
-        va->vertexs[j*va->num_dimensions+1] = psShape->padfY[j];
+        float v[2] = { psShape->padfX[j], psShape->padfY[j] };
+        append_vertex(shape, v);
       }
       write_shape(pipe_out, shape);
       free_shape(shape);
@@ -85,65 +71,40 @@ int read_shapefile(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE
           end = psShape->panPartStart[iPart+1];
         }
         
-        struct Shape * shape = (struct Shape*)malloc(sizeof(struct Shape));
-        memset(shape, 0, sizeof(struct Shape));
+        struct Shape * shape = new_shape();
         shape->unique_set_id = t++;
-        if (psShape->nSHPType == SHPT_ARC)
-          shape->gl_type = GL_LINE_STRIP;
-        else if (psShape->nSHPType == SHPT_POLYGON)
-          shape->gl_type = GL_LINE_LOOP;
         
-        shape->num_vertexs = end - start;
-        if (shape->num_vertexs <= 0) { fprintf(stderr, "shape->num_vertexs = %d", shape->num_vertexs); return 0; }
-        
-        shape->attributes = NULL;
-        shape->num_attributes = 0;
+        if (psShape->nSHPType == SHPT_ARC)           shape->gl_type = GL_LINE_STRIP;
+        else if (psShape->nSHPType == SHPT_POLYGON)  shape->gl_type = GL_LINE_LOOP;
         
         for (j = 0 ; j < nFieldCount ; j++)
         {
           char name[12];
+          char value[50];
           int value_length;
           DBFFieldType field_type = DBFGetFieldInfo(d, j, name, &value_length, NULL);
           switch (field_type) {
             case FTString:
-            {
-              shape->num_attributes ++;
-              shape->attributes = (struct Attribute*)realloc(shape->attributes, shape->num_attributes*sizeof(struct Attribute));
-              struct Attribute * attribute = &shape->attributes[shape->num_attributes-1];
-              strcpy(attribute->name, name);
-              attribute->value_length = value_length;
-              attribute->value = malloc(attribute->value_length+1);
-              strcpy(attribute->value, (char *)DBFReadStringAttribute(d, i, j));
-              //fprintf(stderr, "%d: %s: %s\n", j, name, (char *)DBFReadStringAttribute(d, i, j));
+              set_attribute(shape, name, (char *)DBFReadStringAttribute(d, i, j));
               break;
-            }
-            /*case FTInteger:
-              fprintf(stderr, "%d: %s: %d\n", j, name, DBFReadIntegerAttribute(d, i, j));
+            case FTInteger:
+              sprintf(value, "%d", DBFReadIntegerAttribute(d, i, j));
+              set_attribute(shape, name, value);
               break;
             case FTDouble:
-              fprintf(stderr, "%d: %s: %f\n", j, name, DBFReadDoubleAttribute(d, i, j));
-              break;//*/
+              sprintf(value, "%f", DBFReadDoubleAttribute(d, i, j));
+              set_attribute(shape, name, value);
+              break;
           }
         }
         
-        //fprintf(stderr, "%d: %d %d (%d)\n", iPart, start, end, shape->num_vertexs);
-        
-        shape->num_vertex_arrays = 1;
-        shape->vertex_arrays = (struct VertexArray*)malloc(sizeof(struct VertexArray)*shape->num_vertex_arrays);
-        
-        struct VertexArray *va = &shape->vertex_arrays[0];
-        va->num_dimensions = 2;
-        va->array_type = GL_VERTEX_ARRAY;
-        va->vertexs = (float*)malloc(sizeof(float)*shape->num_vertexs*va->num_dimensions);
-        //fprintf(stderr, "%ld: %d\n", i, psShape->nSHPType);
         for (j = start ; j < end ; j++)
         {
-          va->vertexs[(j-start)*va->num_dimensions+0] = psShape->padfX[j];
-          va->vertexs[(j-start)*va->num_dimensions+1] = psShape->padfY[j];
+          float v[2] = { psShape->padfX[j], psShape->padfY[j] };
+          append_vertex(shape, v);
         }
         write_shape(pipe_out, shape);
         free_shape(shape);
-        //if (iPart > 1) break;
       }
     }
     else
