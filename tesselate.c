@@ -88,20 +88,15 @@ void beginCallback(GLenum which)
 
 void vertex3dv(const GLdouble * c)
 {
-  append_vertex(out_shape, c);
-  /*out_shape->num_vertexs++;
-  struct VertexArray * va = &out_shape->vertex_arrays[0];
-  va->vertexs = (float*)realloc(va->vertexs, sizeof(float)*out_shape->num_vertexs*va->num_dimensions);
-  va->vertexs[(out_shape->num_vertexs-1)*va->num_dimensions] = c[0];
-  va->vertexs[(out_shape->num_vertexs-1)*va->num_dimensions+1] = c[1];
-  if (va->num_dimensions == 3) va->vertexs[(out_shape->num_vertexs-1)*va->num_dimensions+2] = c[2];*/
+  float v[2] = { c[0], c[1] };
+  append_vertex(out_shape, v);
 }
 
 void endCallback(void)
 {
-  /*if (out_shape->gl_type == GL_TRIANGLE_STRIP)
+  if (out_shape->gl_type == GL_TRIANGLE_STRIP)
   {
-    struct VertexArray * va = &out_shape->vertex_arrays[0];
+    struct VertexArray * va = get_or_add_array(out_shape, GL_VERTEX_ARRAY);
     
     int new_num_vertexs = ((out_shape->num_vertexs - 3) * 3) + 3;
     float * new_vertexs = (float*)malloc(sizeof(float)*va->num_dimensions*(new_num_vertexs));
@@ -133,7 +128,8 @@ void endCallback(void)
   }
   else if (out_shape->gl_type == GL_TRIANGLE_FAN)
   {
-    struct VertexArray * va = &out_shape->vertex_arrays[0];
+    struct VertexArray * va = get_or_add_array(out_shape, GL_VERTEX_ARRAY);
+    
     int new_num_vertexs = ((out_shape->num_vertexs - 3) * 3) + 3;
     float * new_vertexs = (float*)malloc(sizeof(float)*va->num_dimensions*(new_num_vertexs));
     
@@ -161,12 +157,14 @@ void endCallback(void)
     out_shape->num_vertexs = new_num_vertexs;
     va->vertexs = new_vertexs;
     out_shape->gl_type = GL_TRIANGLES;
-  }*/
+  }
   
   int i;
   for (i = 0 ; i < out_shape->num_vertexs ; i++)
-    append_vertex(final_shape, get_vertex(out_shape, 0, i));
-  
+  {
+    float * v = get_vertex(out_shape, 0, i);
+    append_vertex(final_shape, v);
+  }
   free_shape(out_shape);
   out_shape = NULL;
 }
@@ -186,16 +184,10 @@ void combineCallback(GLdouble coords[3],
 {
   GLdouble *vertex;
   int i;
-  //fprintf(stderr, "combineCallback\n");
   vertex = (GLdouble *) malloc(3 * sizeof(GLdouble));
   vertex[0] = coords[0];
   vertex[1] = coords[1];
   vertex[2] = coords[2];
-  //for (i = 3; i < 7; i++)
-  //  vertex[i] = weight[0] * vertex_data[0][i] 
-  //                + weight[1] * vertex_data[1][i]
-  //                + weight[2] * vertex_data[2][i] 
-  //                + weight[3] * vertex_data[3][i];
   *dataOut = vertex;
 }
 
@@ -210,30 +202,32 @@ int tesselate(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
   gluTessCallback(tobj, GLU_TESS_COMBINE, (GLvoid (*) ()) &combineCallback);
   
   struct Shape * shape = NULL;
-  long i=0, j=0, count=0;
+  long j=0, count=0;
   while ((shape = read_shape(pipe_in)))
   {
     final_shape = new_shape();
     final_shape->unique_set_id = shape->unique_set_id;
     final_shape->gl_type = GL_TRIANGLES;
+    final_shape->vertex_arrays[0].num_dimensions = 2;
     
     if (shape->gl_type != GL_LINE_LOOP) { fprintf(pipe_err, "providing non line loop to tesselator. CANT DO IT\n"); exit(1); }
     gluTessBeginPolygon(tobj, NULL);
     gluTessBeginContour(tobj);
-    for (i = 0 ; i < shape->num_vertex_arrays ; i++)
+    
+    if (shape->num_vertex_arrays != 1) { fprintf(pipe_err, "num_vertex_arrays != 1, CANT DO IT\n"); exit(1); }
+    
+    struct VertexArray * va = get_or_add_array(final_shape, GL_VERTEX_ARRAY);
+    if (va->num_dimensions < 2 || va->num_dimensions > 3) { fprintf(pipe_err,"va->num_dimensions is %d", va->num_dimensions); continue; }
+    for (j = 0 ; j < shape->num_vertexs ; j++)
     {
-      struct VertexArray * va = get_or_add_array(final_shape, GL_VERTEX_ARRAY);
-      if (va->num_dimensions < 2 || va->num_dimensions > 3) { fprintf(pipe_err,"va->num_dimensions is %d", va->num_dimensions); continue; }
-      for (j = 0 ; j < shape->num_vertexs ; j++)
-      {
-        GLdouble * vertex = (GLdouble*)malloc(3*sizeof(GLdouble));
-        float * v = get_vertex(shape, i, j);
-        vertex[0] = v[0];
-        vertex[1] = v[1];
-        if (va->num_dimensions == 3) vertex[2] = v[2];
-        gluTessVertex(tobj, vertex, vertex);
-      }
+      GLdouble * vertex = (GLdouble*)malloc(3*sizeof(GLdouble));
+      float * v = get_vertex(shape, 0, j);
+      vertex[0] = v[0];
+      vertex[1] = v[1];
+      if (va->num_dimensions == 3) vertex[2] = v[2];
+      gluTessVertex(tobj, vertex, vertex);
     }
+    
     gluTessEndContour(tobj);
     gluTessEndPolygon(tobj);
     
