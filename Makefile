@@ -32,6 +32,7 @@ pipe_inout: \
 	reduce_by_distance \
 	reduce_by_attribute \
 	coordinate_convert \
+	add_attribute \
 	add_random_colors \
 	add_color_from_mysql \
 	group_shapes_on_unique_set_id
@@ -71,6 +72,9 @@ clip: scheme.o clip.c
 
 bbox: scheme.o bbox.c
 	gcc scheme.o bbox.c -o bbox
+
+add_attribute: scheme.o add_attribute.c
+	gcc scheme.o add_attribute.c -o add_attribute
 
 coordinate_convert: scheme.o coordinate_convert.c
 	gcc scheme.o coordinate_convert.c -o coordinate_convert -lm

@@ -21,6 +21,7 @@ write_png
 write_kml
 write_json
 coordinate_convert
+add_attribute
 add_color
 add_color_from_mysql
 clip
