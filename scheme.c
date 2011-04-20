@@ -262,6 +262,42 @@ struct Shape * read_shape(FILE * fp)
   return shape;
 }
 
+char * get_attribute(struct Shape * shape, char * name)
+{
+  int i;
+  for (i = 0 ; i < shape->num_attributes ; i++)
+    if (strcmp(shape->attributes[i].name, name)==0)
+      return shape->attributes[i].value;
+  return NULL;
+}
+
+void set_attribute(struct Shape * shape, char * name, char * value)
+{
+  if (shape == NULL || name == NULL || value == NULL) { fprintf(stderr, "set_attribute called with shape, name or value being NULL"); exit(1); }
+  
+  int i;
+  for (i = 0 ; i < shape->num_attributes ; i++)
+  {
+    if (strcmp(shape->attributes[i].name, name)==0)
+    {
+      free(shape->attributes[i].value);
+      shape->attributes[i].value_length = strlen(value);
+      shape->attributes[i].value = malloc(shape->attributes[i].value_length+1);
+      strncpy(shape->attributes[i].value, value, shape->attributes[i].value_length);
+      shape->attributes[i].value[shape->attributes[i].value_length] = 0;
+      return;
+    }
+  }
+  
+  shape->attributes = realloc(shape->attributes, sizeof(struct Attribute)*(shape->num_attributes+1));
+  strncpy(shape->attributes[shape->num_attributes].name, name, 19);
+  shape->attributes[shape->num_attributes].value_length = strlen(value);
+  shape->attributes[shape->num_attributes].value = malloc(shape->attributes[shape->num_attributes].value_length+1);
+  strncpy(shape->attributes[shape->num_attributes].value, value, shape->attributes[shape->num_attributes].value_length);
+  shape->attributes[shape->num_attributes].value[shape->attributes[shape->num_attributes].value_length] = 0;
+  shape->num_attributes++;
+}
+
 int clamp_int(int v, int min, int max)
 {
   if (v > max) return max;
