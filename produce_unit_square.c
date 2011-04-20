@@ -14,11 +14,19 @@ int produce_unit_square(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out,
 {
   int num_dimensions = 2;
   int c;
-  while ((c = getopt(argc, argv, "d:")) != -1)
+  float width = 1.0;
+  float height = 1.0;
+  while ((c = getopt(argc, argv, "d:w:h:")) != -1)
   switch (c)
   {
     case 'd':
       num_dimensions = clamp_int(atoi(optarg), 2, 3);
+      break;
+    case 'w':
+      width = clamp_float(atof(optarg), -10000000, 10000000);
+      break;
+    case 'h':
+      height = clamp_float(atof(optarg), -10000000, 10000000);
       break;
   }
   
@@ -30,11 +38,11 @@ int produce_unit_square(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out,
   
   float v0[3] = { 0.0, 0.0, 0.0 };
   append_vertex(shape, v0);
-  float v1[3] = { 0.0, 1.0, 0.0 };
+  float v1[3] = { 0.0, height, 0.0 };
   append_vertex(shape, v1);
-  float v2[3] = { 1.0, 1.0, 0.0 };
+  float v2[3] = { width, height, 0.0 };
   append_vertex(shape, v2);
-  float v3[3] = { 1.0, 0.0, 0.0 };
+  float v3[3] = { width, 0.0, 0.0 };
   append_vertex(shape, v3);
   
   write_shape(pipe_out, shape);

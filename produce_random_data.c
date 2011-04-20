@@ -14,12 +14,26 @@ int produce_random_data(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out,
 {
   int num_dimensions = 2;
   int num_vertexs = 64;
+  float width = 1.0;
+  float height = 1.0;
   int c;
-  while ((c = getopt(argc, argv, "d:v:")) != -1)
+  while ((c = getopt(argc, argv, "d:v:w:h:")) != -1)
   switch (c)
   {
-    case 'd': num_dimensions = clamp_int(atoi(optarg), 2, 3); break;
-    case 'v': num_vertexs    = clamp_int(atoi(optarg), 3, 10000); break;
+    case 'd':
+      num_dimensions = clamp_int(atoi(optarg), 2, 3);
+      break;
+    case 'v':
+      num_vertexs = clamp_int(atoi(optarg), 3, 10000);
+      break;
+    case 'w':
+      width = clamp_float(atof(optarg), -10000000, 10000000);
+      break;
+    case 'h':
+      height = clamp_float(atof(optarg), -10000000, 10000000);
+      break;
+    default:
+      abort();
   }
   
   struct Shape * shape = new_shape();
@@ -31,7 +45,7 @@ int produce_random_data(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out,
   long i;
   for (i = 0 ; i < num_vertexs ; i++)
   {
-    float v[3] = { rand()/(float)RAND_MAX, rand()/(float)RAND_MAX, rand()/(float)RAND_MAX };
+    float v[3] = { rand()/(float)RAND_MAX*width, rand()/(float)RAND_MAX*height, rand()/(float)RAND_MAX };
     append_vertex(shape, v);
   }
   write_shape(pipe_out, shape);

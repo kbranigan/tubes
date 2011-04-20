@@ -269,6 +269,13 @@ int clamp_int(int v, int min, int max)
   return v;
 }
 
+float clamp_float(float v, float min, float max)
+{
+  if (v > max) return max;
+  if (v < min) return min;
+  return v;
+}
+
 int free_shape(struct Shape * shape)
 {
   int i = 0;
