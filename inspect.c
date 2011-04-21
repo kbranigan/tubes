@@ -13,10 +13,10 @@ int inspect(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe
 {
   int num_vertexs_to_show = 4;
   int c;
-  while ((c = getopt(argc, argv, "v:")) != -1)
+  while ((c = getopt(argc, argv, "n:")) != -1)
   switch (c)
   {
-    case 'v':
+    case 'n':
       num_vertexs_to_show = clamp_int(atoi(optarg), 3, 100);
       break;
     default:
