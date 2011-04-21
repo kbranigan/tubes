@@ -101,20 +101,25 @@ int clip(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_er
     int j;
     for (j = 0 ; j < result_polygon->num_contours ; j++)
     {
-      free_shape(shape);
-      shape = new_shape();
-      shape->gl_type = GL_LINE_LOOP;
+      struct Shape * res = new_shape();
+      res->gl_type = GL_LINE_LOOP;
+      for (i = 0 ; i < shape->num_attributes ; i++)
+      {
+        set_attribute(res, shape->attributes[i].name, shape->attributes[i].value);
+      }
+      
       for (i = 0 ; i < result_polygon->contour[j].num_vertices ; i++)
       {
         float v[3] = { result_polygon->contour[j].vertex[i].x, result_polygon->contour[j].vertex[i].y, 0.0 };
-        append_vertex(shape, v);
+        append_vertex(res, v);
       }
-      write_shape(pipe_out, shape);
+      write_shape(pipe_out, res);
+      free_shape(res);
     }
-    free_shape(shape);
     
     gpc_free_polygon(org);
     gpc_free_polygon(result_polygon);
+    free_shape(shape);
   }
   
   gpc_free_polygon(clip_polygon);
