@@ -24,58 +24,8 @@
 #include <GL/glu.h>
 #endif
 
-//GLuint textureId;
-//GLuint rboId;
-//GLuint fboId;
 int TEXTURE_WIDTH = 2000;
 int TEXTURE_HEIGHT = 0;
-
-//float min_x =  1000000;
-//float max_x = -1000000;
-//float min_y =  1000000;
-//float max_y = -1000000;
-
-/*struct matrix33
-{
-  float _11; float _12; float _13;
-  float _21; float _22; float _23;
-  float _31; float _32; float _33;
-};
-
-void identity33(struct matrix33 *o)
-{
-  o->_11 = 1; o->_12 = 0; o->_13 = 0;
-  o->_21 = 0; o->_22 = 1; o->_23 = 0;
-  o->_31 = 0; o->_32 = 0; o->_33 = 1;
-}
-
-void multiply_matrixes(struct matrix33 *m1, struct matrix33 *m2, struct matrix33 *o)
-{
-	o->_11 = m1->_11*m2->_11 + m1->_12*m2->_21 + m1->_13*m2->_31;
-	o->_12 = m1->_11*m2->_12 + m1->_12*m2->_22 + m1->_13*m2->_32;
-	o->_13 = m1->_11*m2->_13 + m1->_12*m2->_23 + m1->_13*m2->_33;
-	o->_21 = m1->_21*m2->_11 + m1->_22*m2->_21 + m1->_23*m2->_31;
-	o->_22 = m1->_21*m2->_12 + m1->_22*m2->_22 + m1->_23*m2->_32;
-	o->_23 = m1->_21*m2->_13 + m1->_22*m2->_23 + m1->_23*m2->_33;
-	o->_31 = m1->_31*m2->_11 + m1->_32*m2->_21 + m1->_33*m2->_31;
-	o->_32 = m1->_31*m2->_12 + m1->_32*m2->_22 + m1->_33*m2->_32;
-	o->_33 = m1->_31*m2->_13 + m1->_32*m2->_23 + m1->_33*m2->_33;
-}*/
-
-/*void get_sphere_coords_from_latlng(float lat, float lng, float *x, float *y, float *z)
-{
-  lat = (-lat+90) / 180.0 * 3.14159265;
-  lng = (-lng+180) / 180.0 * 3.14159265;
-  
-  struct matrix33 x33; identity33(&x33); x33._22 = cosf(lng); x33._23 = -sinf(lng); x33._32 =   sinf(lng); x33._33 = cosf(lng);
-  struct matrix33 y33; identity33(&y33); y33._11 = cosf(lat); y33._13 =  sinf(lat);  y33._31 = -sinf(lat); y33._33 = cosf(lat);
-  struct matrix33 z33; identity33(&z33); z33._11 = cosf(lat); z33._12 = -sinf(lat); z33._21 =   sinf(lat); z33._22 = cosf(lat);
-  struct matrix33 o33; multiply_matrixes(&y33, &x33, &o33);
-  
-  *x = o33._12;
-  *y = o33._11; // switched, i think because of opengl
-  *z = o33._13;
-}*/
 
 struct Shape * final_shape = NULL;
 struct Shape * out_shape = NULL;
@@ -210,6 +160,10 @@ int tesselate(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
     final_shape->gl_type = GL_TRIANGLES;
     final_shape->vertex_arrays[0].num_dimensions = 2;
     
+    int i;
+    for (i = 0 ; i < shape->num_attributes ; i++)
+      set_attribute(final_shape, shape->attributes[i].name, shape->attributes[i].value);
+    
     if (shape->gl_type != GL_LINE_LOOP) { fprintf(pipe_err, "providing non line loop to tesselator. CANT DO IT\n"); exit(1); }
     gluTessBeginPolygon(tobj, NULL);
     gluTessBeginContour(tobj);
@@ -224,7 +178,8 @@ int tesselate(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
       float * v = get_vertex(shape, 0, j);
       vertex[0] = v[0];
       vertex[1] = v[1];
-      if (va->num_dimensions == 3) vertex[2] = v[2];
+      vertex[2] = 0;
+      //if (va->num_dimensions == 3) vertex[2] = v[2];
       gluTessVertex(tobj, vertex, vertex);
     }
     
