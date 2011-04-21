@@ -100,30 +100,19 @@ void append_vertex2(struct Shape * shape, float * v1, float * v2)
   shape->num_vertexs++;
 }
 
-void _set_vertex(struct VertexArray * va, int index, float * v)
-{
-  int i = 0;
-  for (i = 0 ; i < va->num_dimensions ; i++)
-    va->vertexs[va->num_dimensions*index+i] = v[i];
-}
-
-void set_vertex(struct Shape * shape, int index, float * v)
+void set_vertex(struct Shape * shape, int va_index, int index, float * v)
 {
   if (shape == NULL) { fprintf(stderr, "set_vertex called on a NULL shape\n"); exit(1); }
-  if (shape->num_vertex_arrays != 1) { fprintf(stderr, "set_vertex called on a shape with %d arrays (try set_vertex2)\n", shape->num_vertex_arrays); exit(1); }
   if (index < 0 || index >= shape->num_vertexs) { fprintf(stderr, "set_vertex called with an index of %d (there are %d vertexs)\n", index, shape->num_vertexs); exit(1); }
+  if (va_index < 0 || va_index >= shape->num_vertex_arrays) { fprintf(stderr, "set_vertex called with an va_index of %d (there are %d vertex_arrays)\n", va_index, shape->num_vertex_arrays); exit(1); }
   
-  _set_vertex(&shape->vertex_arrays[0], index, v);
-}
-
-void set_vertex2(struct Shape * shape, int index, float * v1, float * v2)
-{
-  if (shape == NULL) { fprintf(stderr, "set_vertex2 called on a NULL shape\n"); exit(1); }
-  if (shape->num_vertex_arrays != 2) { fprintf(stderr, "set_vertex2 called on a shape with %d arrays (try set_vertex)\n", shape->num_vertex_arrays); exit(1); }
-  if (index < 0 || index >= shape->num_vertexs) { fprintf(stderr, "set_vertex2 called with an index of %d (there are %d vertexs)\n", index, shape->num_vertexs); exit(1); }
+  struct VertexArray * va = &shape->vertex_arrays[va_index];
   
-  _set_vertex(&shape->vertex_arrays[0], index, v1);
-  _set_vertex(&shape->vertex_arrays[1], index, v2);
+  int i = 0;
+  for (i = 0 ; i < va->num_dimensions ; i++)
+  {
+    va->vertexs[va->num_dimensions*index+i] = v[i];
+  }
 }
 
 float * get_vertex(struct Shape * shape, int va_index, int index)
@@ -178,7 +167,8 @@ int write_shape(FILE * fp, struct Shape * shape)
     struct Attribute * attribute = &shape->attributes[i];
     fwrite(attribute->name, sizeof(attribute->name), 1, fp);
     fwrite(&attribute->value_length, sizeof(attribute->value_length), 1, fp);
-    fwrite(attribute->value, attribute->value_length, 1, fp);
+    if (attribute->value_length > 0)
+      fwrite(attribute->value, attribute->value_length, 1, fp);
   }
   
   if (fwrite(&shape->gl_type, sizeof(shape->gl_type), 1, fp) != 1) return 0;
@@ -220,16 +210,17 @@ struct Shape * read_shape(FILE * fp)
     shape->attributes = (struct Attribute *)malloc(sizeof(struct Attribute)*shape->num_attributes);
     if (shape->attributes == NULL) { fprintf(stderr, "malloc failed in read_shape()\n"); exit(1); }
     
-    int i;
+    long i;
     for (i = 0 ; i < shape->num_attributes ; i++)
     {
       struct Attribute * attribute = &shape->attributes[i];
       
-      if (fread(&attribute->name, sizeof(attribute->name), 1, fp) != 1) { fprintf(stderr, "fread attribute %d key error\n", i); return NULL; }
-      if (fread(&attribute->value_length, sizeof(attribute->value_length), 1, fp) != 1) { fprintf(stderr, "fread attribute %d value length error\n", i); return NULL; }
+      if (fread(&attribute->name, sizeof(attribute->name), 1, fp) != 1) { fprintf(stderr, "fread attribute %ld key error\n", i); return NULL; }
+      if (fread(&attribute->value_length, sizeof(attribute->value_length), 1, fp) != 1) { fprintf(stderr, "fread attribute %ld value length error\n", i); return NULL; }
       attribute->value = malloc(attribute->value_length+1);
       if (attribute->value == NULL) { fprintf(stderr, "malloc failed in read_shape()\n"); exit(1); }
-      if (fread(attribute->value, attribute->value_length, 1, fp) != 1) { fprintf(stderr, "fread attribute %d value error\n", i); return NULL; }
+      if (attribute->value_length > 0)
+        if (fread(attribute->value, attribute->value_length, 1, fp) != 1) { fprintf(stderr, "fread attribute %ld value error\n", i); return NULL; }
       attribute->value[attribute->value_length] = 0;
     }
   }
