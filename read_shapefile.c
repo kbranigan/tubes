@@ -79,23 +79,22 @@ int read_shapefile(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE
         
         for (j = 0 ; j < nFieldCount ; j++)
         {
-          char name[12];
-          char value[50];
+          char name[20];
+          char value[200];
           int value_length;
           DBFFieldType field_type = DBFGetFieldInfo(d, j, name, &value_length, NULL);
           switch (field_type) {
             case FTString:
-              set_attribute(shape, name, (char *)DBFReadStringAttribute(d, i, j));
+              snprintf(value, 200, "%s", (char*)DBFReadStringAttribute(d, i, j));
               break;
             case FTInteger:
-              sprintf(value, "%d", DBFReadIntegerAttribute(d, i, j));
-              set_attribute(shape, name, value);
+              snprintf(value, 200, "%d", DBFReadIntegerAttribute(d, i, j));
               break;
             case FTDouble:
-              sprintf(value, "%f", DBFReadDoubleAttribute(d, i, j));
-              set_attribute(shape, name, value);
+              snprintf(value, 200, "%f", DBFReadDoubleAttribute(d, i, j));
               break;
           }
+          set_attribute(shape, name, value);
         }
         
         for (j = start ; j < end ; j++)
