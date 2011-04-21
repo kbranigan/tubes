@@ -119,6 +119,7 @@ float * get_vertex(struct Shape * shape, int va_index, int index)
 {
   if (shape == NULL) { fprintf(stderr, "get_vertex called on a NULL shape\n"); exit(1); }
   if (index < 0 || index >= shape->num_vertexs) { fprintf(stderr, "get_vertex called with an index of %d (there are %d vertexs)\n", index, shape->num_vertexs); exit(1); }
+  if (va_index < 0 || va_index >= shape->num_vertex_arrays) { fprintf(stderr, "get_vertex called with an va_index of %d (there are %d vertex_arrays)\n", va_index, shape->num_vertex_arrays); exit(1); }
   
   struct VertexArray * va = &shape->vertex_arrays[va_index];
   return &va->vertexs[va->num_dimensions*index];

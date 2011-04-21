@@ -104,9 +104,7 @@ int clip(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_er
       struct Shape * res = new_shape();
       res->gl_type = GL_LINE_LOOP;
       for (i = 0 ; i < shape->num_attributes ; i++)
-      {
         set_attribute(res, shape->attributes[i].name, shape->attributes[i].value);
-      }
       
       for (i = 0 ; i < result_polygon->contour[j].num_vertices ; i++)
       {
