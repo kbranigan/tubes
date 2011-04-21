@@ -151,7 +151,22 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
     
     glBegin(shape->gl_type);
     glColor3f(0,0,0);
-    for (j = 0 ; j < shape->num_vertex_arrays ; j++)
+    
+    for (j = 0 ; j < shape->num_vertexs ; j++)
+    {
+      if (shape->num_vertex_arrays > 1 && shape->vertex_arrays[1].array_type == GL_COLOR_ARRAY)
+      {
+        struct VertexArray * va = &shape->vertex_arrays[1];
+        if (va->num_dimensions == 3)      glColor3fv(get_vertex(shape, 1, j));
+        else if (va->num_dimensions == 4) glColor4fv(get_vertex(shape, 1, j));
+      }
+      struct VertexArray * va = &shape->vertex_arrays[0];
+      if (va->num_dimensions == 2)      glVertex2fv(get_vertex(shape, 0, j));
+      else if (va->num_dimensions == 3) glVertex3fv(get_vertex(shape, 0, j));
+      else if (va->num_dimensions == 4) glVertex4fv(get_vertex(shape, 0, j));
+    }
+    
+    /*for (j = 0 ; j < shape->num_vertex_arrays ; j++)
     {
       struct VertexArray * va = &shape->vertex_arrays[j];
       if (va->array_type != GL_COLOR_ARRAY) continue;
@@ -183,18 +198,6 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
       if (va->num_dimensions < 2) fprintf(stderr, "vertex_array has %d dimensions (expected at least 2)\n", va->num_dimensions);
       if (va->vertexs == NULL) { fprintf(stderr, "vertex array %ld is NULL\n", j); exit(1); }
       
-      /*float *x = (float*)malloc(sizeof(float)*shape->num_vertexs);
-      float *y = (float*)malloc(sizeof(float)*shape->num_vertexs);
-      
-      for (k = 0 ; k < shape->num_vertexs ; k++)
-      {
-        x[k] = va->vertexs[k*va->num_dimensions+0];
-        y[k] = va->vertexs[k*va->num_dimensions+1];
-      }
-      
-      insetPolygon(x, y, shape->num_vertexs-1, 0.001);
-      printf("\n");//*/
-      
       if (va->array_type == GL_VERTEX_ARRAY && va->num_dimensions == 2)
         for (k = 0 ; k < shape->num_vertexs ; k++)
           glVertex2fv(&va->vertexs[k*va->num_dimensions]);
@@ -207,7 +210,7 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
         for (k = 0 ; k < shape->num_vertexs ; k++)
           glVertex4fv(&va->vertexs[k*va->num_dimensions]);
       
-    }
+    }*/
     glEnd();
     free_shape(shape);
   }
