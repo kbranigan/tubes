@@ -42,8 +42,8 @@ You can use these applications to modify and transform the raw vertex data and p
   <dd>This application drops shapes where unique_set_id != id.</dd>
   <dt>./reduce_by_distance <i>[distance]</i></dt>
   <dd>This application strips out vertexs that are too close to their previous vertex.</dd>
-  <dt>./reduce_by_distance <i>[distance]</i></dt>
-  <dd>This application strips out vertexs that are too close to their previous vertex.</dd>
+  <dt>./reduce_by_attribute -n <i>[name]</i> -v <i>[value]</i></dt>
+  <dd>This application strips out shapes which do not have the specified attribute</dd>
   <dt>./coordinate_convert <i>[nad27/wgs84] [utm/mtm] [zone] (mrm)</i></dt>
   <dd>Converts silly coordinate systems to lat/lng</dd>
 </dl>
