@@ -34,6 +34,8 @@ You can use these applications to modify and transform the raw vertex data and p
   <dd>This application merges the vertex arrays of the shapes for each unique_set_id, used to be needed when tesselating, but is no longer.</dd>
   <dt>./add_random_colors</dt>
   <dd>This application adds an additional vertex array for the colour data - it chooses a random colour for each shape.</dd>
+  <dt>./add_color_from_csv -f [csv_file]</dt>
+  <dd>This pulls in color rules from a csv file and adds those colors to the shapes that match (on unique_set_id or exact attribute values)</dd>
   <dt>./reduce_by_id <i>[id]</i></dt>
   <dd>This application drops shapes where unique_set_id != id.</dd>
   <dt>./reduce_by_distance <i>[distance]</i></dt>
@@ -68,6 +70,8 @@ icitw_wgs84.dbf is available at http://www.toronto.ca/open/datasets/wards/<br />
 This repo only includes the source files, to create them, type 'make'
 
     ./read_shapefile icitw_wgs84.dbf | ./tesselate | ./add_random_colors | ./write_bmp toronto_ward_map.bmp
+    or
+    ./read_shapefile pei_hydro/prince_edward_island.dbf | ./tesselate | ./add_color_from_csv -f hydro_colors | ./write_png
 
 This produces: http://branigan.ca/toronto_ward_map.gif
 
