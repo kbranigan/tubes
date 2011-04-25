@@ -3,6 +3,7 @@ images
 cache_images
 inspect
 add_random_colors
+add_color_from_csv
 bbox
 group_shapes_on_unique_set_id
 produce_single_test_circle

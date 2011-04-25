@@ -34,6 +34,7 @@ pipe_inout: \
 	coordinate_convert \
 	add_attribute \
 	add_random_colors \
+	add_color_from_csv \
 	add_color_from_mysql \
 	group_shapes_on_unique_set_id
 
@@ -81,6 +82,9 @@ coordinate_convert: scheme.o coordinate_convert.c
 
 add_color_from_mysql: scheme.o add_color_from_mysql.c
 	gcc scheme.o add_color_from_mysql.c -o add_color_from_mysql $(mysql)
+
+add_color_from_csv: scheme.o add_color_from_csv.c
+	gcc scheme.o add_color_from_csv.c -o add_color_from_csv
 
 add_random_colors: scheme.o add_random_colors.c
 	gcc scheme.o add_random_colors.c -o add_random_colors
