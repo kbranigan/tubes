@@ -73,7 +73,7 @@ This repo only includes the source files, to create them, type 'make'
 
     ./read_shapefile icitw_wgs84.dbf | ./tesselate | ./add_random_colors | ./write_bmp toronto_ward_map.bmp
     or
-    ./read_shapefile pei_hydro/prince_edward_island.dbf | ./tesselate | ./add_color_from_csv -f hydro_colors | ./write_png
+    ./read_shapefile pei_hydro/prince_edward_island.dbf | ./tesselate | ./add_color_from_csv -f hydro_colors.csv | ./write_png
 
 This produces: http://branigan.ca/toronto_ward_map.gif
 

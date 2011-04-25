@@ -19,8 +19,9 @@ pipe_in: \
 	pass_through
 
 pipe_out: \
-	read_shapefile \
+	read_dem \
 	read_mysql \
+	read_shapefile \
 	produce_random_data \
 	produce_unit_circle \
 	produce_unit_square
@@ -47,8 +48,14 @@ produce_unit_circle: scheme.o produce_unit_circle.c
 produce_unit_square: scheme.o produce_unit_square.c
 	gcc scheme.o produce_unit_square.c -o produce_unit_square -lm
 
+read_dem: scheme.o read_dem.c
+	gcc scheme.o read_dem.c -o read_dem
+
 read_mysql: scheme.o read_mysql.c
 	gcc scheme.o read_mysql.c -o read_mysql $(mysql)
+
+read_shapefile: scheme.o shapefile_src/shpopen.o shapefile_src/dbfopen.o read_shapefile.c
+	gcc scheme.o shapefile_src/shpopen.o shapefile_src/dbfopen.o read_shapefile.c -o read_shapefile
 
 group_shapes_on_unique_set_id: scheme.o group_shapes_on_unique_set_id.c
 	gcc scheme.o group_shapes_on_unique_set_id.c -o group_shapes_on_unique_set_id
@@ -109,9 +116,6 @@ write_kml: scheme.o write_kml.c
 
 write_json: scheme.o write_json.c
 	gcc scheme.o write_json.c -o write_json
-
-read_shapefile: scheme.o shapefile_src/shpopen.o shapefile_src/dbfopen.o read_shapefile.c
-	gcc scheme.o shapefile_src/shpopen.o shapefile_src/dbfopen.o read_shapefile.c -o read_shapefile
 
 scheme.o: scheme.c scheme.h
 	gcc scheme.c -c -o scheme.o -Wall
