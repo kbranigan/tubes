@@ -30,11 +30,13 @@ You can use these applications to modify and transform the raw vertex data and p
 <dl>
   <dt>./tesselate</dt>
   <dd>Translates LINE_LOOPS to TRIANGLES, uses gluTesselator (This is for rendering in OpenGL - it can only render convex polygons)</dd>
+  <dt>./clip -f [file] -o [difference|intersection|exclusive-or|union]</dt>
+  <dd>This takes shapes and produces the difference, intersection, exclusive-or or union of shapes.  For example, reducing a soil map to just where there is land or reducing a street graph to specific ward.</dd>
   <dt>./group_shapes_on_unique_set_id</dt>
   <dd>This application merges the vertex arrays of the shapes for each unique_set_id, used to be needed when tesselating, but is no longer.</dd>
   <dt>./add_random_colors</dt>
   <dd>This application adds an additional vertex array for the colour data - it chooses a random colour for each shape.</dd>
-  <dt>./add_color_from_csv -f [csv_file]</dt>
+  <dt>./add_color_from_csv -f [file]</dt>
   <dd>This pulls in color rules from a csv file and adds those colors to the shapes that match (on unique_set_id or exact attribute values)</dd>
   <dt>./reduce_by_id <i>[id]</i></dt>
   <dd>This application drops shapes where unique_set_id != id.</dd>
