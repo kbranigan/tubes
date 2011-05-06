@@ -337,3 +337,74 @@ int point_in_triangle(vec2d A, vec2d B, vec2d C, vec2d P)
   
   return (u > 0.0) && (v > 0.0) && (u + v < 1.0);
 }
+
+char * array_type_names[] = {
+  "GL_VERTEX_ARRAY",
+  "GL_COLOR_ARRAY",
+  "GL_NORMAL_ARRAY",
+  "GL_INDEX_ARRAY",
+  "GL_TEXTURE_COORD_ARRAY",
+  "GL_EDGE_FLAG_ARRAY",
+  "GL_FOG_COORD_ARRAY",
+  "GL_SECONDARY_COLOR_ARRAY"
+};
+
+const char * get_array_type_name(int array_type)
+{
+  if (array_type == GL_VERTEX_ARRAY) return array_type_names[0];
+  if (array_type == GL_COLOR_ARRAY) return array_type_names[1];
+  if (array_type == GL_NORMAL_ARRAY) return array_type_names[2];
+  if (array_type == GL_INDEX_ARRAY) return array_type_names[3];
+  if (array_type == GL_TEXTURE_COORD_ARRAY) return array_type_names[4];
+  if (array_type == GL_EDGE_FLAG_ARRAY) return array_type_names[5];
+  if (array_type == GL_FOG_COORD_ARRAY) return array_type_names[6];
+  if (array_type == GL_SECONDARY_COLOR_ARRAY) return array_type_names[7];
+  return NULL;
+}
+
+int get_array_type(char * array_type_name)
+{
+  if (strcmp(array_type_name, "GL_VERTEX_ARRAY")==0) return GL_VERTEX_ARRAY;
+  if (strcmp(array_type_name, "GL_COLOR_ARRAY")==0) return GL_COLOR_ARRAY;
+  if (strcmp(array_type_name, "GL_NORMAL_ARRAY")==0) return GL_NORMAL_ARRAY;
+  if (strcmp(array_type_name, "GL_INDEX_ARRAY")==0) return GL_INDEX_ARRAY;
+  if (strcmp(array_type_name, "GL_TEXTURE_COORD_ARRAY")==0) return GL_TEXTURE_COORD_ARRAY;
+  if (strcmp(array_type_name, "GL_EDGE_FLAG_ARRAY")==0) return GL_EDGE_FLAG_ARRAY;
+  if (strcmp(array_type_name, "GL_FOG_COORD_ARRAY")==0) return GL_FOG_COORD_ARRAY;
+  if (strcmp(array_type_name, "GL_SECONDARY_COLOR_ARRAY")==0) return GL_SECONDARY_COLOR_ARRAY;
+  return 0;
+}
+
+char * gl_type_names[] = {
+  "GL_POINTS",
+  "GL_LINES",
+  "GL_LINE_LOOP",
+  "GL_LINE_STRIP",
+  "GL_TRIANGLES",
+  "GL_TRIANGLE_STRIP",
+  "GL_TRIANGLE_FAN"
+};
+
+const char * get_gl_type_name(int gl_type)
+{
+  if (gl_type == GL_POINTS) return gl_type_names[0];
+  if (gl_type == GL_LINES) return gl_type_names[1];
+  if (gl_type == GL_LINE_LOOP) return gl_type_names[2];
+  if (gl_type == GL_LINE_STRIP) return gl_type_names[3];
+  if (gl_type == GL_TRIANGLES) return gl_type_names[4];
+  if (gl_type == GL_TRIANGLE_STRIP) return gl_type_names[5];
+  if (gl_type == GL_TRIANGLE_FAN) return gl_type_names[6];
+  return NULL;
+}
+
+int get_gl_type(char * gl_type_name)
+{
+  if (strcmp(gl_type_name, "GL_POINTS")==0) return GL_POINTS;
+  if (strcmp(gl_type_name, "GL_LINES")==0) return GL_LINES;
+  if (strcmp(gl_type_name, "GL_LINE_LOOP")==0) return GL_LINE_LOOP;
+  if (strcmp(gl_type_name, "GL_LINE_STRIP")==0) return GL_LINE_STRIP;
+  if (strcmp(gl_type_name, "GL_TRIANGLES")==0) return GL_TRIANGLES;
+  if (strcmp(gl_type_name, "GL_TRIANGLE_STRIP")==0) return GL_TRIANGLE_STRIP;
+  if (strcmp(gl_type_name, "GL_TRIANGLE_FAN")==0) return GL_TRIANGLE_FAN;
+  return 0;
+}

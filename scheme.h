@@ -126,6 +126,12 @@ extern int write_shape(FILE * fp, struct Shape * shape);
 
 /*int point_in_triangle(vec2d A, vec2d B, vec2d C, vec2d P);*/
 
+extern char * array_type_names[];
+extern char * gl_type_names[];
+
+extern const char * get_array_type_name(int array_type);
+extern const char * get_gl_type_name(int gl_type);
+
 #ifdef SCHEME_CREATE_MAIN
   int main(int argc, char ** argv)
   {
