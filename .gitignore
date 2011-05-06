@@ -1,3 +1,5 @@
+ruby/Makefile
+ruby/Pipes.bundle
 *.o
 030/*
 images
