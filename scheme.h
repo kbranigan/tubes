@@ -107,9 +107,9 @@ extern void assert_stdin_is_piped();
 extern void assert_stdout_is_piped();
 
 extern struct VertexArray* get_or_add_array(struct Shape * shape, int array_type);
-extern void append_vertex2f(struct VertexArray * va, float x, float y);
-extern void append_vertex3f(struct VertexArray * va, float x, float y, float z);
-extern void append_vertex4f(struct VertexArray * va, float x, float y, float z, float w);
+
+extern void append_vertex(struct Shape * shape, float * v);
+extern void append_vertex2(struct Shape * shape, float * v1, float * v2);
 
 extern void set_vertex(struct Shape * shape, int va_index, int index, float * v);
 extern float * get_vertex(struct Shape * shape, int va_index, int index);
