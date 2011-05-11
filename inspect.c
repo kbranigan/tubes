@@ -12,21 +12,33 @@
 int inspect(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
   int num_vertexs_to_show = 4;
+  char selected_attribute[100] = "";
   int c;
-  while ((c = getopt(argc, argv, "n:")) != -1)
+  while ((c = getopt(argc, argv, "n:a:")) != -1)
   switch (c)
   {
     case 'n':
       num_vertexs_to_show = clamp_int(atoi(optarg), 3, 100);
       break;
+    case 'a':
+      strncpy(selected_attribute, optarg, sizeof(selected_attribute));
+      break;
     default:
       abort();
   }
   
+  int num_shapes_without_selected_attribute = 0;
+  int num_values = 0;
+  char ** values = NULL;
+  int * value_counts = NULL;
+  
   int num_shapes = 0;
+  int num_shapes_with_no_attributes = 0;
   int num_shapes_with_no_vertexs = 0;
   int num_vertexs = 0;
   int num_each_gl_type[7] = {0,0,0,0,0,0,0};
+  
+  char gl_types_c[8][20] = {"GL_POINTS", "GL_LINES", "GL_LINE_LOOP", "GL_LINE_STRIP", "GL_TRIANGLES", "GL_TRIANGLE_STRIP", "GL_TRIANGLE_FAN"};
   
   struct Shape * shape = NULL;
   while ((shape = read_shape(pipe_in)))
@@ -36,13 +48,42 @@ int inspect(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe
     
     num_vertexs += shape->num_vertexs;
     num_shapes++;
-    if (num_shapes <= 2)
+    
+    long i;
+    
+    if (selected_attribute[0] != 0) // -a [selected_attribute] provided
+    {
+      int has_attribute = 0;
+      for (i = 0 ; i < shape->num_attributes ; i++)
+      {
+        struct Attribute * attribute = &shape->attributes[i];
+        
+        // only process the selected attribute
+        if (strcmp(shape->attributes[i].name, &selected_attribute[0]) != 0) continue;
+        
+        has_attribute = 1;
+        
+        // has this value been found previously?
+        int j, found = 0;
+        for (j = 0 ; j < num_values ; j++)
+          if (strcmp(shape->attributes[i].value, values[j])==0)
+            { found = 1; value_counts[j]++; break; }
+        if (found) continue;
+        
+        // value hasn't been found, add it to the list
+        values = realloc(values, sizeof(char*)*(num_values+1));
+        value_counts = realloc(value_counts, sizeof(int)*(num_values+1));
+        values[num_values] = malloc(shape->attributes[i].value_length+1);
+        value_counts[num_values] = 1;
+        strncpy(values[num_values], shape->attributes[i].value, shape->attributes[i].value_length);
+        num_values++;
+      }
+      if (has_attribute == 0) num_shapes_without_selected_attribute++;
+    }
+    else if (num_shapes <= 2)
     {
       long count_zero = 0;
-      long i;
-  
-      char gl_types_c[8][20] = {"GL_POINTS", "GL_LINES", "GL_LINE_LOOP", "GL_LINE_STRIP", "GL_TRIANGLES", "GL_TRIANGLE_STRIP", "GL_TRIANGLE_FAN"};
-  
+      
       fprintf(stderr, "shape:\n");
       fprintf(stderr, "  unique_set_id: %d\n", shape->unique_set_id);
       fprintf(stderr, "  gl_type: %s\n", (shape->gl_type >= 0 && shape->gl_type < 8) ? gl_types_c[shape->gl_type] : "????");
@@ -85,6 +126,27 @@ int inspect(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe
   }
   
   fprintf(pipe_err, "{\n");
+  
+  if (selected_attribute[0] != 0) // -a [attribute_name] provided
+  {
+    fprintf(pipe_err, "  \"num_unique_values\": %d,\n", num_values);
+    fprintf(pipe_err, "  \"selected_attribute\": \"%s\",\n", selected_attribute);
+    
+    if (num_shapes_without_selected_attribute > 0)
+      fprintf(pipe_err, "  \"num_shapes_without_selected_attribute\": %d,\n", num_shapes_without_selected_attribute);
+    
+    if (num_values > 0) fprintf(pipe_err, "  \"first_ten_unique_values\": [\n");
+    int i;
+    for (i = 0 ; i < num_values ; i++)
+    {
+      if (i < 10) fprintf(pipe_err, "    \"%s (%d)\"%s\n", values[i], value_counts[i], (i==num_values-1)?"":",");
+      free(values[i]);
+    }
+    if (num_values > 0) fprintf(pipe_err, "  ]\n");
+    free(values);
+    free(value_counts);
+  }
+  
   if (num_shapes_with_no_vertexs > 0) printf("  \"num_shapes_with_no_vertexs\": %d,\n", num_shapes_with_no_vertexs);
   fprintf(pipe_err, "  \"num_shapes\": %d,\n", num_shapes);
   fprintf(pipe_err, "  \"num_vertexs\": %d,\n", num_vertexs);
