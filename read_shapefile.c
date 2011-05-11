@@ -45,6 +45,26 @@ int read_shapefile(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE
       shape->unique_set_id = t++;
       
       int j;
+      for (j = 0 ; j < nFieldCount ; j++)
+      {
+        char name[20];
+        char value[200];
+        int value_length;
+        DBFFieldType field_type = DBFGetFieldInfo(d, j, name, &value_length, NULL);
+        switch (field_type) {
+          case FTString:
+            snprintf(value, 200, "%s", (char*)DBFReadStringAttribute(d, i, j));
+            break;
+          case FTInteger:
+            snprintf(value, 200, "%d", DBFReadIntegerAttribute(d, i, j));
+            break;
+          case FTDouble:
+            snprintf(value, 200, "%f", DBFReadDoubleAttribute(d, i, j));
+            break;
+        }
+        set_attribute(shape, name, value);
+      }
+      
       for (j = 0 ; j < psShape->nVertices ; j++)
       {
         float v[2] = { psShape->padfX[j], psShape->padfY[j] };
