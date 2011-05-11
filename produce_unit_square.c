@@ -16,7 +16,9 @@ int produce_unit_square(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out,
   int c;
   float width = 1.0;
   float height = 1.0;
-  while ((c = getopt(argc, argv, "d:w:h:")) != -1)
+  float x = 0.5;
+  float y = 0.5;
+  while ((c = getopt(argc, argv, "d:w:h:x:y:")) != -1)
   switch (c)
   {
     case 'd':
@@ -28,6 +30,12 @@ int produce_unit_square(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out,
     case 'h':
       height = clamp_float(atof(optarg), -10000000, 10000000);
       break;
+    case 'x':
+      x = clamp_float(atof(optarg), -10000000, 10000000);
+      break;
+    case 'y':
+      y = clamp_float(atof(optarg), -10000000, 10000000);
+      break;
   }
   
   struct Shape * shape = new_shape();
@@ -36,13 +44,13 @@ int produce_unit_square(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out,
   struct VertexArray *va = get_or_add_array(shape, GL_VERTEX_ARRAY);
   va->num_dimensions = num_dimensions;
   
-  float v0[3] = { 0.0, 0.0, 0.0 };
+  float v0[3] = { x-width/2.0, y-height/2.0, 0.0 };
   append_vertex(shape, v0);
-  float v1[3] = { 0.0, height, 0.0 };
+  float v1[3] = { x-width/2.0, y+height/2.0, 0.0 };
   append_vertex(shape, v1);
-  float v2[3] = { width, height, 0.0 };
+  float v2[3] = { x+width/2.0, y+height/2.0, 0.0 };
   append_vertex(shape, v2);
-  float v3[3] = { width, 0.0, 0.0 };
+  float v3[3] = { x+width/2.0, y-height/2.0, 0.0 };
   append_vertex(shape, v3);
   
   write_shape(pipe_out, shape);
