@@ -135,11 +135,11 @@ int inspect(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe
     if (num_shapes_without_selected_attribute > 0)
       fprintf(pipe_err, "  \"num_shapes_without_selected_attribute\": %d,\n", num_shapes_without_selected_attribute);
     
-    if (num_values > 0) fprintf(pipe_err, "  \"first_ten_unique_values\": [\n");
+    if (num_values > 0) fprintf(pipe_err, "  \"first_few_unique_values\": [\n");
     int i;
     for (i = 0 ; i < num_values ; i++)
     {
-      if (i < 10) fprintf(pipe_err, "    \"%s (%d)\"%s\n", values[i], value_counts[i], (i==num_values-1)?"":",");
+      if (num_values < 20 || i < 10) fprintf(pipe_err, "    \"%s (%d)\"%s\n", values[i], value_counts[i], (i==num_values-1)?"":",");
       free(values[i]);
     }
     if (num_values > 0) fprintf(pipe_err, "  ]\n");

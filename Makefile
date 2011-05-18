@@ -14,6 +14,7 @@ pipe_in: \
 	write_png \
 	write_bmp \
 	write_kml \
+	write_sql \
 	write_json \
 	write_bmp_sphere \
 	pass_through
@@ -113,6 +114,9 @@ write_bmp_sphere: scheme.o write_bmp_sphere.c setup_opengl.c
 
 write_kml: scheme.o write_kml.c
 	gcc scheme.o write_kml.c -o write_kml
+
+write_sql: scheme.o write_sql.c
+	gcc scheme.o write_sql.c -o write_sql
 
 write_json: scheme.o write_json.c
 	gcc scheme.o write_json.c -o write_json
