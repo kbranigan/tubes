@@ -31,6 +31,7 @@ pipe_inout: \
 	clip \
 	tesselate \
 	reduce_by_id \
+	reduce_by_bbox \
 	reduce_by_distance \
 	reduce_by_attribute \
 	coordinate_convert \
@@ -69,6 +70,9 @@ reduce_by_attribute: scheme.o reduce_by_attribute.c
 
 reduce_by_id: scheme.o reduce_by_id.c
 	gcc scheme.o reduce_by_id.c -o reduce_by_id
+
+reduce_by_bbox: scheme.o reduce_by_bbox.c
+	gcc scheme.o reduce_by_bbox.c -o reduce_by_bbox
 
 pass_through: scheme.o pass_through.c
 	gcc scheme.o pass_through.c -o pass_through
@@ -123,6 +127,9 @@ write_json: scheme.o write_json.c
 
 scheme.o: scheme.c scheme.h
 	gcc scheme.c -c -o scheme.o -Wall
+
+%.o: %.c
+	cc -O3 -Wall $(mysql) $*.c -c -o $@
 
 #read_mysql_line_strips: scheme.o read_mysql_line_strips.c
 #	gcc scheme.o read_mysql_line_strips.c -o read_mysql_line_strips $(mysql) 
