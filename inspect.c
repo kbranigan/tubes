@@ -85,6 +85,7 @@ int inspect(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe
       long count_zero = 0;
       
       fprintf(stderr, "shape:\n");
+      fprintf(stderr, "  version: %d\n", shape->version);
       fprintf(stderr, "  unique_set_id: %d\n", shape->unique_set_id);
       fprintf(stderr, "  gl_type: %s\n", (shape->gl_type >= 0 && shape->gl_type < 8) ? gl_types_c[shape->gl_type] : "????");
       fprintf(stderr, "  num_attributes: %d\n", shape->num_attributes);
