@@ -34,6 +34,7 @@ pipe_inout: \
 	reduce_by_bbox \
 	reduce_by_distance \
 	reduce_by_attribute \
+	reset_unique_set_ids \
 	coordinate_convert \
 	add_attribute \
 	add_random_colors \
@@ -67,6 +68,9 @@ reduce_by_distance: scheme.o reduce_by_distance.c
 
 reduce_by_attribute: scheme.o reduce_by_attribute.c
 	gcc scheme.o reduce_by_attribute.c -o reduce_by_attribute
+
+reset_unique_set_ids: scheme.o reset_unique_set_ids.c
+	gcc scheme.o reset_unique_set_ids.c -o reset_unique_set_ids
 
 reduce_by_id: scheme.o reduce_by_id.c
 	gcc scheme.o reduce_by_id.c -o reduce_by_id
