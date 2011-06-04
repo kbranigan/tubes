@@ -3,6 +3,9 @@
 #define SCHEME_H
 
 #include <inttypes.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -92,7 +95,6 @@ struct Attribute {
 struct Shape {
   uint32_t unique_set_id;
   uint32_t version;
-  
   uint32_t num_attributes;
   struct Attribute * attributes;
   
@@ -103,7 +105,12 @@ struct Shape {
   struct VertexArray * vertex_arrays;
 };
 
+extern int stdin_is_piped();
+extern int stdin_is_piped_t(float timeout);
 extern void assert_stdin_is_piped();
+extern void assert_stdin_is_piped_t(float timeout);
+
+extern int stdout_is_piped();
 extern void assert_stdout_is_piped();
 
 extern struct VertexArray* get_or_add_array(struct Shape * shape, int array_type);
@@ -133,8 +140,27 @@ extern const char * get_array_type_name(int array_type);
 extern const char * get_gl_type_name(int gl_type);
 
 #ifdef SCHEME_CREATE_MAIN
+  extern int ARGC;
+  extern char ** ARGV;
+  extern char * COMMAND;
   int main(int argc, char ** argv)
   {
+    ARGC = argc;
+    ARGV = argv;
+    
+    int i = 0, length = 0;
+    while (ARGV[i] != NULL)
+      length += strlen(ARGV[i++]) + 1; // +1 for space
+    
+    i = 0;
+    COMMAND = malloc(length + 1); // +1 for the NULL
+    while (ARGV[i] != NULL)
+    {
+      strcat(COMMAND, ARGV[i++]);
+      strcat(COMMAND, " ");
+    }
+    COMMAND[length-1] = 0; // get rid of the last space
+    
     #ifdef SCHEME_FUNCTION
       #ifdef SCHEME_ASSERT_STDIN_IS_PIPED
         assert_stdin_is_piped();
@@ -148,10 +174,7 @@ extern const char * get_gl_type_name(int gl_type);
         fprintf(stderr, "%s: SCHEME_CREATE_MAIN is defined but no SCHEME_ASSERT_STDIN_IS_PIPED, SCHEME_ASSERT_STDOUT_IS_PIPED or SCHEME_ASSERT_STDINOUT_ARE_PIPED\n", argv[0]);
         return EXIT_FAILURE;
       #endif
-      int i = 0;
-      while (i < argc)
-        fprintf(stderr, "%s ", argv[i++]);
-      fprintf(stderr, "\n");
+      fprintf(stderr, "%s\n", COMMAND);
       return SCHEME_FUNCTION(argc, argv, stdin, stdout, stderr);
     #else
       #error SCHEME_CREATE_MAIN is defined but no SCHEME_FUNCTION was defined

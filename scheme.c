@@ -8,45 +8,64 @@
 #include <sys/time.h> // for select()
 
 #include "scheme.h"
+int ARGC;
+char ** ARGV;
+char * COMMAND;
 
-void assert_stdin_is_piped()
+int stdin_is_piped_t(float timeout)
 {
   fd_set rfds;
-  //struct timeval tv;
+  struct timeval tv;
   int retval;
   
   FD_ZERO(&rfds);
   FD_SET(0, &rfds);
-  //tv.tv_sec = 5;
-  //tv.tv_usec = 0;
+  
+  tv.tv_sec = floor(timeout);
+  tv.tv_usec = floor(timeout / 1000000.0);
   
   if (feof(stdin)) { fprintf(stderr, "feof() on stdin\n"); exit(1); }
   
-  //retval = select(1, &rfds, NULL, NULL, &tv);
-  retval = select(1, &rfds, NULL, NULL, NULL);
+  if (timeout != 0)
+    retval = select(1, &rfds, NULL, NULL, &tv);
+  else
+    retval = select(1, &rfds, NULL, NULL, NULL);
   
   if (retval == -1) { fprintf(stderr, "select() on stdin failed.\n"); exit(1); }
   
-  if (!(retval != 0))
+  return (retval != 0);
+}
+int stdin_is_piped() { return stdin_is_piped_t(0); }
+
+void assert_stdin_is_piped_t(float timeout)
+{
+  if (!stdin_is_piped_t(timeout))
   {
     fprintf(stderr, "needs a data source. (redirected pipe, using |)\n");
     exit(1);
   }
 }
-  
-void assert_stdout_is_piped()
+void assert_stdin_is_piped() { assert_stdin_is_piped_t(0); }
+
+
+int stdout_is_piped()
 {
   struct stat outstat = {0};
   struct stat errstat = {0};
-  fstat(1, &outstat);
-  fstat(2, &errstat);
-  
-  if (!(memcmp(&outstat, &errstat, sizeof outstat) != 0))
+  fstat(1, &outstat); // stdout
+  fstat(2, &errstat); // stderr
+  return (memcmp(&outstat, &errstat, sizeof outstat) != 0); // basically test if stdout == stderr
+}
+
+void assert_stdout_is_piped()
+{
+  if (!stdout_is_piped())
   {
     fprintf(stderr, "needs a data destination, the output is binary and will corrupt your console - try redirecting the output to a file (using [command] > [file])\n");
     exit(1);
   }
 }
+
 
 struct VertexArray * get_or_add_array(struct Shape * shape, int array_type)
 {
@@ -156,13 +175,13 @@ int write_shape(FILE * fp, struct Shape * shape)
   if (shape == NULL) { fprintf(stderr, "trying to write NULL shape\n"); return 0; }
   if (shape == NULL || shape->version != CURRENT_VERSION) { fprintf(stderr, "trying to write shape with an invalid version (%d), CURRENT_VERSION = %d\n", shape->version, CURRENT_VERSION); return 0; }
   
+  long i;
+  
   float inf = 1.0 / 0.0;
   if (fwrite(&inf, sizeof(inf), 1, fp) != 1) return 0;
   if (fwrite(&shape->version, sizeof(shape->version), 1, fp) != 1) return 0;
   if (fwrite(&shape->unique_set_id, sizeof(shape->unique_set_id), 1, fp) != 1) return 0;
   if (fwrite(&shape->num_attributes, sizeof(shape->num_attributes), 1, fp) != 1) return 0;
-  
-  long i;
   for (i = 0 ; i < shape->num_attributes ; i++)
   {
     struct Attribute * attribute = &shape->attributes[i];
