@@ -13,8 +13,9 @@ int reduce_by_attribute(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out,
 {
   char name[21] = "";
   char value[200] = "";
+  int invert_search = 0;
   int c;
-  while ((c = getopt(argc, argv, "n:v:")) != -1)
+  while ((c = getopt(argc, argv, "n:v:i")) != -1)
   switch (c)
   {
     case 'n':
@@ -23,6 +24,9 @@ int reduce_by_attribute(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out,
     case 'v':
       strncpy(value, optarg, 20);
       break;
+    case 'i':
+      invert_search = 1;
+      break;
     default:
       abort();
   }
@@ -30,7 +34,14 @@ int reduce_by_attribute(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out,
   while ((shape = read_shape(pipe_in)))
   {
     if (shape->num_attributes == 0) continue;
-    if (strcmp(get_attribute(shape, name), value)!=0) continue;
+    if (!invert_search)
+    {
+      if (strcmp(get_attribute(shape, name), value)!=0) continue;
+    }
+    else
+    {
+      if (strcmp(get_attribute(shape, name), value)==0) continue;
+    }
     
     write_shape(pipe_out, shape);
     free_shape(shape);
