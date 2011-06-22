@@ -16,6 +16,7 @@ pipe_in: \
 	write_kml \
 	write_sql \
 	write_json \
+	write_webgl \
 	write_bmp_sphere \
 	pass_through
 
@@ -136,6 +137,9 @@ write_sql: scheme.o write_sql.c
 
 write_json: scheme.o write_json.c
 	gcc scheme.o write_json.c -o write_json
+
+write_webgl: scheme.o write_webgl.c
+	gcc scheme.o mongoose.c write_webgl.c -o write_webgl
 
 scheme.o: scheme.c scheme.h
 	gcc scheme.c -c -o scheme.o -Wall
