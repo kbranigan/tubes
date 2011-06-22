@@ -8,9 +8,9 @@
 #include <sys/time.h> // for select()
 
 #include "scheme.h"
-int ARGC;
-char ** ARGV;
-char * COMMAND;
+int ARGC = 0;
+char ** ARGV = NULL;
+char * COMMAND = NULL;
 
 int stdin_is_piped_t(float timeout)
 {
@@ -173,11 +173,11 @@ int write_shape(FILE * fp, struct Shape * shape)
 {
   if (fp == NULL) { fprintf(stderr, "trying to write shape to NULL file pointer\n"); return 0; }
   if (shape == NULL) { fprintf(stderr, "trying to write NULL shape\n"); return 0; }
-  if (shape == NULL || shape->version != CURRENT_VERSION) { fprintf(stderr, "trying to write shape with an invalid version (%d), CURRENT_VERSION = %d\n", shape->version, CURRENT_VERSION); return 0; }
+  //if (shape == NULL || shape->version != CURRENT_VERSION) { fprintf(stderr, "trying to write shape with an invalid version (%d), CURRENT_VERSION = %d\n", shape->version, CURRENT_VERSION); return 0; }
   
   long i;
   
-  float inf = 1.0 / 0.0;
+  float inf = INFINITY;
   if (fwrite(&inf, sizeof(inf), 1, fp) != 1) return 0;
   if (fwrite(&shape->version, sizeof(shape->version), 1, fp) != 1) return 0;
   if (fwrite(&shape->unique_set_id, sizeof(shape->unique_set_id), 1, fp) != 1) return 0;
@@ -215,7 +215,7 @@ struct Shape * read_shape(FILE * fp)
   
   uint32_t shape_version;
   if (fread(&shape_version, sizeof(shape_version), 1, fp) != 1) return NULL;
-  if (shape_version != CURRENT_VERSION) { fprintf(stderr, "shape version (%d) is not CURRENT_VERSION (%d)\n", shape_version, CURRENT_VERSION); return NULL; }
+  //if (shape_version != CURRENT_VERSION) { fprintf(stderr, "version (%d) is not CURRENT_VERSION (%d)\n", shape_version, CURRENT_VERSION); return NULL; }
   
   struct Shape * shape = (struct Shape *)malloc(sizeof(struct Shape));
   if (shape == NULL) { fprintf(stderr, "malloc failed in read_shape()\n"); exit(1); }
