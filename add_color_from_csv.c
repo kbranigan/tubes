@@ -13,6 +13,7 @@ struct ColorRule {
   int unique_set_id;
   char name[20];
   char value[200];
+  int def; // default is a keyword
   float r,g,b,a;
 };
 
@@ -44,6 +45,7 @@ you can specify the unique id, or any arbitary name:value pair - which is matche
   
   int num_rules = 0;
   struct ColorRule * rules = NULL;
+  int def_id = -1;
   
   FILE * fp = fopen(filename, "r");
   if (fp == NULL) { fprintf(pipe_err, "%s -f [%s] isn't a valid file.\n", argv[0], filename); exit(1); }
@@ -68,11 +70,12 @@ you can specify the unique id, or any arbitary name:value pair - which is matche
     memset(rule, 0, sizeof(struct ColorRule));
     rule->unique_set_id = -1;
     rule->a = 1.0;
+    rule->def = 0;
     
     int i;
     for (i = 0 ; i < num_parts ; i++)
     {
-      pch = strpbrk(parts[i], ":\n");
+      pch = strpbrk(parts[i], ":\n\t ");
       if (pch == NULL) continue;
       *(pch++) = 0;
       
@@ -81,7 +84,8 @@ you can specify the unique id, or any arbitary name:value pair - which is matche
       else if (strcmp(parts[i], "green")==0) rule->g = atof(pch);
       else if (strcmp(parts[i], "blue")==0) rule->b = atof(pch);
       else if (strcmp(parts[i], "alpha")==0) rule->a = atof(pch);
-      else 
+      else if (strcmp(parts[i], "default")==0) { rule->def = 1; def_id = i; }
+      else
       {
         strncpy(rule->name, parts[i], 20);
         strncpy(rule->value, pch, 200);
@@ -114,6 +118,7 @@ you can specify the unique id, or any arbitary name:value pair - which is matche
         float color[4] = { rule->r, rule->g, rule->b, rule->a };
         for (j = 0 ; j < shape->num_vertexs ; j++)
           set_vertex(shape, 1, j, color);
+        //fprintf(stderr, ".");
       }
     }
     
