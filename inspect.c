@@ -11,14 +11,14 @@
 
 int inspect(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
-  int num_vertexs_to_show = 4;
+  int num_to_display = 4;
   char selected_attribute[100] = "";
   int c;
   while ((c = getopt(argc, argv, "n:a:")) != -1)
   switch (c)
   {
     case 'n':
-      num_vertexs_to_show = clamp_int(atoi(optarg), 3, 100);
+      num_to_display = clamp_int(atoi(optarg), 3, 100);
       break;
     case 'a':
       strncpy(selected_attribute, optarg, sizeof(selected_attribute));
@@ -108,19 +108,19 @@ int inspect(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe
           long j,k;
           for (k = 0 ; k < shape->num_vertexs ; k++)
           {
-            if (k < num_vertexs_to_show) fprintf(stderr, "      ");
+            if (k < num_to_display) fprintf(stderr, "      ");
             int is_zero = 1;
             for (j = 0 ; j < shape->vertex_arrays[i].num_dimensions ; j++)
             {
               if (shape->vertex_arrays[i].vertexs[k*shape->vertex_arrays[i].num_dimensions + j] != 0.0) is_zero = 0;
-              if (k < num_vertexs_to_show) fprintf(stderr, "%f ", shape->vertex_arrays[i].vertexs[k*shape->vertex_arrays[i].num_dimensions + j]);
+              if (k < num_to_display) fprintf(stderr, "%f ", shape->vertex_arrays[i].vertexs[k*shape->vertex_arrays[i].num_dimensions + j]);
             }
             if (is_zero) count_zero ++;
-            if (k < num_vertexs_to_show) fprintf(stderr, "\n");
-            else if (k == num_vertexs_to_show) fprintf(stderr, "      ...\n");
+            if (k < num_to_display) fprintf(stderr, "\n");
+            else if (k == num_to_display) fprintf(stderr, "      ...\n");
           }
         }
-        if (i == num_vertexs_to_show) fprintf(stderr, "    [...]\n");
+        if (i == num_to_display) fprintf(stderr, "    [...]\n");
       }
       if (count_zero > 0) fprintf(stderr, "  count_zero: %ld\n", count_zero);
     }
@@ -140,7 +140,7 @@ int inspect(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe
     int i;
     for (i = 0 ; i < num_values ; i++)
     {
-      if (num_values < 20 || i < 10) fprintf(pipe_err, "    \"%s (%d)\"%s\n", values[i], value_counts[i], (i==num_values-1)?"":",");
+      if (i < num_to_display) fprintf(pipe_err, "    \"%s (%d)\"%s\n", values[i], value_counts[i], (i==num_values-1)?"":",");
       free(values[i]);
     }
     if (num_values > 0) fprintf(pipe_err, "  ]\n");
