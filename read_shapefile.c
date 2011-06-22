@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
+#include <unistd.h>
 
 #include "shapefile_src/shapefil.h"
 
@@ -13,9 +13,35 @@
 
 int read_shapefile(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
-  char * filename = (argc > 1) ? argv[1] : "prov_ab_p_geo83_e.dbf";
-  int row_id      = (argc > 2) ? atoi(argv[2]) : -1;
-  int part_id     = (argc > 3) ? atoi(argv[3]) : -1;
+  char filename[300] = "";
+  long row_id = -1;
+  long part_id = -1;
+  int num_attributes = -1;
+  int c;
+  while ((c = getopt(argc, argv, "f:r:p:a:")) != -1)
+  switch (c)
+  {
+    case 'f':
+      strncpy(filename, optarg, 300);
+      break;
+    case 'r':
+      row_id = atol(optarg);
+      break;
+    case 'p':
+      part_id = atol(optarg);
+      break;
+    case 'a':
+      num_attributes = atoi(optarg);
+      break;
+    default:
+      abort();
+  }
+  
+  if (strlen(filename) == 0)
+  {
+    fprintf(stderr, "%s: must specify a shapefile using -f [filename.dbf]\n", argv[0]);
+    exit(1);
+  }
   
   FILE * fp = fopen(filename, "r");
   if (!fp)
@@ -45,7 +71,8 @@ int read_shapefile(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE
       shape->unique_set_id = t++;
       
       int j;
-      for (j = 0 ; j < nFieldCount ; j++)
+      if (num_attributes)
+      for (j = 0 ; j < nFieldCount && (j < num_attributes || num_attributes == -1) ; j++)
       {
         char name[20];
         char value[200];
