@@ -22,6 +22,7 @@ pipe_in: \
 pipe_out: \
 	read_dem \
 	read_mysql \
+	read_nextbus \
 	read_shapefile \
 	produce_random_data \
 	produce_unit_circle \
@@ -57,6 +58,9 @@ read_dem: scheme.o read_dem.c
 
 read_mysql: scheme.o read_mysql.c
 	gcc scheme.o read_mysql.c -o read_mysql $(mysql)
+
+read_nextbus: scheme.o read_nextbus.c
+	gcc scheme.o read_nextbus.c -o read_nextbus -lcurl `xml2-config --cflags --libs`
 
 read_shapefile: scheme.o shapefile_src/shpopen.o shapefile_src/dbfopen.o read_shapefile.c
 	gcc scheme.o shapefile_src/shpopen.o shapefile_src/dbfopen.o read_shapefile.c -o read_shapefile
