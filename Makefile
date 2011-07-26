@@ -34,6 +34,7 @@ pipe_out: \
 
 pipe_inout: \
 	clip \
+	delay \
 	tesselate \
 	reduce_by_id \
 	reduce_by_bbox \
@@ -95,6 +96,9 @@ remove_attributes: scheme.o remove_attributes.c
 
 pass_through: scheme.o pass_through.c
 	gcc $(extra) scheme.o pass_through.c -o pass_through
+
+delay: scheme.o delay.c
+	gcc $(extra) scheme.o delay.c -o delay
 
 produce_random_data: scheme.o produce_random_data.c
 	gcc $(extra) scheme.o produce_random_data.c -o produce_random_data
