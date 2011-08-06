@@ -11,6 +11,7 @@ bbox
 group_shapes_on_unique_set_id
 produce_single_test_circle
 read_dem
+read_dwg
 read_mysql
 read_mysql.sql.log
 read_mysql_shapes

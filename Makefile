@@ -24,6 +24,7 @@ pipe_in: \
 
 pipe_out: \
 	read_dem \
+	read_dwg \
 	read_mysql \
 	read_nextbus \
 	read_soundwave \
@@ -60,6 +61,9 @@ produce_unit_square: scheme.o produce_unit_square.c
 
 read_dem: scheme.o read_dem.c
 	gcc $(extra) scheme.o read_dem.c -o read_dem
+
+read_dwg: scheme.o read_dwg.c
+	gcc $(extra) scheme.o read_dwg.c -o read_dwg -ldwg -Iext -Lext
 
 read_soundwave: scheme.o read_soundwave.c
 	gcc $(extra) scheme.o read_soundwave.c -o read_soundwave -lsndfile -Iext -Lext
