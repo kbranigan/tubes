@@ -34,6 +34,9 @@ int write_kml(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
   {
     char name[200];
     sprintf(name, "shape %d", shape->unique_set_id);
+    for (i = 0 ; i < shape->num_attributes ; i++)
+      if (strcmp("NAME", shape->attributes[i].name) == 0)
+        sprintf(name, "%s", shape->attributes[i].value);
     fprintf(fp, "    <Placemark>\n");
     fprintf(fp, "      <name>%s</name>\n", name);
     fprintf(fp, "      <Polygon>\n");
