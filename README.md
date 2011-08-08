@@ -1,7 +1,24 @@
-Pipes
-=====
+Hookah
+======
 
-Pipes is just an idea for a series of smaller applications that produce, process and consume raw vertex data.
+Hookah is just an idea for a series of smaller applications that produce, process and consume raw vertex data.
+
+Examples
+--------
+
+    - Reading an AutoCad DWG file
+    - clipping the content by a specific bbox
+    - adding colours according to a csv stylesheet
+    - outputting to a webserver that serves WebGL code
+
+    - Read in the soil map data of a province (which extends to the political boundaries - miles off the coast)
+    - Cull data by the hydrological data of the same island (where there is land)
+    - Add colours according to water tables
+    - Produce pretty maps (png, webgl, kml)
+
+    - Read in current transit vehicle position information from a remote server (nextbus)
+    - Aligning those positions to the road or rail they should be on, to eliminate bad data
+    - Produce cleaned versions of low quality data
 
 Pipe in
 -------
@@ -23,7 +40,7 @@ These programs produce raw vertex data which can be piped into one of the other 
 
 
 Pipe inout
--------
+----------
 
 You can use these applications to modify and transform the raw vertex data and pipe the result to something else. With this concept you can chain multiple processes together - once a decent number of these are built, this tool set might actually be useful.
 
@@ -65,7 +82,7 @@ These are applications at the end of the chain, they make something real out of 
 </dl>
 
 
-Examples
+Usage Examples
 --------
 
 icitw_wgs84.dbf is available at http://www.toronto.ca/open/datasets/wards/<br />
