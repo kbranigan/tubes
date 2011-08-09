@@ -190,7 +190,7 @@ struct xtmcoord get_xtm(struct latlon ll, int xtm, double mrm)//double lat, doub
     {
       lonorig = mrm;
       if (abs(ll.lon - lonorig) > 4.)
-        printf("MTM ref meridian more than 4 degrees away from longitude\nContinuing anyway\n");
+        fprintf(stderr, "MTM ref meridian more than 4 degrees away from longitude\nContinuing anyway\n");
     }
   }
   
@@ -235,17 +235,17 @@ struct latlon get_latlon(struct xtmcoord c) //double easting, double northing, d
 {
   if (c.zone < 0 || c.zone > 60)
   {
-    printf("Zone number is out of range.\nMust be between 1 and 60.\n");
+    fprintf(stderr, "Zone number is out of range.\nMust be between 1 and 60.\n");
     return;
   }
   if (c.northing < 0 || c.northing > 10000000)
   {
-    printf("Northing value is out of range (%f)\n", c.northing);
+    fprintf(stderr, "Northing value is out of range (%f)\n", c.northing);
     return;
   }
   if (c.mrm == 0 && (c.easting < 160000 || c.easting > 834000))
   {
-    printf("Easting value is out of range\n");
+    fprintf(stderr, "Easting value is out of range\n");
     return;
   }
   
@@ -258,11 +258,11 @@ struct latlon get_latlon(struct xtmcoord c) //double easting, double northing, d
   }*/
   if (e.axis == 0)
   {
-    printf("Ellipsoid must be entered\n");
+    fprintf(stderr, "Ellipsoid must be entered\n");
     return;
   }
   if (c.mrm == 0 && e.scaleTm == 0.9999 && (c.zone < 1 || c.zone > 32))
-    printf("MTM zone numbers only confirmed for 1-32, in Canada\nContinuing anyway\n");
+    fprintf(stderr, "MTM zone numbers only confirmed for 1-32, in Canada\nContinuing anyway\n");
   
   double axis = e.axis;
   double eccent = e.eccentricity;
@@ -360,9 +360,11 @@ int coordinate_convert(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, 
     for (i = 0 ; i < shape->num_vertex_arrays ; i++)
     {
       struct VertexArray * va = &shape->vertex_arrays[i];
+      if (va->array_type != GL_VERTEX_ARRAY) continue;
+      
       for (j = 0 ; j < shape->num_vertexs ; j++)
       {
-        float * vertex = &va->vertexs[j*3];
+        float * vertex = get_vertex(shape, i, j);
         
         struct xtmcoord c;
         c.easting = vertex[0];
