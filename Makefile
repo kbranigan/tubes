@@ -37,6 +37,7 @@ pipe_inout: \
 	clip \
 	delay \
 	tesselate \
+	transform \
 	reduce_by_id \
 	reduce_by_bbox \
 	reduce_by_distance \
@@ -136,6 +137,9 @@ inspect: scheme.o inspect.c
 
 tesselate: scheme.o tesselate.c
 	gcc $(extra) scheme.o tesselate.c -o tesselate $(whichgl)
+
+transform: scheme.o transform.c
+	gcc $(extra) scheme.o transform.c -o transform
 
 write_png: scheme.o write_png.c setup_opengl.c
 	gcc $(extra) scheme.o write_png.c -o write_png $(whichgl) -lpng

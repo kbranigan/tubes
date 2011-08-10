@@ -21,6 +21,7 @@ reduce_by_id
 reduce_by_distance
 reduce_by_attribute
 tesselate
+transform
 write_bmp
 write_bmp_sphere
 write_png
