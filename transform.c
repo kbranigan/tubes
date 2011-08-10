@@ -19,9 +19,12 @@ int transform(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
   int array_index = 0; // will operate only on a single array, default the first
   
   int i;
-  while ((i = getopt(argc, argv, "o:s:")) != -1)
+  while ((i = getopt(argc, argv, "a:o:s:")) != -1)
   switch (i)
   {
+    case 'a':
+      array_index = atoi(optarg);
+      break;
     case 'o':
     {
       char * pch = strtok(optarg, ",");
@@ -50,22 +53,22 @@ int transform(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
       abort();
   }
   
-  for (i = 0 ; i < num_offsets ; i++)
-    fprintf(stderr, "%d: %f\n", i, offsets[i]);
-  
   struct Shape * shape = NULL;
   while ((shape = read_shape(pipe_in)))
   {
     int j;
     float * v;
-    struct VertexArray * va = get_or_add_array(shape, GL_VERTEX_ARRAY);
-    for (i = 0 ; i < shape->num_vertexs ; i++)
+    if (array_index < shape->num_vertex_arrays && array_index >= 0)
     {
-      v = get_vertex(shape, 0, i);
-      for (j = 0 ; j < va->num_dimensions && j < num_offsets ; j++)
-        v[j] += offsets[j];
-      for (j = 0 ; j < va->num_dimensions && j < num_scales ; j++)
-        v[j] *= scales[j];
+      struct VertexArray * va = &shape->vertex_arrays[array_index];
+      for (i = 0 ; i < shape->num_vertexs ; i++)
+      {
+        v = get_vertex(shape, 0, i);
+        for (j = 0 ; j < va->num_dimensions && j < num_offsets ; j++)
+          v[j] += offsets[j];
+        for (j = 0 ; j < va->num_dimensions && j < num_scales ; j++)
+          v[j] *= scales[j];
+      }
     }
     
     write_shape(pipe_out, shape);
