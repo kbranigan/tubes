@@ -149,17 +149,21 @@ extern const char * get_gl_type_name(int gl_type);
     ARGV = argv;
     
     int i = 0, length = 0;
-    while (ARGV[i] != NULL)
-      length += strlen(ARGV[i++]) + 1; // +1 for space
+    for (i = 0 ; i < argc ; i++)
+      length += strlen(argv[i]) + ((i==argc-1)?0:1); // for each space
     
-    i = 0;
-    COMMAND = malloc(length + 1); // +1 for the NULL
-    while (ARGV[i] != NULL)
+    COMMAND = malloc(length);
+    strcpy(COMMAND, "");
+    for (i = 0 ; i < argc ; i++)
     {
-      strcat(COMMAND, ARGV[i++]);
-      strcat(COMMAND, " ");
+      strcat(COMMAND, argv[i]);
+      if (i != argc - 1)
+        strcat(COMMAND, " ");
     }
-    COMMAND[length-1] = 0; // get rid of the last space
+    
+    #ifdef DEBUG
+    fprintf(stderr, "%s\n", COMMAND);
+    #endif
     
     #ifdef SCHEME_FUNCTION
       #ifdef SCHEME_ASSERT_STDIN_IS_PIPED
