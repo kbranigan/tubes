@@ -8,12 +8,20 @@ whichgl= $(applegl)
 
 extra= 
 
-all: pipe_in  pipe_out  pipe_inout
+all: pipe_in  pipe_out  pipe_inout extras
+
+# these require additional libs I put them in here just to indicate that
+extras: \
+	write_png \
+	read_dwg \
+	read_mysql \
+	read_nextbus \
+	read_soundwave \
+	fast_fourier_transform
 
 pipe_in: \
 	bbox \
 	inspect \
-	write_png \
 	write_bmp \
 	write_kml \
 	write_sql \
@@ -24,10 +32,6 @@ pipe_in: \
 
 pipe_out: \
 	read_dem \
-	read_dwg \
-	read_mysql \
-	read_nextbus \
-	read_soundwave \
 	read_shapefile \
 	produce_random_data \
 	produce_unit_circle \
@@ -39,15 +43,15 @@ pipe_inout: \
 	tesselate \
 	transform \
 	reduce_by_id \
+	add_attribute \
 	reduce_by_bbox \
+	add_random_colors \
+	remove_attributes \
+	add_color_from_csv \
+	coordinate_convert \
 	reduce_by_distance \
 	reduce_by_attribute \
 	reset_unique_set_ids \
-	remove_attributes \
-	coordinate_convert \
-	add_attribute \
-	add_random_colors \
-	add_color_from_csv \
 	add_color_from_mysql \
 	group_shapes_on_unique_set_id
 
