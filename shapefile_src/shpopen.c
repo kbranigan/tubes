@@ -158,8 +158,8 @@
  *
  */
 
-static char rcsid[] = 
-  "$Id: shpopen.c,v 1.39 2002/08/26 06:46:56 warmerda Exp $";
+//static char rcsid[] = 
+//  "$Id: shpopen.c,v 1.39 2002/08/26 06:46:56 warmerda Exp $";
 
 #include "shapefil.h"
 

@@ -182,8 +182,8 @@
  * Added header.
  */
 
-static char rcsid[] = 
-  "$Id: dbfopen.c,v 1.48 2003/03/10 14:51:27 warmerda Exp $";
+//static char rcsid[] = 
+//  "$Id: dbfopen.c,v 1.48 2003/03/10 14:51:27 warmerda Exp $";
 
 #include "shapefil.h"
 
