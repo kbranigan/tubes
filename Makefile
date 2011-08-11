@@ -106,6 +106,9 @@ remove_attributes: scheme.o remove_attributes.c
 pass_through: scheme.o pass_through.c
 	gcc $(extra) scheme.o pass_through.c -o pass_through
 
+fast_fourier_transform: scheme.o fast_fourier_transform.c
+	gcc $(extra) scheme.o fast_fourier_transform.c -o fast_fourier_transform -lfftw3 -lm -Iext -Lext
+
 delay: scheme.o delay.c
 	gcc $(extra) scheme.o delay.c -o delay
 
