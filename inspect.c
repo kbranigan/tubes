@@ -38,8 +38,6 @@ int inspect(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe
   int num_vertexs = 0;
   int num_each_gl_type[7] = {0,0,0,0,0,0,0};
   
-  char gl_types_c[8][20] = {"GL_POINTS", "GL_LINES", "GL_LINE_LOOP", "GL_LINE_STRIP", "GL_TRIANGLES", "GL_TRIANGLE_STRIP", "GL_TRIANGLE_FAN"};
-  
   struct Shape * shape = NULL;
   while ((shape = read_shape(pipe_in)))
   {
@@ -87,7 +85,7 @@ int inspect(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe
       fprintf(stderr, "shape:\n");
       fprintf(stderr, "  version: %d\n", shape->version);
       fprintf(stderr, "  unique_set_id: %d\n", shape->unique_set_id);
-      fprintf(stderr, "  gl_type: %s\n", (shape->gl_type >= 0 && shape->gl_type < 8) ? gl_types_c[shape->gl_type] : "????");
+      fprintf(stderr, "  gl_type: %s\n", get_gl_type_name(shape->gl_type));
       fprintf(stderr, "  num_attributes: %d\n", shape->num_attributes);
       if (shape->num_attributes) fprintf(stderr, "  attributes:\n");
       for (i = 0 ; i < shape->num_attributes ; i++)
@@ -100,7 +98,7 @@ int inspect(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe
       if (shape->num_vertex_arrays) fprintf(stderr, "  vertex_arrays:\n");
       for (i = 0 ; i < shape->num_vertex_arrays ; i++)
       {
-        fprintf(stderr, "    array_type: %d\n", shape->vertex_arrays[i].array_type);
+        fprintf(stderr, "    array_type: %s\n", get_array_type_name(shape->vertex_arrays[i].array_type));
         fprintf(stderr, "    num_dimensions: %d\n", shape->vertex_arrays[i].num_dimensions);
         fprintf(stderr, "    vertexs:\n");
         if (shape->num_vertexs > 0 && shape->vertex_arrays[i].num_dimensions > 0)
