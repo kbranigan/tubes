@@ -20,7 +20,7 @@ Examples
     - Aligning those positions to the road or rail they should be on, to eliminate bad data
     - Produce cleaned versions of low quality data
 
-Pipe in
+Produce (Pipe out)
 -------
 
 These programs produce raw vertex data which can be piped into one of the other applications.
@@ -39,7 +39,7 @@ These programs produce raw vertex data which can be piped into one of the other 
 </dl>
 
 
-Pipe inout
+Process (Pipe in/out)
 ----------
 
 You can use these applications to modify and transform the raw vertex data and pipe the result to something else. With this concept you can chain multiple processes together - once a decent number of these are built, this tool set might actually be useful.
@@ -65,7 +65,7 @@ You can use these applications to modify and transform the raw vertex data and p
   <dd>Converts silly coordinate systems to lat/lng</dd>
 </dl>
 
-Pipe out
+Consume (Pipe in)
 -------
 
 These are applications at the end of the chain, they make something real out of all the processing.
@@ -85,22 +85,24 @@ These are applications at the end of the chain, they make something real out of 
 Usage Examples
 --------
 
-icitw_wgs84.dbf is available at http://www.toronto.ca/open/datasets/wards/<br />
-This repo only includes the source files, to create them, type 'make'
+These tools require linux/mac and build tools.  First you must run 'make'.  
 
-    ./read_shapefile icitw_wgs84.dbf | ./tesselate | ./add_random_colors | ./write_bmp toronto_ward_map.bmp
+icitw_wgs84.dbf is available at http://www.toronto.ca/open/datasets/wards/
+
+    ./read_shapefile -f icitw_wgs84.dbf | ./tesselate | ./add_random_colors | ./write_bmp toronto_ward_map.bmp
     or
-    ./read_shapefile pei_hydro/prince_edward_island.dbf | ./tesselate | ./add_color_from_csv -f hydro_colors.csv | ./write_png
+    ./read_shapefile -f pei_hydro/prince_edward_island.dbf | ./tesselate | ./add_color_from_csv -f hydro_colors.csv | ./write_png
 
 This produces: http://branigan.ca/toronto_ward_map.gif
 
-    ./read_shapefile icitw_wgs84.dbf | ./write_kml toronto_ward_map.kml
+    ./read_shapefile -f icitw_wgs84.dbf | ./write_kml toronto_ward_map.kml
 
-This produces: http://maps.google.com/maps?q=http://branigan.ca/toronto_ward_map.kml
+This produces: http://maps.google.com/maps?q=http:%2F%2Fbranigan.ca%2Ftoronto_ward_map.kml%3F
 
 The advantage with this process is that you can redirect any stage to a file and and inspect it such as:
 
-    ./read_shapefile icitw_wgs84.dbf > some_binary_data_file ; cat some_binary_data_file | ./inspect
+    ./read_shapefile -f icitw_wgs84.dbf > some_binary_data_file
+    cat some_binary_data_file | ./inspect
 
 This will output something similar to:
 
