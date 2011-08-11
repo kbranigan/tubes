@@ -102,7 +102,7 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
     {10000000, -10000000}
   };
   
-  float x,y,z;
+  float x=0, y=0, z=0;
   int num_shapes = 0;
   struct Shape ** shapes = NULL;
   
@@ -118,18 +118,27 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
     {
       struct VertexArray * va = &shape->vertex_arrays[i];
       if (va->array_type != GL_VERTEX_ARRAY) continue;
-      if (va->num_dimensions < 2) fprintf(stderr, "vertex_array has %d dimensions (expected at least 2)\n", va->num_dimensions);
+      //if (va->num_dimensions < 2) fprintf(stderr, "vertex_array has %d dimensions (expected at least 2)\n", va->num_dimensions);
       if (va->vertexs == NULL) { fprintf(stderr, "vertex array %ld is NULL\n", i); exit(1); }
       
       for (j = 0 ; j < shape->num_vertexs ; j++)
       {
-        x = va->vertexs[j*va->num_dimensions];
-        y = va->vertexs[j*va->num_dimensions+1];
+        if (va->num_dimensions == 1)
+        {
+          x = j;
+          y = va->vertexs[j*va->num_dimensions];
+        }
+        else if (va->num_dimensions >= 2)
+        {
+          x = va->vertexs[j*va->num_dimensions];
+          y = va->vertexs[j*va->num_dimensions+1];
+        }
+        
         if (va->num_dimensions >= 3) z = va->vertexs[j*va->num_dimensions+2];
         
         if (x < b[0][0]) b[0][0] = x; if (x > b[0][1]) b[0][1] = x;
         if (y < b[1][0]) b[1][0] = y; if (y > b[1][1]) b[1][1] = y;
-        if (va->num_dimensions >= 3) { if (z < b[2][0]) b[2][0] = z; if (z > b[2][1]) b[2][1] = z; }
+        if (z < b[2][0]) b[2][0] = z; if (z > b[2][1]) b[2][1] = z;
       }
     }
   }
@@ -150,7 +159,11 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
       shape->gl_type = GL_POINTS;
     
     glBegin(shape->gl_type);
-    glColor3f(0,0,0);
+    
+    if (shape->gl_type == GL_POINTS)
+      glColor4f(0, 0, 0, 1);
+    else
+      glColor4f(0, 0, 0, 0.3);
     
     for (j = 0 ; j < shape->num_vertexs ; j++)
     {
@@ -161,68 +174,30 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
         else if (va->num_dimensions == 4) glColor4fv(get_vertex(shape, 1, j));
       }
       struct VertexArray * va = &shape->vertex_arrays[0];
-      if (va->num_dimensions == 2)      glVertex2fv(get_vertex(shape, 0, j));
+      if (va->num_dimensions == 1)      glVertex2f(j, va->vertexs[j]);
+      else if (va->num_dimensions == 2) glVertex2fv(get_vertex(shape, 0, j));
       else if (va->num_dimensions == 3) glVertex3fv(get_vertex(shape, 0, j));
       else if (va->num_dimensions == 4) glVertex4fv(get_vertex(shape, 0, j));
     }
     
-    /*for (j = 0 ; j < shape->num_vertex_arrays ; j++)
-    {
-      struct VertexArray * va = &shape->vertex_arrays[j];
-      if (va->array_type != GL_COLOR_ARRAY) continue;
-      if (va->num_dimensions < 3) fprintf(stderr, "vertex_array has %d dimensions (expected at least 3)\n", va->num_dimensions);
-      if (va->vertexs == NULL) { fprintf(stderr, "vertex array %ld is NULL\n", j); exit(1); }
-      
-      if (va->array_type == GL_COLOR_ARRAY && va->num_dimensions == 3)
-        for (k = 0 ; k < shape->num_vertexs ; k++)
-        {
-          if (va->vertexs[k*va->num_dimensions+0] != 1.0 || 
-              va->vertexs[k*va->num_dimensions+1] != 0.0 ||
-              va->vertexs[k*va->num_dimensions+2] != 0.0)
-              {
-                va->vertexs[k*va->num_dimensions+0] = 1 - log(1+va->vertexs[k*va->num_dimensions+0]*5959.0) / log(5959.0)/2;
-                va->vertexs[k*va->num_dimensions+1] = 1 - log(1+va->vertexs[k*va->num_dimensions+1]*5959.0) / log(5959.0)/2;
-                va->vertexs[k*va->num_dimensions+2] = 1 - log(1+va->vertexs[k*va->num_dimensions+2]*5959.0) / log(5959.0)/2;
-              }
-          glColor3fv(&va->vertexs[k*va->num_dimensions]);
-        }
-      else if (va->array_type == GL_COLOR_ARRAY && va->num_dimensions == 4)
-        for (k = 0 ; k < shape->num_vertexs ; k++)
-          glColor4fv(&va->vertexs[k*va->num_dimensions]);
-    }
-    
-    for (j = 0 ; j < shape->num_vertex_arrays ; j++)
-    {
-      struct VertexArray * va = &shape->vertex_arrays[j];
-      if (va->array_type != GL_VERTEX_ARRAY) continue;
-      if (va->num_dimensions < 2) fprintf(stderr, "vertex_array has %d dimensions (expected at least 2)\n", va->num_dimensions);
-      if (va->vertexs == NULL) { fprintf(stderr, "vertex array %ld is NULL\n", j); exit(1); }
-      
-      if (va->array_type == GL_VERTEX_ARRAY && va->num_dimensions == 2)
-        for (k = 0 ; k < shape->num_vertexs ; k++)
-          glVertex2fv(&va->vertexs[k*va->num_dimensions]);
-      
-      else if (va->array_type == GL_VERTEX_ARRAY && va->num_dimensions == 3)
-        for (k = 0 ; k < shape->num_vertexs ; k++)
-          glVertex3fv(&va->vertexs[k*va->num_dimensions]);
-      
-      else if (va->array_type == GL_VERTEX_ARRAY && va->num_dimensions == 4)
-        for (k = 0 ; k < shape->num_vertexs ; k++)
-          glVertex4fv(&va->vertexs[k*va->num_dimensions]);
-      
-    }*/
     glEnd();
     free_shape(shape);
   }
+  free(shapes);
   
   bitmap_t png;
   png.width = TEXTURE_WIDTH;
   png.height = TEXTURE_HEIGHT;
   
-  if (TEXTURE_WIDTH <= 0 || TEXTURE_WIDTH >= 100000 || 
-      TEXTURE_HEIGHT <= 0 || TEXTURE_HEIGHT >= 100000)
+  if (fabs(b[0][0] - b[0][1]) <= 0 || fabs(b[1][0] - b[1][1]) <= 0)
       {
-        fprintf(stderr, "generated image size is definitely wrong (%dx%d)\n", TEXTURE_WIDTH, TEXTURE_HEIGHT);
+        fprintf(stderr, "content range is: x:(%f => %f) by y:(%f => %f)\n", b[0][0], b[0][1], b[1][0], b[1][1]);
+        exit(0);
+      }
+  
+  if (TEXTURE_WIDTH  >= 50000 || TEXTURE_HEIGHT >= 50000)
+      {
+        fprintf(stderr, "generated image size is definitely wrong (%d x %d)\n", TEXTURE_WIDTH, TEXTURE_HEIGHT);
         exit(0);
       }
   
@@ -231,6 +206,6 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
   glReadPixels(0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)png.pixels);
   
   _write_png(&png, filename);
-  fprintf(stderr, "%s: %dx%d bmp created named '%s'\n", argv[0], TEXTURE_WIDTH, TEXTURE_HEIGHT, filename);
+  //fprintf(stderr, "%s: %dx%d bmp created named '%s'\n", argv[0], TEXTURE_WIDTH, TEXTURE_HEIGHT, filename);
 }
 
