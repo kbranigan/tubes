@@ -53,6 +53,7 @@ pipe_inout: \
 	reduce_by_attribute \
 	reset_unique_set_ids \
 	add_color_from_mysql \
+	align_points_to_line_strips \
 	group_shapes_on_unique_set_id
 
 civicsets: shapefile_src/shpopen.o shapefile_src/dbfopen.o mongoose.o
