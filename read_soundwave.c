@@ -7,11 +7,11 @@ compile it yourself.  I built the included file from: http://www.mega-nerd.com/l
 
 */
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <math.h>
 #include <complex.h>
 #include <sndfile.h>
 
@@ -20,7 +20,7 @@ compile it yourself.  I built the included file from: http://www.mega-nerd.com/l
 #define SCHEME_FUNCTION read_soundwave
 #include "scheme.h"
 
-#define	BUFFER_LEN    2048
+#define	BUFFER_LEN    1024  
 #define	MAX_CHANNELS  6
 
 int read_soundwave(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
@@ -46,55 +46,42 @@ int read_soundwave(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE
   SF_INFO	sfinfo;
   int	readcount;
   
-  if (!(infile = sf_open(filename, SFM_READ, &sfinfo)))
-  {
-    fprintf(pipe_err, "Not able to open input file '%s'\n%s", filename, sf_strerror(NULL));
-    return 1;
-  }
-  
-  if (sfinfo.channels > MAX_CHANNELS)
-  {
-    fprintf(pipe_err, "Not able to process sound files with more than %d channels\n", MAX_CHANNELS);
-    return 1;
-  }
-  
-  if (sfinfo.channels > max_channels)
-  {
-    fprintf(pipe_err, "Warning: input file has %d channels, max_channels set to %d. (truncating the difference)\n", sfinfo.channels, max_channels);
-  }
+  if (filename == NULL) { fprintf(pipe_err, "Usage: %s -f [filename.wav]\n", argv[0]); return 1; }
+  if (!(infile = sf_open(filename, SFM_READ, &sfinfo))) { fprintf(pipe_err, "Not able to open input file '%s'\n%s\n", filename, sf_strerror(NULL)); return 1; }
+  if (sfinfo.channels > MAX_CHANNELS) { fprintf(pipe_err, "Not able to process sound files with more than %d channels\n", MAX_CHANNELS); return 1; }
+  if (sfinfo.channels > max_channels) { fprintf(pipe_err, "Warning: input file has %d channels, max_channels set to %d. (truncating the difference)\n", sfinfo.channels, max_channels); }
   
   struct Shape * shape = new_shape();
   shape->gl_type = GL_LINE_STRIP;
-  struct VertexArray * va = get_or_add_array(shape, GL_VERTEX_ARRAY);
-  shape->num_vertexs = sfinfo.frames;
-  va->num_dimensions = sfinfo.channels;
-  va->vertexs = (float*)realloc(va->vertexs, sizeof(float) * shape->num_vertexs * va->num_dimensions);
-  if (va->vertexs == NULL) { fprintf(pipe_err, "malloc failed generating vertex array for shape (%d points, %d dimensions)\n", shape->num_vertexs, va->num_dimensions); exit(0); }
+  set_num_vertexs(shape, sfinfo.frames);
+  set_num_dimensions(shape, 0, (sfinfo.channels > max_channels) ? max_channels : sfinfo.channels);
+  
+  char temp[50];
+  sprintf(temp, "%d", sfinfo.samplerate);
+  set_attribute(shape, "samplerate", temp);
+  set_attribute(shape, "original_filename", filename);
   
   #ifdef DEBUG
   fprintf(pipe_err, "%s: music file has %ld frames, %d channels\n", argv[0], (long)sfinfo.frames, sfinfo.channels);
   #endif
   
+  struct VertexArray * va = get_or_add_array(shape, GL_VERTEX_ARRAY);
   int i = 0, k = 0;
   int count = 0;
   while (readcount = sf_read_double(infile, data, BUFFER_LEN))
   {
-    //double total = 0;
+    double total = 0;
     k = 0;
     while (k < readcount)
     {
       float v[MAX_CHANNELS];
-      for (i = 0 ; i < sfinfo.channels ; i++)
-      {
+      for (i = 0 ; i < va->num_dimensions ; i++)
         v[i] = data[k+i];
-      }
+      
       set_vertex(shape, 0, count, v);
       count++;
       k += sfinfo.channels;
     }
-    //float v[3] = { count, total / (readcount / sfinfo.channels) * 5000, 0 };
-    //append_vertex(shapes[0], v);
-    //if (shapes[0]->num_vertexs > 10000) break;
   }
   write_shape(pipe_out, shape);
   free_shape(shape);
