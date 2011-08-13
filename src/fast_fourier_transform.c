@@ -80,7 +80,8 @@ int fast_fourier_transform(int argc, char ** argv, FILE * pipe_in, FILE * pipe_o
     for (i = 0 ; i < shape->num_attributes ; i++)
       set_attribute(out_shape, shape->attributes[i].name, shape->attributes[i].value);
     
-    if (cabs_result || direction == 0) set_num_dimensions(out_shape, 0, 1);
+    if (cabs_result || direction == 0)
+      set_num_dimensions(out_shape, 0, 1);
     
     out_shape->gl_type = GL_LINE_STRIP;
     for (j = 0 ; j < buffer_len ; j++)

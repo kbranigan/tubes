@@ -4,7 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "shapefile_src/shapefil.h"
+#include "ext/shapefil.h"
 
 #define SCHEME_CREATE_MAIN
 #define SCHEME_ASSERT_STDOUT_IS_PIPED
@@ -61,6 +61,20 @@ int read_shapefile(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE
   
   long t=0;
   long i;
+  
+  /*int num_strings = nFieldCount;
+  char ** strings = malloc(sizeof(char*)*num_strings);
+  for (i = 0 ; i < nFieldCount ; i++)
+  {
+    strings[i] = malloc(20);
+    int value_length;
+    DBFFieldType field_type = DBFGetFieldInfo(d, i, strings[i], &value_length, NULL);
+  }
+  write_string_table(pipe_out, num_strings, strings);
+  for (i = 0 ; i < nFieldCount ; i++)
+    free(strings[i]);
+  free(strings);*/
+  
   for (i = 0 ; i < nRecordCount ; i++)
   {
     if (row_id != -1 && row_id != i) continue;
@@ -69,6 +83,7 @@ int read_shapefile(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE
     {
       struct Shape * shape = new_shape();
       shape->unique_set_id = t++;
+      shape->has_attribute_names = 0;
       
       int j;
       if (num_attributes)
@@ -89,7 +104,7 @@ int read_shapefile(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE
             snprintf(value, 200, "%f", DBFReadDoubleAttribute(d, i, j));
             break;
         }
-        set_attribute(shape, name, value);
+        set_attribute(shape, NULL, value);
       }
       
       for (j = 0 ; j < psShape->nVertices ; j++)

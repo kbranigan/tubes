@@ -193,7 +193,7 @@ int tesselate(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
   gluDeleteTess(tobj);
   
   if (count == 0)
-  {
     fprintf(pipe_err, "There were no line loops to tesselate.\n");
-  }
+  else
+    fprintf(pipe_err, "Tesselator finished.\n");
 }

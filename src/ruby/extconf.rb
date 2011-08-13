@@ -7,7 +7,7 @@ extension_name = 'Pipes'
 # The destination
 dir_config(extension_name)
 
-$srcs = ['../scheme.c', 'Pipes.rb.c']
-
+$srcs = ['../src/scheme.c', 'Pipes.rb.c']
+$objs = ['../src/scheme.o', 'Pipes.rb.o']
 # Do the work
 create_makefile(extension_name)

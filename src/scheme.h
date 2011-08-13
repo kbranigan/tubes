@@ -15,8 +15,9 @@
 #define FILE_VERSION_2 2
 #define FILE_VERSION_3 3
 #define FILE_VERSION_4 4
+#define FILE_VERSION_5 5
 
-#define CURRENT_VERSION FILE_VERSION_4
+#define CURRENT_VERSION FILE_VERSION_5
 
 /* include this file before OpenGL headers, that way these defines don't conflict */
 
@@ -37,17 +38,38 @@
 #define GL_FOG_COORD_ARRAY           33879
 #define GL_SECONDARY_COLOR_ARRAY     33886
 
+#define COMMAND_STRING 14
+#define STRING_TABLE 15
+
 /*
   c type           name                 values
   //////////////////////////////////////////
+  [ // shape meta data or instruction or something else
+    float          thing header         -INFINITY
+    uint32_t       thing version        CURRENT_VERSION
+    uint32_t       thing type           COMMAND_STRING or STRING_TABLE (or something else)
+    
+    [ // case COMMAND_STRING
+      uint32_t     length
+      char[length] COMMAND
+    ]
+    
+    [ // case STRING_TABLE
+      uint32_t     num_strings
+      [ // num_strings
+        char[20]   name
+      ]
+    ]
+  ]
   
   [ // shapes (read until feof or fread error)
     float          shape header         INFINITY
     uint32_t       shape version        CURRENT_VERSION
     uint32_t       unique_set_id
     uint32_t       num_attributes
+    uint32_t       has_attribute_names    >= FILE_VERSION_5
     [ // num_attributes
-      char[20]     key
+      char[20]     name                 only if (has_attribute_names == 1 ||  < FILE_VERSION_5)
       uint32_t     length               including the \0
       char[length] value
     ]
@@ -87,7 +109,7 @@ struct VertexArray {
 };
 
 struct Attribute {
-  char name[20];
+  char name[20]; /* if (has_attribute_names) */
   uint32_t value_length;
   char * value;
 };
@@ -95,6 +117,7 @@ struct Attribute {
 struct Shape {
   uint32_t unique_set_id;
   uint32_t version;
+  int has_attribute_names;
   uint32_t num_attributes;
   struct Attribute * attributes;
   
@@ -113,13 +136,16 @@ extern void assert_stdin_is_piped_t(float timeout);
 extern int stdout_is_piped();
 extern void assert_stdout_is_piped();
 
-extern struct VertexArray* get_or_add_array(struct Shape * shape, int array_type);
+extern struct VertexArray* get_or_add_array(struct Shape * shape, unsigned int array_type);
+
+extern void set_num_vertexs(struct Shape * shape, unsigned int num_vertexs);
+extern void set_num_dimensions(struct Shape * shape, unsigned int va_index, unsigned int num_dimensions);
 
 extern void append_vertex(struct Shape * shape, float * v);
 extern void append_vertex2(struct Shape * shape, float * v1, float * v2);
 
-extern void set_vertex(struct Shape * shape, int va_index, int index, float * v);
-extern float * get_vertex(struct Shape * shape, int va_index, int index);
+extern void set_vertex(struct Shape * shape, unsigned int va_index, unsigned int index, float * v);
+extern float * get_vertex(struct Shape * shape, unsigned int va_index, unsigned int index);
 
 extern char * get_attribute(struct Shape * shape, char * name);
 extern void set_attribute(struct Shape * shape, char * name, char * value);
@@ -133,8 +159,8 @@ extern int write_shape(FILE * fp, struct Shape * shape);
 
 /*int point_in_triangle(vec2d A, vec2d B, vec2d C, vec2d P);*/
 
-extern char * array_type_names[];
-extern char * gl_type_names[];
+extern const char * array_type_names[];
+extern const char * gl_type_names[];
 
 extern const char * get_array_type_name(int array_type);
 extern const char * get_gl_type_name(int gl_type);
@@ -178,7 +204,6 @@ extern const char * get_gl_type_name(int gl_type);
         fprintf(stderr, "%s: SCHEME_CREATE_MAIN is defined but no SCHEME_ASSERT_STDIN_IS_PIPED, SCHEME_ASSERT_STDOUT_IS_PIPED or SCHEME_ASSERT_STDINOUT_ARE_PIPED\n", argv[0]);
         return EXIT_FAILURE;
       #endif
-      fprintf(stderr, "%s\n", COMMAND);
       return SCHEME_FUNCTION(argc, argv, stdin, stdout, stderr);
     #else
       #error SCHEME_CREATE_MAIN is defined but no SCHEME_FUNCTION was defined

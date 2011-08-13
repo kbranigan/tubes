@@ -1,9 +1,12 @@
 #!/usr/bin/env ruby -w
 #encoding:ASCII-8BIT
 
+#str = (STDIN.tty?) ? 'not reading from stdin' : $stdin.read
+#puts str
+
 require File.join(File.dirname(File.expand_path(__FILE__)), 'Pipes') # tanks carsten
-require 'rubygems'
-require 'json'
+#require 'rubygems'
+#require 'json'
 
 Pipes.assert_stdin_is_piped
 Pipes.assert_stdout_is_piped

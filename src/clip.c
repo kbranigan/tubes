@@ -4,7 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "gpc/gpc.h"
+#include "ext/gpc.h"
 
 #define SCHEME_CREATE_MAIN
 #define SCHEME_ASSERT_STDINOUT_ARE_PIPED

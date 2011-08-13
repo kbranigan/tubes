@@ -1,12 +1,12 @@
 
 #include <stdio.h>
-#include "../scheme.h"
+#include "../src/scheme.h"
 
 #include <ruby.h>
 
 #ifdef RUBY_RUBY_H // ruby 1.9.2
 #include <ruby/io.h>
-#define GET_STDIO_FILE(rfile) RFILE(rfile)->fptr->stdio_file
+#define GET_STDIO_FILE(rfile) rb_io_stdio_file(RFILE(rfile)->fptr)
 
 #else // ruby 1.8.7
 #include <rubyio.h>

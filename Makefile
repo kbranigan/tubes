@@ -4,183 +4,195 @@ mysql= -I/usr/local/mysql/include/mysql -I/usr/include/mysql -L/usr/local/mysql/
 applegl= -framework OpenGL
 linuxgl= -lOSMesa -lGL -lGLU
 
+ext= -Isrc/ext -Lsrc/ext
+
 whichgl= $(applegl)
 
-extra= 
+extra= -Wall
 
 all: pipe_in  pipe_out  pipe_inout extras
 
 # these require additional libs I put them in here just to indicate that
 extras: \
-	write_png \
-	read_dwg \
-	read_mysql \
-	read_nextbus \
-	read_soundwave \
-	fast_fourier_transform
+	bin/write_png \
+	bin/read_dwg \
+	bin/read_mysql \
+	bin/read_nextbus \
+	bin/read_soundwave \
+	bin/fast_fourier_transform
 
 pipe_in: \
-	bbox \
-	inspect \
-	write_bmp \
-	write_kml \
-	write_sql \
-	write_json \
-	write_webgl \
-	write_bmp_sphere \
-	pass_through
+	bin/bbox \
+	bin/inspect \
+	bin/write_bmp \
+	bin/write_kml \
+	bin/write_sql \
+	bin/write_json \
+	bin/write_webgl \
+	bin/write_bmp_sphere \
+	bin/pass_through
 
 pipe_out: \
-	read_dem \
-	read_shapefile \
-	produce_random_data \
-	produce_unit_circle \
-	produce_unit_square
+	bin/read_csv \
+	bin/read_dem \
+	bin/read_shapefile \
+	bin/produce_random_data \
+	bin/produce_unit_circle \
+	bin/produce_unit_square
 
 pipe_inout: \
-	clip \
-	delay \
-	tesselate \
-	transform \
-	reduce_by_id \
-	add_attribute \
-	reduce_by_bbox \
-	add_random_colors \
-	remove_attributes \
-	add_color_from_csv \
-	coordinate_convert \
-	reduce_by_distance \
-	reduce_by_attribute \
-	reset_unique_set_ids \
-	add_color_from_mysql \
-	align_points_to_line_strips \
-	group_shapes_on_unique_set_id
+	bin/clip \
+	bin/delay \
+	bin/tesselate \
+	bin/transform \
+	bin/reduce_by_id \
+	bin/add_attribute \
+	bin/reduce_by_bbox \
+	bin/add_random_colors \
+	bin/remove_attributes \
+	bin/add_color_from_csv \
+	bin/coordinate_convert \
+	bin/reduce_by_distance \
+	bin/reduce_by_attribute \
+	bin/reset_unique_set_ids \
+	bin/add_color_from_mysql \
+	bin/align_points_to_line_strips \
+	bin/group_shapes_on_unique_set_id
 
-civicsets: shapefile_src/shpopen.o shapefile_src/dbfopen.o mongoose.o
-	g++ $(extra) -Wall civicsets.c shapefile_src/shpopen.o shapefile_src/dbfopen.o mongoose.o -ldl -lpthread -o civicsets.ca $(mysql)
+bin/mongoose.o: src/mongoose.c src/mongoose.h
+	gcc $(extra) src/mongoose.c -c -o bin/mongoose.o -std=c99 -D_POSIX_SOURCE -D_BSD_SOURCE
 
-produce_unit_circle: scheme.o produce_unit_circle.c
-	gcc $(extra) scheme.o produce_unit_circle.c -o produce_unit_circle -lm
+bin/scheme.o: src/scheme.c src/scheme.h
+	gcc $(extra) src/scheme.c -c -o bin/scheme.o
 
-produce_unit_square: scheme.o produce_unit_square.c
-	gcc $(extra) scheme.o produce_unit_square.c -o produce_unit_square -lm
+#bin/civicsets: ext/shpopen.o ext/dbfopen.o mongoose.o
+#	g++ $(extra) -Wall src/civicsets.c ext/shpopen.o ext/dbfopen.o mongoose.o -ldl -lpthread -o bin/civicsets.ca $(mysql)
 
-read_dem: scheme.o read_dem.c
-	gcc $(extra) scheme.o read_dem.c -o read_dem
+bin/produce_unit_circle: bin/scheme.o src/produce_unit_circle.c
+	gcc $(extra) bin/scheme.o src/produce_unit_circle.c -o bin/produce_unit_circle -lm
 
-read_dwg: scheme.o read_dwg.c
-	gcc $(extra) scheme.o read_dwg.c -o read_dwg -ldwg -Iext -Lext
+bin/produce_unit_square: bin/scheme.o src/produce_unit_square.c
+	gcc $(extra) bin/scheme.o src/produce_unit_square.c -o bin/produce_unit_square -lm
 
-read_soundwave: scheme.o read_soundwave.c
-	gcc $(extra) scheme.o read_soundwave.c -o read_soundwave -lsndfile -Iext -Lext
+bin/read_dem: bin/scheme.o src/read_dem.c
+	gcc $(extra) bin/scheme.o src/read_dem.c -o bin/read_dem
 
-read_mysql: scheme.o read_mysql.c
-	gcc $(extra) scheme.o read_mysql.c -o read_mysql $(mysql)
+bin/read_csv: bin/scheme.o src/read_csv.c
+	gcc $(extra) bin/scheme.o src/read_csv.c -o bin/read_csv
 
-read_nextbus: scheme.o read_nextbus.c
-	gcc $(extra) scheme.o read_nextbus.c -o read_nextbus -lcurl `xml2-config --cflags --libs`
+bin/read_dwg: bin/scheme.o src/read_dwg.c
+	gcc $(extra) bin/scheme.o src/read_dwg.c -o bin/read_dwg -ldwg $(ext)
 
-read_shapefile: scheme.o shapefile_src/shpopen.o shapefile_src/dbfopen.o read_shapefile.c
-	gcc $(extra) scheme.o shapefile_src/shpopen.o shapefile_src/dbfopen.o read_shapefile.c -o read_shapefile
+bin/read_soundwave: bin/scheme.o src/read_soundwave.c
+	gcc $(extra) bin/scheme.o src/read_soundwave.c -o bin/read_soundwave -lsndfile $(ext)
 
-group_shapes_on_unique_set_id: scheme.o group_shapes_on_unique_set_id.c
-	gcc $(extra) scheme.o group_shapes_on_unique_set_id.c -o group_shapes_on_unique_set_id
+bin/read_mysql: bin/scheme.o src/read_mysql.c
+	gcc $(extra) bin/scheme.o src/read_mysql.c -o bin/read_mysql $(mysql)
 
-reduce_by_distance: scheme.o reduce_by_distance.c
-	gcc $(extra) scheme.o reduce_by_distance.c -o reduce_by_distance -lm
+bin/read_nextbus: bin/scheme.o src/read_nextbus.c
+	gcc $(extra) bin/scheme.o src/read_nextbus.c -o bin/read_nextbus -lcurl `xml2-config --cflags --libs`
 
-reduce_by_attribute: scheme.o reduce_by_attribute.c
-	gcc $(extra) scheme.o reduce_by_attribute.c -o reduce_by_attribute
+bin/read_shapefile: bin/scheme.o src/ext/shpopen.c src/ext/dbfopen.c src/read_shapefile.c
+	gcc $(extra) bin/scheme.o src/ext/shpopen.c src/ext/dbfopen.c src/read_shapefile.c -o bin/read_shapefile
 
-reset_unique_set_ids: scheme.o reset_unique_set_ids.c
-	gcc $(extra) scheme.o reset_unique_set_ids.c -o reset_unique_set_ids
+bin/group_shapes_on_unique_set_id: bin/scheme.o src/group_shapes_on_unique_set_id.c
+	gcc $(extra) bin/scheme.o src/group_shapes_on_unique_set_id.c -o bin/group_shapes_on_unique_set_id
 
-reduce_by_id: scheme.o reduce_by_id.c
-	gcc $(extra) scheme.o reduce_by_id.c -o reduce_by_id
+bin/reduce_by_distance: bin/scheme.o src/reduce_by_distance.c
+	gcc $(extra) bin/scheme.o src/reduce_by_distance.c -o bin/reduce_by_distance -lm
 
-reduce_by_bbox: scheme.o reduce_by_bbox.c
-	gcc $(extra) scheme.o reduce_by_bbox.c -o reduce_by_bbox
+bin/reduce_by_attribute: bin/scheme.o src/reduce_by_attribute.c
+	gcc $(extra) bin/scheme.o src/reduce_by_attribute.c -o bin/reduce_by_attribute
 
-remove_attributes: scheme.o remove_attributes.c
-	gcc $(extra) scheme.o remove_attributes.c -o remove_attributes
+bin/reset_unique_set_ids: bin/scheme.o src/reset_unique_set_ids.c
+	gcc $(extra) bin/scheme.o src/reset_unique_set_ids.c -o bin/reset_unique_set_ids
 
-pass_through: scheme.o pass_through.c
-	gcc $(extra) scheme.o pass_through.c -o pass_through
+bin/reduce_by_id: bin/scheme.o src/reduce_by_id.c
+	gcc $(extra) bin/scheme.o src/reduce_by_id.c -o bin/reduce_by_id
 
-fast_fourier_transform: scheme.o fast_fourier_transform.c
-	gcc $(extra) scheme.o fast_fourier_transform.c -o fast_fourier_transform -lfftw3 -lm -Iext -Lext
+bin/reduce_by_bbox: bin/scheme.o src/reduce_by_bbox.c
+	gcc $(extra) bin/scheme.o src/reduce_by_bbox.c -o bin/reduce_by_bbox
 
-delay: scheme.o delay.c
-	gcc $(extra) scheme.o delay.c -o delay
+bin/remove_attributes: bin/scheme.o src/remove_attributes.c
+	gcc $(extra) bin/scheme.o src/remove_attributes.c -o bin/remove_attributes
 
-produce_random_data: scheme.o produce_random_data.c
-	gcc $(extra) scheme.o produce_random_data.c -o produce_random_data
+bin/pass_through: bin/scheme.o src/pass_through.c
+	gcc $(extra) bin/scheme.o src/pass_through.c -o bin/pass_through
 
-clip: scheme.o clip.c
-	gcc $(extra) scheme.o clip.c gpc/gpc.c -o clip
+bin/fast_fourier_transform: bin/scheme.o src/fast_fourier_transform.c
+	gcc $(extra) bin/scheme.o src/fast_fourier_transform.c -o bin/fast_fourier_transform -lfftw3 -lm $(ext)
 
-bbox: scheme.o bbox.c
-	gcc $(extra) scheme.o bbox.c -o bbox
+bin/delay: bin/scheme.o src/delay.c
+	gcc $(extra) bin/scheme.o src/delay.c -o bin/delay
 
-add_attribute: scheme.o add_attribute.c
-	gcc $(extra) scheme.o add_attribute.c -o add_attribute
+bin/produce_random_data: bin/scheme.o src/produce_random_data.c
+	gcc $(extra) bin/scheme.o src/produce_random_data.c -o bin/produce_random_data
 
-coordinate_convert: scheme.o coordinate_convert.c
-	gcc $(extra) scheme.o coordinate_convert.c -o coordinate_convert -lm
+bin/clip: bin/scheme.o src/clip.c src/ext/gpc.c
+	gcc $(extra) bin/scheme.o src/clip.c src/ext/gpc.c -o bin/clip
 
-add_color_from_mysql: scheme.o add_color_from_mysql.c
-	gcc $(extra) scheme.o add_color_from_mysql.c -o add_color_from_mysql $(mysql)
+bin/bbox: bin/scheme.o src/bbox.c
+	gcc $(extra) bin/scheme.o src/bbox.c -o bin/bbox
 
-add_color_from_csv: scheme.o add_color_from_csv.c
-	gcc $(extra) scheme.o add_color_from_csv.c -o add_color_from_csv
+bin/add_attribute: bin/scheme.o src/add_attribute.c
+	gcc $(extra) bin/scheme.o src/add_attribute.c -o bin/add_attribute
 
-align_points_to_line_strips: scheme.o align_points_to_line_strips.c
-	gcc $(extra) scheme.o align_points_to_line_strips.c -o align_points_to_line_strips
+bin/coordinate_convert: bin/scheme.o src/coordinate_convert.c
+	gcc $(extra) bin/scheme.o src/coordinate_convert.c -o bin/coordinate_convert -lm
 
-add_random_colors: scheme.o add_random_colors.c
-	gcc $(extra) scheme.o add_random_colors.c -o add_random_colors
+bin/add_color_from_mysql: bin/scheme.o src/add_color_from_mysql.c
+	gcc $(extra) bin/scheme.o src/add_color_from_mysql.c -o bin/add_color_from_mysql $(mysql)
 
-inspect: scheme.o inspect.c
-	gcc $(extra) scheme.o inspect.c -o inspect
+bin/add_color_from_csv: bin/scheme.o src/add_color_from_csv.c
+	gcc $(extra) bin/scheme.o src/add_color_from_csv.c -o bin/add_color_from_csv
 
-tesselate: scheme.o tesselate.c
-	gcc $(extra) scheme.o tesselate.c -o tesselate $(whichgl)
+bin/align_points_to_line_strips: bin/scheme.o src/align_points_to_line_strips.c
+	gcc $(extra) bin/scheme.o src/align_points_to_line_strips.c -o bin/align_points_to_line_strips
 
-transform: scheme.o transform.c
-	gcc $(extra) scheme.o transform.c -o transform
+bin/add_random_colors: bin/scheme.o src/add_random_colors.c
+	gcc $(extra) bin/scheme.o src/add_random_colors.c -o bin/add_random_colors
 
-write_png: scheme.o write_png.c setup_opengl.c
-	gcc $(extra) scheme.o write_png.c -o write_png $(whichgl) -lpng
+bin/inspect: bin/scheme.o src/inspect.c
+	gcc $(extra) bin/scheme.o src/inspect.c -o bin/inspect
 
-write_bmp: scheme.o write_bmp.c setup_opengl.c
-	gcc $(extra) scheme.o write_bmp.c -o write_bmp $(whichgl)
+bin/tesselate: bin/scheme.o src/tesselate.c
+	gcc $(extra) bin/scheme.o src/tesselate.c -o bin/tesselate $(whichgl)
 
-write_bmp_sphere: scheme.o write_bmp_sphere.c setup_opengl.c
-	gcc $(extra) scheme.o write_bmp_sphere.c -o write_bmp_sphere $(whichgl) -lm
+bin/transform: bin/scheme.o src/transform.c
+	gcc $(extra) bin/scheme.o src/transform.c -o bin/transform
 
-write_kml: scheme.o write_kml.c
-	gcc $(extra) scheme.o write_kml.c -o write_kml
+bin/write_png: bin/scheme.o src/write_png.c src/setup_opengl.c
+	gcc $(extra) bin/scheme.o src/write_png.c -o bin/write_png $(whichgl) -lpng
 
-write_sql: scheme.o write_sql.c
-	gcc $(extra) scheme.o write_sql.c -o write_sql
+bin/write_bmp: bin/scheme.o src/write_bmp.c src/setup_opengl.c
+	gcc $(extra) bin/scheme.o src/write_bmp.c -o bin/write_bmp $(whichgl)
 
-write_json: scheme.o write_json.c
-	gcc $(extra) scheme.o write_json.c -o write_json
+bin/write_bmp_sphere: bin/scheme.o src/write_bmp_sphere.c src/setup_opengl.c
+	gcc $(extra) bin/scheme.o src/write_bmp_sphere.c -o bin/write_bmp_sphere $(whichgl) -lm
 
-write_webgl: scheme.o write_webgl.c
-	gcc $(extra) scheme.o mongoose.c write_webgl.c -o write_webgl
+bin/write_kml: bin/scheme.o src/write_kml.c
+	gcc $(extra) bin/scheme.o src/write_kml.c -o bin/write_kml
 
-scheme.o: scheme.c scheme.h
-	gcc $(extra) scheme.c -c -o scheme.o -Wall
+bin/write_sql: bin/scheme.o src/write_sql.c
+	gcc $(extra) bin/scheme.o src/write_sql.c -o bin/write_sql
 
-%.o: %.c
-	cc $(extra) -O3 -Wall $(mysql) $*.c -c -o $@
+bin/write_json: bin/scheme.o src/write_json.c
+	gcc $(extra) bin/scheme.o src/write_json.c -o bin/write_json
 
-#read_mysql_line_strips: scheme.o read_mysql_line_strips.c
-#	gcc $(extra) scheme.o read_mysql_line_strips.c -o read_mysql_line_strips $(mysql) 
+bin/write_webgl: bin/scheme.o bin/mongoose.o src/write_webgl.c
+	gcc $(extra) bin/scheme.o bin/mongoose.o src/write_webgl.c -o bin/write_webgl
 
-#read_mysql_shapes: scheme.o read_mysql_shapes.c
-#	gcc $(extra) scheme.o read_mysql_shapes.c -o read_mysql_shapes $(mysql)
+#%.o: %.c
+#	cc $(extra) -O3 -Wall $(mysql) $*.c -c -o bin/$@
 
-#convert_to_voronoi: scheme.o convert_to_voronoi.c
-#	gcc scheme.o convert_to_voronoi.c -o convert_to_voronoi
+#bin/write_http: bin/scheme.o src/write_http.c
+#	gcc $(extra) bin/scheme.o src/mongoose.o src/write_http.c -o bin/write_http
+
+#read_mysql_line_strips: bin/scheme.o read_mysql_line_strips.c
+#	gcc $(extra) bin/scheme.o read_mysql_line_strips.c -o bin/read_mysql_line_strips $(mysql) 
+
+#read_mysql_shapes: bin/scheme.o read_mysql_shapes.c
+#	gcc $(extra) bin/scheme.o read_mysql_shapes.c -o bin/read_mysql_shapes $(mysql)
+
+#convert_to_voronoi: bin/scheme.o convert_to_voronoi.c
+#	gcc $(extra) bin/scheme.o convert_to_voronoi.c -o bin/convert_to_voronoi

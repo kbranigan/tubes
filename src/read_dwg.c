@@ -13,7 +13,7 @@ compile it yourself.  I built the included file from: http://downloads.sourcefor
 #include <unistd.h>
 #include <math.h>
 
-#include <dvg.h>
+#include "ext/dvg.h"
 
 #define SCHEME_CREATE_MAIN
 #define SCHEME_ASSERT_STDOUT_IS_PIPED
