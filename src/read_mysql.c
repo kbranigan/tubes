@@ -49,6 +49,11 @@ int read_mysql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * p
     int z_field_id = -1;
     int unique_set_field_id = -1;
     
+    int r_field_id = -1;
+    int g_field_id = -1;
+    int b_field_id = -1;
+    int a_field_id = -1;
+    
     int i=0;
     for (i = 0 ; i < mysql_num_fields(res) ; i++)
     {
@@ -56,7 +61,19 @@ int read_mysql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * p
       if (strcmp(field->name, "x") == 0) x_field_id = i;
       else if (strcmp(field->name, "y") == 0) y_field_id = i;
       else if (strcmp(field->name, "z") == 0) z_field_id = i;
+      else if (strcmp(field->name, "r") == 0) r_field_id = i;
+      else if (strcmp(field->name, "g") == 0) g_field_id = i;
+      else if (strcmp(field->name, "b") == 0) b_field_id = i;
+      else if (strcmp(field->name, "a") == 0) a_field_id = i;
       else if (strcmp(field->name, "unique_set_id") == 0) unique_set_field_id = i;
+    }
+    if (unique_set_field_id == -1)
+    {
+      for (i = 0 ; i < mysql_num_fields(res) ; i++)
+      {
+        field = mysql_fetch_field_direct(res, i);
+        if (strcmp(field->name, "id") == 0) unique_set_field_id = i;
+      }
     }
     
     fprintf(stderr, "mysql_num_rows = %lld\n", mysql_num_rows(res));
@@ -91,15 +108,33 @@ int read_mysql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * p
         
         shape->unique_set_id = atol(row[unique_set_field_id]);
         if (z_field_id != -1) shape->vertex_arrays[0].num_dimensions++;
+        
+        //get_or_add_array(shape, GL_VERTEX_ARRAY); // this is auto, but you, helps doc the code
+        
+        if (r_field_id != -1 &&
+            g_field_id != -1 &&
+            b_field_id != -1)
+        {
+          get_or_add_array(shape, GL_COLOR_ARRAY);
+          if (a_field_id != -1) set_num_dimensions(shape, 1, 4);
+        }
       }
-      struct VertexArray * va = get_or_add_array(shape, GL_VERTEX_ARRAY);
       
       float v[3] = { atof(row[x_field_id]), atof(row[y_field_id]), 0.0 };
       
       if (z_field_id != -1)
         v[2] = atof(row[z_field_id]);
       
-      append_vertex(shape, v);
+      if (r_field_id != -1 &&
+        g_field_id != -1 &&
+        b_field_id != -1)
+      {
+        float v2[4] = { atof(row[r_field_id]), atof(row[g_field_id]), atof(row[b_field_id]), 0 };
+        if (a_field_id != -1) v2[3] = atof(row[r_field_id]);
+        append_vertex2(shape, v, v2);
+      }
+      else
+        append_vertex(shape, v);
       
       prev_unique_set_id = atol(row[unique_set_field_id]);
     }
