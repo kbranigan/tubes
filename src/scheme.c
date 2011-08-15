@@ -85,7 +85,10 @@ struct VertexArray * get_or_add_array(struct Shape * shape, unsigned int array_t
   struct VertexArray * va = &shape->vertex_arrays[shape->num_vertex_arrays-1];
   va->shape = shape;
   va->array_type = array_type;
-  va->num_dimensions = 2;
+  if (array_type == GL_COLOR_ARRAY)
+    va->num_dimensions = 3;
+  else
+    va->num_dimensions = 2;
   va->vertexs = malloc(sizeof(float)*shape->num_vertexs*va->num_dimensions);
   if (va->vertexs == NULL) { fprintf(stderr, "malloc failed in get_array()\n"); exit(1); }
   
@@ -147,7 +150,7 @@ void append_vertex(struct Shape * shape, float * v)
 void append_vertex2(struct Shape * shape, float * v1, float * v2)
 {
   if (shape == NULL) { fprintf(stderr, "append_vertex3fv called on a NULL shape\n"); exit(1); }
-  if (shape->num_vertex_arrays != 2) { fprintf(stderr, "append_vertex3fv called on a shape with %d arrays (try something like append_vertex3fv_4fv)\n", shape->num_vertex_arrays); exit(1); }
+  if (shape->num_vertex_arrays != 2) { fprintf(stderr, "append_vertex2 called on a shape with %d arrays\n", shape->num_vertex_arrays); exit(1); }
   
   _append_vertex_fv(&shape->vertex_arrays[0], v1);
   _append_vertex_fv(&shape->vertex_arrays[1], v2);
