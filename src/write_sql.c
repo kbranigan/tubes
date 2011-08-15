@@ -41,15 +41,14 @@ int write_sql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
   
   if (drop_tables)
   {
-    fprintf(sql_out, "DROP TABLE IF EXISTS DBF;\n");
-    fprintf(sql_out, "DROP TABLE IF EXISTS shape_points;\n");
+    //fprintf(sql_out, "DROP TABLE IF EXISTS DBF;\n");
+    //fprintf(sql_out, "DROP TABLE IF EXISTS shape_points;\n");
     fprintf(sql_out, "DROP TABLE IF EXISTS points;\n");
   }
   
-  fprintf(sql_out, "CREATE TABLE IF NOT EXISTS DBF (dbf_id INT PRIMARY KEY AUTO_INCREMENT, unique_set_id INT, created_at DATETIME);\n");
-  fprintf(sql_out, "CREATE TABLE IF NOT EXISTS shape_points (id INT PRIMARY KEY AUTO_INCREMENT, dbf_id INT, part_id INT, x FLOAT(15, 5), y FLOAT(15, 5));\n");
-  fprintf(sql_out, "CREATE TABLE IF NOT EXISTS points (id INT PRIMARY KEY AUTO_INCREMENT, created_at DATETIME, x FLOAT(15, 5), y FLOAT(15, 5), unique_set_id INT"
-                   ", routeTag INT, dirTag VARCHAR(15), secsSinceReport INT, heading INT);"); // kbfu - for read_nextbus, i know it's bad
+  //fprintf(sql_out, "CREATE TABLE IF NOT EXISTS DBF (dbf_id INT PRIMARY KEY AUTO_INCREMENT, unique_set_id INT, created_at DATETIME);\n");
+  //fprintf(sql_out, "CREATE TABLE IF NOT EXISTS shape_points (id INT PRIMARY KEY AUTO_INCREMENT, dbf_id INT, part_id INT, x FLOAT(15, 5), y FLOAT(15, 5));\n");
+  fprintf(sql_out, "CREATE TABLE IF NOT EXISTS points (id INT PRIMARY KEY AUTO_INCREMENT, created_at DATETIME, x FLOAT(15, 5), y FLOAT(15, 5), unique_set_id INT);\n");
   
   int num_fields = 0;
   char ** fields = NULL;
@@ -75,7 +74,7 @@ int write_sql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
       if (found && shape->attributes[i].value_length > field_lengths[j])
       {
         field_lengths[j] = shape->attributes[i].value_length;
-        //fprintf(sql_out, "ALTER TABLE DBF CHANGE %s %s VARCHAR(%d);\n", shape->attributes[i].name, shape->attributes[i].name, shape->attributes[i].value_length);
+        fprintf(sql_out, "ALTER TABLE points CHANGE %s %s VARCHAR(%d);\n", shape->attributes[i].name, shape->attributes[i].name, shape->attributes[i].value_length);
       }
       if (!found)
       {
@@ -84,7 +83,7 @@ int write_sql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
         field_lengths = realloc(field_lengths, sizeof(int)*(num_fields+1));
         field_lengths[num_fields] = shape->attributes[i].value_length;
         strcpy(fields[num_fields], shape->attributes[i].name);
-        //fprintf(sql_out, "ALTER TABLE DBF ADD %s VARCHAR(%d);\n", shape->attributes[i].name, shape->attributes[i].value_length);
+        fprintf(sql_out, "ALTER TABLE points ADD %s VARCHAR(%d);\n", shape->attributes[i].name, shape->attributes[i].value_length);
         num_fields++;
       }
     }
