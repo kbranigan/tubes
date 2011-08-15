@@ -83,7 +83,7 @@ int read_shapefile(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE
     {
       struct Shape * shape = new_shape();
       shape->unique_set_id = t++;
-      shape->has_attribute_names = 0;
+      //shape->has_attribute_names = 0;
       
       int j;
       if (num_attributes)
@@ -104,7 +104,7 @@ int read_shapefile(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE
             snprintf(value, 200, "%f", DBFReadDoubleAttribute(d, i, j));
             break;
         }
-        set_attribute(shape, NULL, value);
+        set_attribute(shape, name, value);
       }
       
       for (j = 0 ; j < psShape->nVertices ; j++)
