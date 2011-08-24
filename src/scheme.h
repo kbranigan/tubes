@@ -199,6 +199,8 @@ extern const char * get_gl_type_name(int gl_type);
       #elif defined(SCHEME_ASSERT_STDINOUT_ARE_PIPED)
         assert_stdin_is_piped();
         assert_stdout_is_piped();
+      #elif defined(SCHEME_ASSERT_STDIN_OR_OUT_IS_PIPED)
+        assert_stdin_or_out_is_piped();
       #else
         #error SCHEME_CREATE_MAIN is defined but no SCHEME_ASSERT_STDIN_IS_PIPED, SCHEME_ASSERT_STDOUT_IS_PIPED or SCHEME_ASSERT_STDINOUT_ARE_PIPED
         fprintf(stderr, "%s: SCHEME_CREATE_MAIN is defined but no SCHEME_ASSERT_STDIN_IS_PIPED, SCHEME_ASSERT_STDOUT_IS_PIPED or SCHEME_ASSERT_STDINOUT_ARE_PIPED\n", argv[0]);

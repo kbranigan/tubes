@@ -69,6 +69,15 @@ void assert_stdout_is_piped()
   }
 }
 
+void assert_stdin_or_out_is_piped()
+{
+  if (!stdin_is_piped_t(0.2) && !stdout_is_piped())
+  {
+    fprintf(stderr, "needs a piped source or destination, the output is binary and will corrupt your console - try redirecting the output to a file (using [command] > [file])\n");
+    exit(1);
+  }
+}
+
 struct VertexArray * get_or_add_array(struct Shape * shape, unsigned int array_type)
 {
   if (shape == NULL) shape = new_shape();
