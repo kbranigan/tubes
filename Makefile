@@ -15,6 +15,7 @@ all: pipe_in  pipe_out  pipe_inout extras
 # these require additional libs I put them in here just to indicate that
 extras: \
 	bin/write_png \
+	bin/redis \
 	bin/read_dwg \
 	bin/read_mysql \
 	bin/read_nextbus \
@@ -82,6 +83,9 @@ bin/read_csv: bin/scheme.o src/read_csv.c
 
 bin/read_dwg: bin/scheme.o src/read_dwg.c
 	gcc $(extra) bin/scheme.o src/read_dwg.c -o bin/read_dwg -ldwg $(ext)
+
+bin/redis: bin/scheme.o src/redis.c
+	gcc $(extra) bin/scheme.o src/redis.c -o bin/redis -lhiredis $(ext)
 
 bin/read_soundwave: bin/scheme.o src/read_soundwave.c
 	gcc $(extra) bin/scheme.o src/read_soundwave.c -o bin/read_soundwave -lsndfile $(ext)
