@@ -20,6 +20,7 @@ extras: \
 	bin/read_mysql \
 	bin/read_nextbus \
 	bin/read_soundwave \
+	bin/read_foursquare \
 	bin/fast_fourier_transform
 
 pipe_in: \
@@ -95,6 +96,9 @@ bin/read_mysql: bin/scheme.o src/read_mysql.c
 
 bin/read_nextbus: bin/scheme.o src/read_nextbus.c
 	gcc $(extra) bin/scheme.o src/read_nextbus.c -o bin/read_nextbus -lcurl `xml2-config --cflags --libs`
+
+bin/read_foursquare: bin/scheme.o src/read_foursquare.c
+	gcc $(extra) bin/scheme.o src/read_foursquare.c src/ext/cJSON.c -o bin/read_foursquare -lcurl
 
 bin/read_shapefile: bin/scheme.o src/ext/shpopen.c src/ext/dbfopen.c src/read_shapefile.c
 	gcc $(extra) bin/scheme.o src/ext/shpopen.c src/ext/dbfopen.c src/read_shapefile.c -o bin/read_shapefile
