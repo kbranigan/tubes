@@ -13,13 +13,10 @@ int write_sql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
 {
   char filename[300] = "";
   int drop_tables = 0;
-  
-  char username[30] = "root";
-  char password[30] = "";
-  char database[30] = "";
+  int expire_old_content = 0; // this is for nextbus
   
   int c;
-  while ((c = getopt(argc, argv, "f:u:p:d")) != -1)
+  while ((c = getopt(argc, argv, "f:u:p:de")) != -1)
   switch (c)
   {
     case 'f':
@@ -27,6 +24,9 @@ int write_sql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
       break;
     case 'd':
       drop_tables = 1;
+      break;
+    case 'e':
+      expire_old_content = 1;
       break;
     default:
       abort();
@@ -59,6 +59,9 @@ int write_sql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
   while ((shape = read_shape(pipe_in)))
   {
     int i, j;
+    
+    if (expire_old_content)
+      fprintf(sql_out, "DELETE FROM points WHERE created_at < now() - interval 3 hour;\n");
     
     for (i = 0 ; i < shape->num_attributes ; i++)
     {
