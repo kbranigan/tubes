@@ -134,7 +134,7 @@ int inspect(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe
     if (num_shapes_without_selected_attribute > 0)
       fprintf(pipe_err, "  \"num_shapes_without_selected_attribute\": %d,\n", num_shapes_without_selected_attribute);
     
-    if (num_values > 0) fprintf(pipe_err, "  \"first_few_unique_values\": [\n");
+    if (num_values > 0) fprintf(pipe_err, "  \"first_%d_unique_values\": [\n", (num_to_display < num_values) ? num_to_display : num_values);
     int i;
     for (i = 0 ; i < num_values ; i++)
     {
