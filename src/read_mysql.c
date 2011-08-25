@@ -118,6 +118,15 @@ int read_mysql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * p
           get_or_add_array(shape, GL_COLOR_ARRAY);
           if (a_field_id != -1) set_num_dimensions(shape, 1, 4);
         }
+        
+        for (i = 0 ; i < mysql_num_fields(res) ; i++)
+        {
+          field = mysql_fetch_field_direct(res, i);
+          if (strcmp(field->name, "x") != 0 && strcmp(field->name, "y") != 0 && strcmp(field->name, "z") != 0 && 
+              strcmp(field->name, "r") != 0 && strcmp(field->name, "g") != 0 && strcmp(field->name, "b") != 0 && strcmp(field->name, "a") != 0 && 
+              strcmp(field->name, "id") != 0 && strcmp(field->name, "unique_set_id") != 0)
+            set_attribute(shape, field->name, row[i]);
+        }
       }
       
       float v[3] = { atof(row[x_field_id]), atof(row[y_field_id]), 0.0 };
