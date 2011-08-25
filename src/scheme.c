@@ -253,6 +253,7 @@ int write_shape(FILE * fp, struct Shape * shape)
     if (fwrite(&va->num_dimensions, sizeof(va->num_dimensions), 1, fp) != 1) return 0;
     if (fwrite(va->vertexs, sizeof(float)*va->num_dimensions*shape->num_vertexs, 1, fp) != 1) return 0;
   }
+  fflush(fp);
   return 0;
 }
 
