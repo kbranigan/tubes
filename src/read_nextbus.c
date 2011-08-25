@@ -84,7 +84,7 @@ int read_nextbus(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE *
     chunk.memory = NULL;
     chunk.size = 0;
     sprintf(url, "http://webservices.nextbus.com/service/publicXMLFeed?command=vehicleLocations%s%s&a=%s&t=%llu", (routeTag!=NULL ? "&r=" : ""), (routeTag!=NULL ? routeTag : ""), agency, last_vehicles_update);
-    fprintf(pipe_err, "requesting: %s\n", url);
+    fprintf(pipe_err, "requesting: %s ", url);
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
@@ -93,56 +93,73 @@ int read_nextbus(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE *
     
     if (chunk.size == 0)
     {
-      fprintf(pipe_err, " - received 0 byte response.\n");
-      return;
+      fprintf(pipe_err, "- received 0 byte response.\n");
     }
-    if (agency == NULL) return;
-    
-    int count = 0;
-    reader = xmlReaderForMemory(chunk.memory, chunk.size, NULL, NULL, (XML_PARSE_NOBLANKS | XML_PARSE_NOCDATA | XML_PARSE_NOERROR | XML_PARSE_NOWARNING));
-    if (reader != NULL)
+    else
     {
-      int ret = xmlTextReaderRead(reader);
-      while (ret == 1)
+      int count = 0;
+      reader = xmlReaderForMemory(chunk.memory, chunk.size, NULL, NULL, (XML_PARSE_NOBLANKS | XML_PARSE_NOCDATA | XML_PARSE_NOERROR | XML_PARSE_NOWARNING));
+      if (reader != NULL)
       {
-        const xmlChar * name = xmlTextReaderConstName(reader);
-        
-        if (strcmp((const char *)name, "vehicle")==0)
+        int ret = xmlTextReaderRead(reader);
+        while (ret == 1)
         {
-          int nextbus_id = atoi((char*)xmlTextReaderGetAttribute(reader, (xmlChar *)"id"));
+          const xmlChar * name = xmlTextReaderConstName(reader);
           
-          struct Shape * shape = new_shape();
-          shape->unique_set_id = nextbus_id;
-          float v[3];
-          v[0] = atof((char*)xmlTextReaderGetAttribute(reader, (xmlChar *)"lon"));
-          v[1] = atof((char*)xmlTextReaderGetAttribute(reader, (xmlChar *)"lat"));
+          if (strcmp((const char *)name, "vehicle")==0)
+          {
+            struct Shape * shape = new_shape();
+            
+            void * temp = xmlTextReaderGetAttribute(reader, (xmlChar *)"id");
+            shape->unique_set_id = atoi(temp); free(temp);
+            
+            float v[3];
+            
+            temp = xmlTextReaderGetAttribute(reader, (xmlChar *)"lon");
+            v[0] = atof(temp); free(temp);
+            
+            temp = xmlTextReaderGetAttribute(reader, (xmlChar *)"lat");
+            v[1] = atof(temp); free(temp);
+            
+            temp = xmlTextReaderGetAttribute(reader, (xmlChar *)"routeTag");
+            set_attribute(shape, "routeTag", temp); free(temp);
+            
+            temp = xmlTextReaderGetAttribute(reader, (xmlChar *)"dirTag");
+            set_attribute(shape, "dirTag", temp); free(temp);
+            
+            temp = xmlTextReaderGetAttribute(reader, (xmlChar *)"secsSinceReport");
+            set_attribute(shape, "secsSinceReport", temp); free(temp);
+            
+            //temp = xmlTextReaderGetAttribute(reader, (xmlChar *)"speedKmHr");
+            //set_attribute(shape, "speedKmHr", temp); free(temp);
+            
+            temp = xmlTextReaderGetAttribute(reader, (xmlChar *)"heading");
+            set_attribute(shape, "heading", temp); free(temp);
+            
+            //temp = xmlTextReaderGetAttribute(reader, (xmlChar *)"predictable");
+            //set_attribute(shape, "predictable", temp); free(temp);
+            
+            append_vertex(shape, v);
+            write_shape(pipe_out, shape);
+            free_shape(shape);
+            fflush(pipe_out);
+            count++;
+          }
+          else if (strcmp((const char *)name, "lastTime")==0)
+          {
+            void * temp = xmlTextReaderGetAttribute(reader, (xmlChar *)"time");
+            last_vehicles_update = atoll(temp); free(temp);
+          }
           
-          //set_attribute(shape, "id", (char*)xmlTextReaderGetAttribute(reader, (xmlChar *)"id"));
-          set_attribute(shape, "routeTag", (char*)xmlTextReaderGetAttribute(reader, (xmlChar *)"routeTag"));
-          set_attribute(shape, "dirTag", (char*)xmlTextReaderGetAttribute(reader, (xmlChar *)"dirTag"));
-          set_attribute(shape, "secsSinceReport", (char*)xmlTextReaderGetAttribute(reader, (xmlChar *)"secsSinceReport"));
-          set_attribute(shape, "velocity", (char*)xmlTextReaderGetAttribute(reader, (xmlChar *)"velocity"));
-          //set_attribute(shape, "speedKmHr", (char*)xmlTextReaderGetAttribute(reader, (xmlChar *)"speedKmHr"));
-          set_attribute(shape, "heading", (char*)xmlTextReaderGetAttribute(reader, (xmlChar *)"heading"));
-          //set_attribute(shape, "predictable", (char*)xmlTextReaderGetAttribute(reader, (xmlChar *)"predictable"));
-          append_vertex(shape, v);
-          write_shape(pipe_out, shape);
-          free_shape(shape);
-          count++;
+          ret = xmlTextReaderRead(reader);
         }
-        else if (strcmp((const char *)name, "lastTime")==0)
-        {
-          last_vehicles_update = atoll((char*)xmlTextReaderGetAttribute(reader, (xmlChar *)"time"));
-        }
-        
-        ret = xmlTextReaderRead(reader);
+        xmlFreeTextReader(reader);
+        if (ret != 0) fprintf(pipe_err, "xmlReader failed to parse\n");
       }
-      xmlFreeTextReader(reader);
-      if (ret != 0) fprintf(pipe_err, "xmlReader failed to parse\n");
+      free(chunk.memory);
+      
+      fprintf(pipe_err, "- %d vehicles received\n", count);
     }
-    free(chunk.memory);
-    
-    fprintf(pipe_err, " %d vehicles received\n", count);
     
     if (interval != 0 && (num_requests == 0 || request_index < num_requests - 1)) usleep(interval*1000);
   }
