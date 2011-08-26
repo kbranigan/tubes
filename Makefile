@@ -8,7 +8,7 @@ ext= -Isrc/ext -Lsrc/ext
 
 whichgl= $(applegl)
 
-extra= -Wall
+extra= -lm
 
 all: pipe_in  pipe_out  pipe_inout extras
 

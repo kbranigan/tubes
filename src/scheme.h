@@ -156,6 +156,7 @@ extern float clamp_float(float v, float min, float max);
 extern struct Shape * new_shape();
 extern struct Shape * read_shape(FILE * fp);
 extern int write_shape(FILE * fp, struct Shape * shape);
+extern int free_shape(struct Shape * shape);
 
 /*int point_in_triangle(vec2d A, vec2d B, vec2d C, vec2d P);*/
 
