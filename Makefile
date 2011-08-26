@@ -65,13 +65,13 @@ pipe_inout: \
 	bin/read_walk_distance_via_osm_to_bus_stop_from_iroquois
 
 bin/mongoose.o: src/mongoose.c src/mongoose.h
-	gcc $(extra) src/mongoose.c -c -o bin/mongoose.o -std=c99 -D_POSIX_SOURCE -D_BSD_SOURCE -ldl -lpthread
+	gcc $(extra) src/mongoose.c -c -o bin/mongoose.o -std=c99 -D_POSIX_SOURCE -D_BSD_SOURCE
 
 bin/scheme.o: src/scheme.c src/scheme.h
 	gcc $(extra) src/scheme.c -c -o bin/scheme.o
 
 bin/civicsets: bin/mongoose.o
-	g++ $(extra) -Wall src/civicsets.c bin/mongoose.o -o bin/civicsets.ca
+	g++ $(extra) -Wall src/civicsets.c bin/mongoose.o -o bin/civicsets.ca -ldl -lpthread
 
 bin/produce_unit_circle: bin/scheme.o src/produce_unit_circle.c
 	gcc $(extra) bin/scheme.o src/produce_unit_circle.c -o bin/produce_unit_circle -lm
@@ -191,7 +191,7 @@ bin/write_json: bin/scheme.o src/write_json.c
 	gcc $(extra) bin/scheme.o src/write_json.c -o bin/write_json
 
 bin/write_webgl: bin/scheme.o bin/mongoose.o src/write_webgl.c
-	gcc $(extra) bin/scheme.o bin/mongoose.o src/write_webgl.c -o bin/write_webgl
+	gcc $(extra) bin/scheme.o bin/mongoose.o src/write_webgl.c -o bin/write_webgl -ldl -lpthread
 
 bin/read_walk_distance_via_osm_to_bus_stop_from_iroquois: bin/scheme.o src/read_walk_distance_via_osm_to_bus_stop_from_iroquois.c
 	gcc $(extra) -lcurl bin/scheme.o src/read_walk_distance_via_osm_to_bus_stop_from_iroquois.c -o bin/read_walk_distance_via_osm_to_bus_stop_from_iroquois
@@ -206,7 +206,7 @@ bin/stream_opengl: bin/scheme.o src/stream_opengl.c
 #	cc $(extra) -O3 -Wall $(mysql) $*.c -c -o bin/$@
 
 #bin/write_http: bin/scheme.o src/write_http.c
-#	gcc $(extra) bin/scheme.o src/mongoose.o src/write_http.c -o bin/write_http
+#	gcc $(extra) bin/scheme.o src/mongoose.o src/write_http.c -o bin/write_http -ldl -lpthread
 
 #read_mysql_line_strips: bin/scheme.o read_mysql_line_strips.c
 #	gcc $(extra) bin/scheme.o read_mysql_line_strips.c -o bin/read_mysql_line_strips $(mysql) 
