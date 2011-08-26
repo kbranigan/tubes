@@ -65,7 +65,7 @@ pipe_inout: \
 	bin/read_walk_distance_via_osm_to_bus_stop_from_iroquois
 
 bin/mongoose.o: src/mongoose.c src/mongoose.h
-	gcc $(extra) src/mongoose.c -c -o bin/mongoose.o -std=c99 -D_POSIX_SOURCE -D_BSD_SOURCE
+	gcc $(extra) src/mongoose.c -c -o bin/mongoose.o -std=c99 -D_POSIX_SOURCE -D_BSD_SOURCE -ldl -lpthread
 
 bin/scheme.o: src/scheme.c src/scheme.h
 	gcc $(extra) src/scheme.c -c -o bin/scheme.o
