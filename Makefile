@@ -19,6 +19,7 @@ extras: \
 	bin/write_bmp \
 	bin/write_png \
 	bin/civicsets \
+	bin/tesselate \
 	bin/read_mysql \
 	bin/read_nextbus \
 	bin/stream_opengl \
@@ -47,7 +48,6 @@ pipe_out: \
 pipe_inout: \
 	bin/clip \
 	bin/delay \
-	bin/tesselate \
 	bin/transform \
 	bin/reduce_by_id \
 	bin/add_attribute \
