@@ -10,15 +10,17 @@ whichgl= $(applegl)
 
 extra= -lm
 
-all: pipe_in  pipe_out  pipe_inout extras
+all: pipe_in  pipe_out  pipe_inout  
 
 # these require additional libs I put them in here just to indicate that
 extras: \
-	bin/write_png \
 	bin/redis \
 	bin/read_dwg \
+	bin/write_png \
+	bin/civicsets \
 	bin/read_mysql \
 	bin/read_nextbus \
+	bin/stream_opengl \
 	bin/read_soundwave \
 	bin/read_foursquare \
 	bin/fast_fourier_transform
@@ -59,7 +61,8 @@ pipe_inout: \
 	bin/reset_unique_set_ids \
 	bin/add_color_from_mysql \
 	bin/align_points_to_line_strips \
-	bin/group_shapes_on_unique_set_id
+	bin/group_shapes_on_unique_set_id \
+	bin/read_walk_distance_via_osm_to_bus_stop_from_iroquois
 
 bin/mongoose.o: src/mongoose.c src/mongoose.h
 	gcc $(extra) src/mongoose.c -c -o bin/mongoose.o -std=c99 -D_POSIX_SOURCE -D_BSD_SOURCE
@@ -67,8 +70,8 @@ bin/mongoose.o: src/mongoose.c src/mongoose.h
 bin/scheme.o: src/scheme.c src/scheme.h
 	gcc $(extra) src/scheme.c -c -o bin/scheme.o
 
-#bin/civicsets: ext/shpopen.o ext/dbfopen.o mongoose.o
-#	g++ $(extra) -Wall src/civicsets.c ext/shpopen.o ext/dbfopen.o mongoose.o -ldl -lpthread -o bin/civicsets.ca $(mysql)
+bin/civicsets: bin/mongoose.o
+	g++ $(extra) -Wall src/civicsets.c bin/mongoose.o -o bin/civicsets.ca
 
 bin/produce_unit_circle: bin/scheme.o src/produce_unit_circle.c
 	gcc $(extra) bin/scheme.o src/produce_unit_circle.c -o bin/produce_unit_circle -lm
@@ -189,6 +192,15 @@ bin/write_json: bin/scheme.o src/write_json.c
 
 bin/write_webgl: bin/scheme.o bin/mongoose.o src/write_webgl.c
 	gcc $(extra) bin/scheme.o bin/mongoose.o src/write_webgl.c -o bin/write_webgl
+
+bin/read_walk_distance_via_osm_to_bus_stop_from_iroquois: bin/scheme.o src/read_walk_distance_via_osm_to_bus_stop_from_iroquois.c
+	gcc $(extra) -lcurl bin/scheme.o src/read_walk_distance_via_osm_to_bus_stop_from_iroquois.c -o bin/read_walk_distance_via_osm_to_bus_stop_from_iroquois
+
+bin/stream_opengl: bin/scheme.o src/stream_opengl.c
+	mkdir -p bin/stream_opengl.app/Contents/Resources/English.lproj/
+	/Developer/usr/bin/ibtool --strip bin/stream_opengl.app/Contents/Resources/English.lproj/MainMenu.nib --output-format human-readable-text src/ext/MainMenu.nib
+	mkdir -p bin/stream_opengl.app/Contents/MacOS/
+	gcc $(extra) -framework Cocoa -framework OpenGL bin/scheme.o src/stream_opengl.c -o bin/stream_opengl.app/Contents/MacOS/stream_opengl
 
 #%.o: %.c
 #	cc $(extra) -O3 -Wall $(mysql) $*.c -c -o bin/$@
