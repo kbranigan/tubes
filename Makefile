@@ -24,6 +24,7 @@ extras: \
 	bin/stream_opengl \
 	bin/read_soundwave \
 	bin/read_foursquare \
+	bin/write_bmp_sphere \
 	bin/fast_fourier_transform
 
 pipe_in: \
@@ -33,7 +34,6 @@ pipe_in: \
 	bin/write_sql \
 	bin/write_json \
 	bin/write_webgl \
-	bin/write_bmp_sphere \
 	bin/pass_through
 
 pipe_out: \
