@@ -16,6 +16,7 @@ all: pipe_in  pipe_out  pipe_inout
 extras: \
 	bin/redis \
 	bin/read_dwg \
+	bin/write_bmp \
 	bin/write_png \
 	bin/civicsets \
 	bin/read_mysql \
@@ -28,7 +29,6 @@ extras: \
 pipe_in: \
 	bin/bbox \
 	bin/inspect \
-	bin/write_bmp \
 	bin/write_kml \
 	bin/write_sql \
 	bin/write_json \
