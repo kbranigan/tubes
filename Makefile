@@ -22,7 +22,6 @@ extras: \
 	bin/tesselate \
 	bin/read_mysql \
 	bin/read_nextbus \
-	bin/stream_opengl \
 	bin/read_soundwave \
 	bin/read_foursquare \
 	bin/write_bmp_sphere \
@@ -61,7 +60,10 @@ pipe_inout: \
 	bin/reset_unique_set_ids \
 	bin/add_color_from_mysql \
 	bin/align_points_to_line_strips \
-	bin/group_shapes_on_unique_set_id \
+	bin/group_shapes_on_unique_set_id
+
+testing: \
+	bin/stream_opengl \
 	bin/read_walk_distance_via_osm_to_bus_stop_from_iroquois
 
 bin/mongoose.o: src/mongoose.c src/mongoose.h
