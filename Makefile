@@ -16,7 +16,6 @@ all: pipe_in  pipe_out  pipe_inout
 extras: \
 	bin/redis \
 	bin/read_dwg \
-	bin/write_bmp \
 	bin/write_png \
 	bin/civicsets \
 	bin/tesselate \
@@ -24,7 +23,6 @@ extras: \
 	bin/read_nextbus \
 	bin/read_soundwave \
 	bin/read_foursquare \
-	bin/write_bmp_sphere \
 	bin/fast_fourier_transform
 
 pipe_in: \
@@ -64,6 +62,8 @@ pipe_inout: \
 
 testing: \
 	bin/stream_opengl \
+	bin/write_bmp \
+	bin/write_bmp_sphere \
 	bin/read_walk_distance_via_osm_to_bus_stop_from_iroquois
 
 bin/mongoose.o: src/mongoose.c src/mongoose.h

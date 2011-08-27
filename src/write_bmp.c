@@ -18,9 +18,12 @@
 
 int write_image(char * file_name, unsigned int width, unsigned int height)
 {
-  unsigned char * image_data = (unsigned char *)malloc(TEXTURE_WIDTH*TEXTURE_HEIGHT*sizeof(unsigned char)*3);
+  unsigned int texture_width = width;
+  unsigned int texture_height = height;
+  
+  unsigned char * image_data = (unsigned char *)malloc(texture_width*texture_height*sizeof(unsigned char)*3);
   glReadBuffer((GLenum)GL_COLOR_ATTACHMENT0_EXT);
-  glReadPixels(0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT, GL_BGR, GL_UNSIGNED_BYTE, (GLvoid*)image_data);
+  glReadPixels(0, 0, texture_width, texture_height, GL_BGR, GL_UNSIGNED_BYTE, (GLvoid*)image_data);
   
   FILE *fp = fopen(file_name, "wb");
   
@@ -75,6 +78,8 @@ int write_image(char * file_name, unsigned int width, unsigned int height)
 
 int write_bmp(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
+  int texture_width = 800;
+  
   char * filename = argc > 1 ? argv[1] : "output.bmp";
   int draw_individual_shapes = 0;
   
@@ -117,14 +122,14 @@ int write_bmp(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
   }
   
   if (!draw_individual_shapes)
-    if (setup_offscreen_render(b[0][0], b[0][1], b[1][0], b[1][1], b[2][0], b[2][1]) != EXIT_SUCCESS)
+    if (setup_offscreen_render(b[0][0], b[0][1], b[1][0], b[1][1], b[2][0], b[2][1], texture_width) != EXIT_SUCCESS)
       return EXIT_FAILURE;
   
   long i, j, k;
   for (i = 0 ; i < num_shapes ; i++)
   {
     if (draw_individual_shapes)
-      if (setup_offscreen_render(b[0][0], b[0][1], b[1][0], b[1][1], b[2][0], b[2][1]) != EXIT_SUCCESS)
+      if (setup_offscreen_render(b[0][0], b[0][1], b[1][0], b[1][1], b[2][0], b[2][1], texture_width) != EXIT_SUCCESS)
         return EXIT_FAILURE;
     
     shape = shapes[i];
@@ -165,15 +170,15 @@ int write_bmp(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
     {
       char f[100];
       sprintf(f, "output/%ld.bmp", i);
-      write_image(f, TEXTURE_WIDTH, TEXTURE_HEIGHT);
-      fprintf(stderr, "%s: %dx%d bmp created named '%s'\n", argv[0], TEXTURE_WIDTH, TEXTURE_HEIGHT, f);
+      write_image(f, texture_width);
+      fprintf(stderr, "%s: %dx%d bmp created named '%s'\n", argv[0], texture_width, texture_height, f);
     }
   }
   
   if (!draw_individual_shapes)
   {
-    write_image(filename, TEXTURE_WIDTH, TEXTURE_HEIGHT);
-    fprintf(stderr, "%s: %dx%d bmp created named '%s'\n", argv[0], TEXTURE_WIDTH, TEXTURE_HEIGHT, filename);
+    write_image(filename, texture_width);
+    fprintf(stderr, "%s: %dx%d bmp created named '%s'\n", argv[0], texture_width, texture_height, filename);
   }
 }
 

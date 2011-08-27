@@ -94,6 +94,8 @@ static int _write_png(bitmap_t *bitmap, const char *path)
 
 int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
+  int texture_width = 800;
+  
   char * filename = argc > 1 ? argv[1] : "output.png";
   
   float b[3][2] = {
@@ -143,7 +145,10 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
     }
   }
   
-  if (setup_offscreen_render(b[0][0], b[0][1], b[1][0], b[1][1], b[2][0], b[2][1]) != EXIT_SUCCESS)
+  int texture_height = texture_width * ((b[1][1] - b[1][0]) / (b[0][1] - b[0][0]));
+  if (texture_height > texture_width * 1.5) texture_height = texture_width * 1.5;
+  
+  if (setup_offscreen_render(b[0][0], b[0][1], b[1][0], b[1][1], b[2][0], b[2][1], texture_width) != EXIT_SUCCESS)
     return EXIT_FAILURE;
   
   glTranslatef((b[0][0]+b[0][1])/2.0, (b[1][0]+b[1][1])/2.0, 0);
@@ -186,8 +191,8 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
   free(shapes);
   
   bitmap_t png;
-  png.width = TEXTURE_WIDTH;
-  png.height = TEXTURE_HEIGHT;
+  png.width = texture_width;
+  png.height = texture_height;
   
   if (fabs(b[0][0] - b[0][1]) <= 0 || fabs(b[1][0] - b[1][1]) <= 0)
       {
@@ -195,15 +200,15 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
         exit(0);
       }
   
-  if (TEXTURE_WIDTH  >= 50000 || TEXTURE_HEIGHT >= 50000)
+  if (texture_width >= 50000 || texture_height >= 50000)
       {
-        fprintf(stderr, "generated image size is definitely wrong (%d x %d)\n", TEXTURE_WIDTH, TEXTURE_HEIGHT);
+        fprintf(stderr, "generated image size is definitely wrong (%d x %d)\n", texture_width, texture_height);
         exit(0);
       }
   
-  png.pixels = calloc(sizeof(pixel_t), TEXTURE_WIDTH*TEXTURE_HEIGHT);
+  png.pixels = calloc(sizeof(pixel_t), texture_width*texture_height);
   glReadBuffer((GLenum)GL_COLOR_ATTACHMENT0_EXT);
-  glReadPixels(0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)png.pixels);
+  glReadPixels(0, 0, texture_width, texture_height, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)png.pixels);
   
   _write_png(&png, filename);
   //fprintf(stderr, "%s: %dx%d bmp created named '%s'\n", argv[0], TEXTURE_WIDTH, TEXTURE_HEIGHT, filename);

@@ -15,13 +15,13 @@
 GLuint textureId;
 GLuint rboId;
 GLuint fboId;
-int TEXTURE_WIDTH = 1600;
-int TEXTURE_HEIGHT = 0;
+//int texture_width = 1600;
+//int texture_height = 0;
 
-int setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, float min_z, float max_z)
+int setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, float min_z, float max_z, int texture_width)
 {
-  TEXTURE_HEIGHT = TEXTURE_WIDTH * ((max_y - min_y) / (max_x - min_x));
-  if (TEXTURE_HEIGHT > TEXTURE_WIDTH * 1.5) TEXTURE_HEIGHT = TEXTURE_WIDTH * 1.5;
+  int texture_height = texture_width * ((max_y - min_y) / (max_x - min_x));
+  if (texture_height > texture_width * 1.5) texture_height = texture_width * 1.5;
   
   #ifdef __APPLE__
   
@@ -51,8 +51,8 @@ int setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, f
   
   OSMesaContext ctx = OSMesaCreateContextExt(OSMESA_RGBA, 32, 8, 16, NULL);
   if (!ctx) { fprintf(stderr, "OSMesaCreateContext failed!\n"); return EXIT_FAILURE; }
-  void *buffer = malloc(TEXTURE_WIDTH * TEXTURE_HEIGHT * 4 * sizeof(GLubyte));
-  if (!OSMesaMakeCurrent(ctx, buffer, GL_UNSIGNED_BYTE, TEXTURE_WIDTH, TEXTURE_HEIGHT)) { printf("OSMesaMakeCurrent failed!\n"); return EXIT_FAILURE; }
+  void *buffer = malloc(texture_width * texture_height * 4 * sizeof(GLubyte));
+  if (!OSMesaMakeCurrent(ctx, buffer, GL_UNSIGNED_BYTE, texture_width, texture_height)) { printf("OSMesaMakeCurrent failed!\n"); return EXIT_FAILURE; }
   
   #endif
   
@@ -64,13 +64,13 @@ int setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, f
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE); // automatic mipmap
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, texture_width, texture_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
   glBindTexture(GL_TEXTURE_2D, 0);
   
   // create a renderbuffer object to store depth info
   glGenRenderbuffersEXT(1, &rboId);
   glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, rboId);
-  glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+  glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT, texture_width, texture_height);
   glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
   
   // create a framebuffer object
@@ -100,14 +100,14 @@ int setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, f
   
   glDisable(GL_TEXTURE_2D);
   
-  glViewport(0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+  glViewport(0, 0, texture_width, texture_height);
   glClearColor(1, 1, 1, 1);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  //gluPerspective(60.0f, (float)(TEXTURE_WIDTH)/TEXTURE_HEIGHT, 1.0f, 100.0f);
-  //glOrtho(TEXTURE_WIDTH, -TEXTURE_WIDTH, TEXTURE_HEIGHT, -TEXTURE_HEIGHT, -100, 100);
+  //gluPerspective(60.0f, (float)(texture_width)/texture_height, 1.0f, 100.0f);
+  //glOrtho(texture_width, -texture_width, texture_height, -texture_height, -100, 100);
   
   float diff_x = max_x - min_x;
   float diff_y = max_y - min_y;
