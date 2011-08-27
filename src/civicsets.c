@@ -1,5 +1,5 @@
 
-#include <ftw.h>
+//#include <ftw.h>
 #include <time.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -8,10 +8,14 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <mysql.h>
+//#include <mysql.h>
 
-#include "shapefile_src/shapefil.h"
+//#include "shapefile_src/shapefil.h"
 #include "mongoose.h"
+
+const char *port = "2222";
+
+char * cwd = NULL;
 
 int file_exists(const char * fmt, ...)
 {
@@ -28,47 +32,17 @@ int file_exists(const char * fmt, ...)
   return (fp != NULL);
 }
 
+/*void run(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
 void list(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
 void image(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
 void fields(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
 void shapes(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
 void records(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
-void record_a_position(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
+void record_a_position(struct mg_connection *conn, const struct mg_request_info *ri, void *data);*/
 
-const char *port = "2222";
+//MYSQL mysql;
 
-MYSQL mysql;
-
-int main(int argc, char **argv)
-{
-  if ((mysql_init(&mysql) == NULL)) { printf("mysql_init error\n"); }
-  if (!mysql_real_connect(&mysql, "localhost", "root", "", "civicsets", 0, NULL, 0)) { printf("mysql_real_connect error\n"); }
-  
-  mysql_query(&mysql, "TRUNCATE TABLE datasets");
-  
-  struct mg_context *ctx = mg_start();
-  mg_set_option(ctx, "dir_list", "no");  // Set document root
-  int ret = 0;
-  ret = mg_set_option(ctx, "ports", "2222");
-  while (ret != 1)
-  {
-    sleep(1);
-    ret = mg_set_option(ctx, "ports", "2222");
-  }
-  mg_set_uri_callback(ctx, "/", &list, NULL);
-  mg_set_uri_callback(ctx, "/image", &image, NULL);
-  mg_set_uri_callback(ctx, "/fields", &fields, NULL);
-  mg_set_uri_callback(ctx, "/shapes", &shapes, NULL);
-  mg_set_uri_callback(ctx, "/records", &records, NULL);
-  mg_set_uri_callback(ctx, "/record_a_position", &record_a_position, NULL);
-  
-  printf("-------------------------------------------------------------------------\n");
-  
-  for (;;) sleep(10000);
-  mg_stop(ctx);
-}
-
-char data_path[] = "/work/data";
+/*char data_path[] = "/work/data";
 struct mg_connection *dconn = NULL;
 static int display_info(const char *fpath, const struct stat *sb, int tflag, struct FTW *ftwbuf)
 {
@@ -97,7 +71,7 @@ static int display_info(const char *fpath, const struct stat *sb, int tflag, str
     sprintf(query, "INSERT INTO datasets (filename, name) VALUES (\"%s%s.prj\", \"%s%s\")", data_path, file, data_path, file);
     mysql_query(&mysql, query);
     printf("%s\n", query);
-  }//*/
+  }
   
   mg_printf(dconn, "<tr><td>%s</td>", file);
   mg_printf(dconn, "<td><a href='/fields?file=%s'>fields</a></td>", file);
@@ -108,10 +82,139 @@ static int display_info(const char *fpath, const struct stat *sb, int tflag, str
   mg_printf(dconn, "</tr>\n");
   
   //mg_printf(dconn, "%s (%d) (%s)<br />\n", fpath + strlen(fpath) - 4);
-  return 0;           /* To tell nftw() to continue */
+  return 0;           // To tell nftw() to continue
+}*/
+
+/*struct Command {
+  char * name;
+  char ** arguments;
+  unsigned int num_arguments;
+};
+
+void run(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
+{
+  srand ( time(NULL) );
+  
+  mg_printf(conn, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n");
+  
+  mg_printf(conn, "<html>\n<head>\n<title>civicsets.ca</title>\n</head>\n<body>\n<br />\n");
+  
+  char *buf;
+  char *cwd;
+  long cwd_length = pathconf(".", _PC_PATH_MAX);
+  
+  if ((buf = (char *)malloc((size_t)cwd_length)) != NULL)
+    cwd = getcwd(buf, (size_t)cwd_length);
+  
+  //c#      // command #
+  //  a#_?  // command #  argument ?
+  
+  struct Command * commands = NULL;
+  unsigned int num_commands = 0;
+  
+  do
+  {
+    char fname[50];
+    sprintf(fname, "c%d", num_commands);
+    char * command_name = mg_get_var(conn, fname);
+    if (command_name == NULL) break; // all done
+    
+    num_commands ++;
+    commands = (struct Command*)realloc(commands, sizeof(struct Command)*num_commands);
+    struct Command * command = &commands[num_commands-1];
+    command->name = command_name;
+    command->num_arguments = 0;
+    command->arguments = NULL;
+    
+    do
+    {
+      sprintf(fname, "a%d_%d", num_commands-1, command->num_arguments);
+      char * argument = mg_get_var(conn, fname);
+      if (argument == NULL) break; // all done
+      
+      command->num_arguments ++;
+      command->arguments = (char**)realloc(command->arguments, sizeof(char*)*command->num_arguments);
+      command->arguments[command->num_arguments-1] = argument;
+      
+    } while (1);
+    
+  } while (1);
+  
+  char * command_full = (char*)malloc(cwd_length + 7);
+  sprintf(command_full, "cd %s ; ", cwd);
+  
+  unsigned int i = 0;
+  for (i = 0 ; i < num_commands ; i++)
+  {
+    struct Command * command = &commands[i];
+    printf("%d: %s\n", i, command->name);
+    
+    if (i > 0) command_full = (char*)realloc(command_full, strlen(command_full) + 3);
+    if (i > 0) strcat(command_full, " | ");
+    
+    if (strncmp(command->name, "bin/write_", 6) == 0 && command->num_arguments == 0)
+    {
+      char temp[20];
+      sprintf(temp, " cache/%d.%s", rand(), command->name+10);
+      mg_printf(conn, "<a href='%s'>%s</a><br />\n", temp, temp);
+      command_full = (char*)realloc(command_full, strlen(command_full) + 2 + strlen(command->name) + 10 + strlen(temp));
+      strcat(command_full, "./");
+      strcat(command_full, command->name);
+      strcat(command_full, temp);
+    }
+    else if (strncmp(command->name, "bin/", 4) == 0)
+    {
+      command_full = (char*)realloc(command_full, strlen(command_full) + 2 + strlen(command->name) + 1);
+      strcat(command_full, command->name);
+    }
+    else if (strcmp(command->name, "cat") == 0 && command->num_arguments == 1)
+    {
+      command_full = (char*)realloc(command_full, strlen(command_full) + strlen(command->name) + 6 + strlen(command->arguments[0]));
+      strcat(command_full, command->name);
+      strcat(command_full, " data/");
+      strcat(command_full, command->arguments[0]);
+    }
+    else
+    {
+      unsigned int j = 0;
+      for (j = 0 ; j < command->num_arguments ; j++)
+      {
+        
+      }
+      mg_printf(conn, "%s is no good. SOWWY <br />\n", command->name);
+    }
+    
+    unsigned int j = 0;
+    for (j = 0 ; j < command->num_arguments ; j++)
+    {
+      printf("  %d: %s\n", j, command->arguments[j]);
+      free(command->arguments[j]);
+    }
+    free(command->name);
+    free(command->arguments);
+  }
+  free(commands);
+  
+  system(command_full);
+  printf("%s\n", command_full);
+  free(command_full);
 }
 
-void record_a_position(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
+void list(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
+{
+  mg_printf(conn, "<table>\n");
+  
+  //dconn = conn; // dconn used in display_info callback
+  //int flags = FTW_DEPTH | FTW_PHYS;
+  //if (nftw(data_path, display_info, 20, flags) == -1) mg_printf(conn, "nftw FAILED\n");
+  //dconn = NULL;
+  
+  
+  
+  mg_printf(conn, "</table>\n");
+}*/
+
+/*void record_a_position(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
 {
   char * recorded_at_c = mg_get_var(conn, "recorded_at");
   long recorded_at = (recorded_at_c == NULL) ? 0 : atoi(recorded_at_c);
@@ -152,19 +255,6 @@ void record_a_position(struct mg_connection *conn, const struct mg_request_info 
   free(recorded_at_c);
   free(lat_c);
   free(lon_c);
-}
-
-void list(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
-{
-  mg_printf(conn, "<h1>Available shapefiles</h1>\n");
-  mg_printf(conn, "<table>\n");
-  
-  dconn = conn;
-  int flags = FTW_DEPTH | FTW_PHYS;
-  if (nftw(data_path, display_info, 20, flags) == -1) mg_printf(conn, "nftw FAILED\n");
-  dconn = NULL;
-  
-  mg_printf(conn, "</table>\n");
 }
 
 void fields(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
@@ -390,4 +480,76 @@ void image(struct mg_connection *conn, const struct mg_request_info *ri, void *d
 	if (d != NULL) DBFClose(d);
   free(row_id_c);
   free(part_id_c);
+}*/
+
+void ttc_route(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
+{
+  char * route = mg_get_var(conn, "route");
+  if (route == NULL) { mg_printf(conn, "You need to specify a route [like 7, or 510]<br />"); return; }
+  
+  mg_printf(conn, "<table>\n");
+  
+  char command[1000];
+  sprintf(command, "mkdir -p %s/cache_images/ttc_routes/", cwd);
+  system(command);
+  
+  srand(time(NULL));
+  
+  char temp[200];
+  sprintf(temp, "cache_images/ttc_routes/%d.png", rand());
+  
+  sprintf(command, "%s/bin/read_mysql \"SELECT x, y, id FROM nextbus.points WHERE routeTag = '%d'\" | %s/bin/write_png %s/%s", cwd, atoi(route), cwd, cwd, temp);
+  //printf("%s\n", command);
+  
+  system(command);
+  
+  mg_printf(conn, "<img src='%s'><br />\n", temp);
+  
+  //system("./bin/");
+  
+  //dconn = conn; // dconn used in display_info callback
+  //int flags = FTW_DEPTH | FTW_PHYS;
+  //if (nftw(data_path, display_info, 20, flags) == -1) mg_printf(conn, "nftw FAILED\n");
+  //dconn = NULL;
+  
+  
+  
+  mg_printf(conn, "</table>\n");
+}
+
+int main(int argc, char **argv)
+{
+  //if ((mysql_init(&mysql) == NULL)) { printf("mysql_init error\n"); }
+  //if (!mysql_real_connect(&mysql, "localhost", "root", "", "civicsets", 0, NULL, 0)) { printf("mysql_real_connect error\n"); }
+  
+  //mysql_query(&mysql, "TRUNCATE TABLE datasets");
+  
+  long size = pathconf(".", _PC_PATH_MAX);
+  char *buf;
+  
+  if ((buf = (char *)malloc((size_t)size)) != NULL)
+    cwd = getcwd(buf, (size_t)size);
+  
+  struct mg_context *ctx = mg_start();
+  mg_set_option(ctx, "dir_list", "no");  // Set document root
+  int ret = 0;
+  ret = mg_set_option(ctx, "ports", port);
+  while (ret != 1)
+  {
+    sleep(1);
+    ret = mg_set_option(ctx, "ports", port);
+  }
+  //mg_set_uri_callback(ctx, "/", &list, NULL);
+  //mg_set_uri_callback(ctx, "/run", &run, NULL);
+  mg_set_uri_callback(ctx, "/ttc_route", &ttc_route, NULL);
+  //mg_set_uri_callback(ctx, "/image", &image, NULL);
+  //mg_set_uri_callback(ctx, "/fields", &fields, NULL);
+  //mg_set_uri_callback(ctx, "/shapes", &shapes, NULL);
+  //mg_set_uri_callback(ctx, "/records", &records, NULL);
+  //mg_set_uri_callback(ctx, "/record_a_position", &record_a_position, NULL);
+  
+  printf("[http server on port:%s]\n", port);
+  
+  for (;;) sleep(10000);
+  mg_stop(ctx);
 }
