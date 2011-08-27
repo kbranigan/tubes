@@ -499,7 +499,7 @@ void ttc_route(struct mg_connection *conn, const struct mg_request_info *ri, voi
   sprintf(temp, "cache_images/ttc_routes/%d.png", rand());
   
   sprintf(command, "%s/bin/read_mysql \"SELECT x, y, id FROM nextbus.points WHERE routeTag = '%d'\" | %s/bin/write_png %s/%s", cwd, atoi(route), cwd, cwd, temp);
-  //printf("%s\n", command);
+  fprintf(stderr, "%s\n", command);
   
   system(command);
   
