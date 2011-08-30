@@ -482,43 +482,114 @@ void image(struct mg_connection *conn, const struct mg_request_info *ri, void *d
   free(part_id_c);
 }*/
 
-void ttc_route(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
+void get_image_name(char * temp)
 {
-  char * route = mg_get_var(conn, "route");
+  sprintf(temp, "cache_images/ttc_routes/%d.png", rand());
+}
+
+void output_and_delete_image(struct mg_connection *conn, char * filename)
+{
+  mg_printf(conn, "HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nConnection: close\r\n\r\n");
+  
+  FILE * fp = fopen(filename, "r");
+  if (fp != NULL)
+  {
+    int actual_size = 0;
+    int malloc_size = 0;
+    char * data = NULL;
+    int c;
+    do {
+      c = fgetc(fp);
+      if (c != EOF)
+      {
+        actual_size ++;
+        if (actual_size > malloc_size)
+        {
+          malloc_size += 1000;
+          data = (char *)realloc(data, malloc_size);
+        }
+        data[actual_size-1] = c;
+      }
+    } while (c != EOF);
+    
+    mg_write(conn, data, actual_size);
+    fclose(fp);
+    free(data);
+    
+    char command[1000];
+    sprintf(command, "rm %s", filename);
+    system(command);
+  }
+}
+
+void ttc_performance(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
+{
+  char * route = mg_get_var(conn, "r");
   if (route == NULL) { mg_printf(conn, "You need to specify a route [like 7, or 510]<br />"); return; }
   
-  mg_printf(conn, "<table>\n");
+  char image[200];
+  get_image_name(image);
   
-  char command[1000];
-  sprintf(command, "mkdir -p %s/cache_images/ttc_routes/", cwd);
+  char command[4000];
+  
+  int nextbus_rand_int = rand();
+  
+  sprintf(command, "./bin/read_mysql \"SELECT lat as y, lng as x, shape_id as unique_set_id from ttc.shape_points where shape_id = 667 order by position\" > nextbus_temp_%d.b", nextbus_rand_int);
+  
+  fprintf(stderr, "%s\n", command);
   system(command);
   
-  srand(time(NULL));
+  sprintf(command, "./bin/read_mysql \"select x, y, id, created_at as reported_at, unique_set_id as vehicle_number, secsSinceReport from nextbus.points where routeTag = 510 and dirTag = '510_0_510' order by unique_set_id, created_at\" "
+  " | ./bin/align_points_to_line_strips -f nextbus_temp_%d.b "
+  " | ./bin/write_sql -d "
+  " | mysql -uroot nextbus_temp ", nextbus_rand_int);
+  
+  fprintf(stderr, "%s\n", command);
+  system(command);
+  
+  sprintf(command, " ./bin/read_mysql \"select (dist_line_667+0.0)/2 as x, unix_timestamp(reported_at) - (select min(unix_timestamp(reported_at)) from nextbus_temp.points) - secsSinceReport as y, vehicle_number as unique_set_id from nextbus_temp.points order by vehicle_number, reported_at\" "
+  " | ./bin/write_png %s", image);
+  
+  fprintf(stderr, "%s\n", command);
+  system(command);
+  
+  sprintf(command, "rm nextbus_temp_%d.b", nextbus_rand_int);
+  
+  fprintf(stderr, "%s\n", command);
+  system(command);
+  
+  output_and_delete_image(conn, image);
+  
+  free(route);
+}
+
+void ttc_route(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
+{
+  char * route = mg_get_var(conn, "r");
+  if (route == NULL) { mg_printf(conn, "You need to specify a route [like ?r=7, or ?r=510]<br />"); return; }
   
   char temp[200];
-  sprintf(temp, "cache_images/ttc_routes/%d.png", rand());
+  get_image_name(temp);
   
-  sprintf(command, "%s/bin/read_mysql \"SELECT x, y, id FROM nextbus.points WHERE routeTag = '%d'\" | %s/bin/write_png %s/%s", cwd, atoi(route), cwd, cwd, temp);
+  char command[1000];
+  
+  if (strlen(route) == 0)
+    sprintf(command, "%s/bin/read_mysql \"SELECT x, y, id FROM nextbus_null.points WHERE routeTag IS NULL\" | %s/bin/write_png %s/%s", cwd, cwd, cwd, temp);
+  else
+    sprintf(command, "%s/bin/read_mysql \"SELECT x, y, id FROM nextbus.points WHERE routeTag = '%d'\" | %s/bin/write_png %s/%s", cwd, atoi(route), cwd, cwd, temp);
   fprintf(stderr, "%s\n", command);
   
   system(command);
   
-  mg_printf(conn, "<img src='%s'><br />\n", temp);
+  output_and_delete_image(conn, temp);
   
-  //system("./bin/");
-  
-  //dconn = conn; // dconn used in display_info callback
-  //int flags = FTW_DEPTH | FTW_PHYS;
-  //if (nftw(data_path, display_info, 20, flags) == -1) mg_printf(conn, "nftw FAILED\n");
-  //dconn = NULL;
-  
-  
-  
-  mg_printf(conn, "</table>\n");
+  free(route);
 }
 
 int main(int argc, char **argv)
 {
+  srand(time(NULL));
+  
   //if ((mysql_init(&mysql) == NULL)) { printf("mysql_init error\n"); }
   //if (!mysql_real_connect(&mysql, "localhost", "root", "", "civicsets", 0, NULL, 0)) { printf("mysql_real_connect error\n"); }
   
@@ -533,6 +604,7 @@ int main(int argc, char **argv)
   struct mg_context *ctx = mg_start();
   mg_set_option(ctx, "dir_list", "no");  // Set document root
   int ret = 0;
+  ret = mg_set_option(ctx, "max_threads", "1"); // just you know, easier to work with
   ret = mg_set_option(ctx, "ports", port);
   while (ret != 1)
   {
@@ -542,6 +614,8 @@ int main(int argc, char **argv)
   //mg_set_uri_callback(ctx, "/", &list, NULL);
   //mg_set_uri_callback(ctx, "/run", &run, NULL);
   mg_set_uri_callback(ctx, "/ttc_route", &ttc_route, NULL);
+  mg_set_uri_callback(ctx, "/ttc_performance", &ttc_performance, NULL);
+  
   //mg_set_uri_callback(ctx, "/image", &image, NULL);
   //mg_set_uri_callback(ctx, "/fields", &fields, NULL);
   //mg_set_uri_callback(ctx, "/shapes", &shapes, NULL);
