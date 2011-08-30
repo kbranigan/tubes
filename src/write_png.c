@@ -95,7 +95,7 @@ static int _write_png(bitmap_t *bitmap, const char *path)
 
 int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
-  int texture_width = 800;
+  int texture_width = 1200;
   
   char * filename = argc > 1 ? argv[1] : "output.png";
   
