@@ -42,7 +42,7 @@ int graph_ttc_performance(int argc, char ** argv, FILE * pipe_in, FILE * pipe_ou
     
     if (atoi(get_attribute(shape, "secsSinceReport")) > 6) { free_shape(shape); continue; }
     
-    float v[3] = { atof(get_attribute(shape, distance_attribute)), atof(get_attribute(shape, "reported_at")) - 1314727708, 0 };
+    float v[3] = { atof(get_attribute(shape, distance_attribute)), atof(get_attribute(shape, "reported_at")), 0 };
     float c[4] = { 0, 0, 0, 1 };
     
     append_vertex2(line, v, c);
