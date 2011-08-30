@@ -23,6 +23,8 @@ int setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, f
   int texture_height = texture_width * ((max_y - min_y) / (max_x - min_x));
   if (texture_height > texture_width * 1.5) texture_height = texture_width * 1.5;
   
+  fprintf(stderr, "%s: image size: %f by %f\n", ARGV[0], texture_width, texture_height);
+  
   #ifdef __APPLE__
   
   CGLContextObj contextObj;
