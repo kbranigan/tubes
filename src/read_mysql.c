@@ -76,8 +76,6 @@ int read_mysql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * p
       }
     }
     
-    fprintf(stderr, "mysql_num_rows = %lld\n", mysql_num_rows(res));
-    
     if (x_field_id == -1 || y_field_id == -1)
     {
       fprintf(stderr, "at least one field named 'x' and one field named 'y' is required\n");
