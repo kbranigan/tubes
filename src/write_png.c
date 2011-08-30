@@ -1,6 +1,7 @@
 
 #include <png.h>
 #include <math.h>
+#include <float.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -99,9 +100,9 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
   char * filename = argc > 1 ? argv[1] : "output.png";
   
   float b[3][2] = {
-    {10000000, -10000000},
-    {10000000, -10000000},
-    {10000000, -10000000}
+    {FLT_MAX, -FLT_MIN},
+    {FLT_MAX, -FLT_MIN},
+    {FLT_MAX, -FLT_MIN}
   };
   
   float x=0, y=0, z=0;
