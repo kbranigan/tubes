@@ -1,4 +1,4 @@
-
+1018,1019,1020,1021,1022,1023,1024,1025,1026,1027,1028,1029
 
 This is for the viewing ttc vehicles, traveling along the which ever specific shape over time
 Assumes the following:
@@ -26,11 +26,29 @@ cat 125.aligned.b \
   | ./bin/graph_ttc_performance \
   | ./bin/write_png
 
-./bin/read_mysql "select x, y, id, unix_timestamp(created_at) - (select min(unix_timestamp(created_at)) from nextbus.points where routeTag = 125 and secsSinceReport > 6) - secsSinceReport as reported_at, unique_set_id as vehicle_number, dirTag from nextbus.points where routeTag = 125 and secsSinceReport > 6 order by dirTag, unique_set_id, created_at" \
+./bin/read_mysql "select x, y, id, unix_timestamp(created_at) - (select min(unix_timestamp(created_at)) from nextbus.points where routeTag = 125 and round(secsSinceReport) < 6) - secsSinceReport as reported_at, unique_set_id as vehicle_number, dirTag from nextbus.points where routeTag = 125 and round(secsSinceReport) < 6 order by dirTag, unique_set_id, created_at" \
   | ./bin/reduce_by_attribute -n dirTag -v 125_0_125 \
   | ./bin/align_points_to_line_strips -f <(./bin/read_mysql "SELECT lat as y, lng as x, shape_id as unique_set_id from ttc_gtfs.shape_points where shape_id = 192 order by shape_id, position") \
-  | ./bin/graph_ttc_performance \
-  | ./bin/write_png
+  | ./bin/graph_ttc_performance -a dist_line_192 \
+  | ./bin/write_png cache_images/ttc.125.to.finch.png
+
+./bin/read_mysql "select x, y, id, unix_timestamp(created_at) - (select min(unix_timestamp(created_at)) from nextbus.points where routeTag = 125 and round(secsSinceReport) < 6) - secsSinceReport as reported_at, unique_set_id as vehicle_number, dirTag from nextbus.points where routeTag = 125 and round(secsSinceReport) < 6 order by dirTag, unique_set_id, created_at" \
+  | ./bin/reduce_by_attribute -n dirTag -v 125_1_125 \
+  | ./bin/align_points_to_line_strips -f <(./bin/read_mysql "SELECT lat as y, lng as x, shape_id as unique_set_id from ttc_gtfs.shape_points where shape_id = 194 order by shape_id, position") \
+  | ./bin/graph_ttc_performance -a dist_line_194 \
+  | ./bin/write_png cache_images/ttc.125.to.antibes.png
+
+./bin/read_mysql "select x, y, id, unix_timestamp(created_at) - (select min(unix_timestamp(created_at)) from nextbus.points where routeTag = 60 and round(secsSinceReport) < 6) - secsSinceReport as reported_at, unique_set_id as vehicle_number, dirTag from nextbus.points where routeTag = 60 and round(secsSinceReport) < 6 order by dirTag, unique_set_id, created_at" \
+  | ./bin/reduce_by_attribute -n dirTag -v 60_0_60D \
+  | ./bin/align_points_to_line_strips -f <(./bin/read_mysql "SELECT lat as y, lng as x, shape_id as unique_set_id from ttc_gtfs.shape_points where shape_id = 1020 order by shape_id, position") \
+  | ./bin/graph_ttc_performance -a dist_line_1020 \
+  | ./bin/write_png cache_images/ttc.60D.to.signal.hill.png
+
+./bin/read_mysql "select x, y, id, unix_timestamp(created_at) - (select min(unix_timestamp(created_at)) from nextbus.points where routeTag = 60 and round(secsSinceReport) < 6) - secsSinceReport as reported_at, unique_set_id as vehicle_number, dirTag from nextbus.points where routeTag = 60 and round(secsSinceReport) < 6 order by dirTag, unique_set_id, created_at" \
+  | ./bin/reduce_by_attribute -n dirTag -v 60_1_60D \
+  | ./bin/align_points_to_line_strips -f <(./bin/read_mysql "SELECT lat as y, lng as x, shape_id as unique_set_id from ttc_gtfs.shape_points where shape_id = 1027 order by shape_id, position") \
+  | ./bin/graph_ttc_performance -a dist_line_1027 \
+  | ./bin/write_png cache_images/ttc.60D.to.finch.png
 
 
 #############################################################
