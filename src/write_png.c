@@ -100,9 +100,9 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
   char * filename = argc > 1 ? argv[1] : "output.png";
   
   float b[3][2] = {
-    {FLT_MAX, -FLT_MIN},
-    {FLT_MAX, -FLT_MIN},
-    {FLT_MAX, -FLT_MIN}
+    {FLT_MAX, -FLT_MAX},
+    {FLT_MAX, -FLT_MAX},
+    {FLT_MAX, -FLT_MAX}
   };
   
   float x=0, y=0, z=0;
@@ -116,38 +116,40 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
     shapes = (struct Shape **)realloc(shapes, sizeof(struct Shape*)*num_shapes);
     shapes[num_shapes-1] = shape;
     
-    long i, j;
-    for (i = 0 ; i < shape->num_vertex_arrays ; i++)
-    {
-      struct VertexArray * va = &shape->vertex_arrays[i];
-      if (va->array_type != GL_VERTEX_ARRAY) continue;
-      //if (va->num_dimensions < 2) fprintf(stderr, "vertex_array has %d dimensions (expected at least 2)\n", va->num_dimensions);
-      if (va->vertexs == NULL) { fprintf(stderr, "vertex array %ld is NULL\n", i); exit(1); }
+    long j;
+    struct VertexArray * va = &shape->vertex_arrays[0];
       
-      for (j = 0 ; j < shape->num_vertexs ; j++)
+    for (j = 0 ; j < shape->num_vertexs ; j++)
+    {
+      float * v = get_vertex(shape, 0, j);
+      if (va->num_dimensions == 1)
       {
-        if (va->num_dimensions == 1)
-        {
-          x = j;
-          y = va->vertexs[j*va->num_dimensions];
-        }
-        else if (va->num_dimensions >= 2)
-        {
-          x = va->vertexs[j*va->num_dimensions];
-          y = va->vertexs[j*va->num_dimensions+1];
-        }
-        
-        if (va->num_dimensions >= 3) z = va->vertexs[j*va->num_dimensions+2];
-        
-        if (x < b[0][0]) b[0][0] = x; if (x > b[0][1]) b[0][1] = x;
-        if (y < b[1][0]) b[1][0] = y; if (y > b[1][1]) b[1][1] = y;
-        if (z < b[2][0]) b[2][0] = z; if (z > b[2][1]) b[2][1] = z;
+        x = j;
+        y = v[0];
       }
+      else if (va->num_dimensions >= 2)
+      {
+        x = v[0];
+        y = v[1];
+      }
+      
+      if (va->num_dimensions >= 3)
+        z = v[2];
+      
+      if (x < b[0][0]) b[0][0] = x; if (x > b[0][1]) b[0][1] = x;
+      if (y < b[1][0]) b[1][0] = y; if (y > b[1][1]) b[1][1] = y;
+      if (z < b[2][0]) b[2][0] = z; if (z > b[2][1]) b[2][1] = z;
     }
   }
   
   int texture_height = texture_width * ((b[1][1] - b[1][0]) / (b[0][1] - b[0][0]));
   if (texture_height > texture_width * 1.5) texture_height = texture_width * 1.5;
+  
+  if (texture_width <= 1 || texture_height <= 1)
+  {
+    fprintf(stderr, "%s: ERROR, texture size: %d by %d\n", argv[0], texture_width, texture_height);
+    return 0;
+  }
   
   if (setup_offscreen_render(b[0][0], b[0][1], b[1][0], b[1][1], b[2][0], b[2][1], texture_width) != EXIT_SUCCESS)
     return EXIT_FAILURE;

@@ -46,8 +46,8 @@ int bbox(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_er
       bbox = (struct minmax*)realloc(bbox, sizeof(struct minmax)*va->num_dimensions);
       for (j = (each_shape ? 0 : bbox_num_dimensions) ; j < va->num_dimensions ; j++)
       {
-        bbox[j].min =  FLT_MAX;//1000000.0;
-        bbox[j].max = -FLT_MIN;//-1000000.0;
+        bbox[j].min =  FLT_MAX;
+        bbox[j].max = -FLT_MAX;
       }
       bbox_num_dimensions = va->num_dimensions;
     }
