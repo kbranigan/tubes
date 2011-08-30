@@ -29,6 +29,8 @@ int graph_ttc_performance(int argc, char ** argv, FILE * pipe_in, FILE * pipe_ou
   struct Shape * shape = NULL;
   while ((shape = read_shape(pipe_in)))
   {
+    if (get_attribute(shape, "vehicle_number") == NULL) { free_shape(shape); continue; }
+    
     if (line == NULL || strcmp(get_attribute(line, "vehicle_number"), get_attribute(shape, "vehicle_number")) != 0 || atoi(get_attribute(shape, distance_attribute)) < distance_value)
     {
       if (line != NULL && line->num_vertexs > 0) { write_shape(pipe_out, line); free_shape(line); }
