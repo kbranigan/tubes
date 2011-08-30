@@ -89,7 +89,7 @@ struct VertexArray * get_or_add_array(struct Shape * shape, unsigned int array_t
   
   shape->num_vertex_arrays++;
   shape->vertex_arrays = realloc(shape->vertex_arrays, shape->num_vertex_arrays*sizeof(struct VertexArray));
-  if (shape->vertex_arrays == NULL) { fprintf(stderr, "malloc failed in read_shape()\n"); exit(1); }
+  if (shape->vertex_arrays == NULL) { fprintf(stderr, "malloc failed in get_or_add_array()\n"); exit(1); }
   
   struct VertexArray * va = &shape->vertex_arrays[shape->num_vertex_arrays-1];
   va->shape = shape;
@@ -99,7 +99,7 @@ struct VertexArray * get_or_add_array(struct Shape * shape, unsigned int array_t
   else
     va->num_dimensions = 2;
   va->vertexs = malloc(sizeof(float)*shape->num_vertexs*va->num_dimensions);
-  if (va->vertexs == NULL) { fprintf(stderr, "malloc failed in get_array()\n"); exit(1); }
+  if (va->vertexs == NULL) { fprintf(stderr, "malloc failed in get_or_add_array()\n"); exit(1); }
   
   return va;
 }
