@@ -57,6 +57,7 @@ pipe_inout: \
 	bin/reduce_by_attribute \
 	bin/reset_unique_set_ids \
 	bin/add_color_from_mysql \
+	bin/graph_ttc_performance \
 	bin/align_points_to_line_strips \
 	bin/group_shapes_on_unique_set_id
 
@@ -83,6 +84,9 @@ bin/produce_unit_square: bin/scheme.o src/produce_unit_square.c
 
 bin/read_dem: bin/scheme.o src/read_dem.c
 	gcc $(extra) bin/scheme.o src/read_dem.c -o bin/read_dem
+
+bin/graph_ttc_performance: bin/scheme.o src/graph_ttc_performance.c
+	gcc $(extra) bin/scheme.o src/graph_ttc_performance.c -o bin/graph_ttc_performance
 
 bin/read_csv: bin/scheme.o src/read_csv.c
 	gcc $(extra) bin/scheme.o src/read_csv.c -o bin/read_csv
