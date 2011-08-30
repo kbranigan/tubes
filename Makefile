@@ -17,7 +17,7 @@ extras: \
 	bin/redis \
 	bin/read_dwg \
 	bin/write_png \
-	bin/civicsets \
+	bin/civicsets.ca \
 	bin/tesselate \
 	bin/read_mysql \
 	bin/read_nextbus \
@@ -73,8 +73,8 @@ bin/mongoose.o: src/mongoose.c src/mongoose.h
 bin/scheme.o: src/scheme.c src/scheme.h
 	gcc $(extra) src/scheme.c -c -o bin/scheme.o
 
-bin/civicsets: bin/mongoose.o
-	g++ $(extra) -Wall src/civicsets.c bin/mongoose.o -o bin/civicsets.ca -ldl -lpthread
+bin/civicsets.ca: bin/mongoose.o src/civicsets.c
+	g++ $(extra) -Wall src/civicsets.c bin/mongoose.o -o bin/civicsets.ca -ldl -lpthread $(mysql)
 
 bin/produce_unit_circle: bin/scheme.o src/produce_unit_circle.c
 	gcc $(extra) bin/scheme.o src/produce_unit_circle.c -o bin/produce_unit_circle -lm
