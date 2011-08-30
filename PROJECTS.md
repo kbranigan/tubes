@@ -11,22 +11,27 @@ Assumes the following:
 
 #############################################################
 
-./bin/read_mysql "select x, y, id, unix_timestamp(created_at) as reported_at, secsSinceReport, unique_set_id as vehicle_number, dirTag from nextbus.points where routeTag = 125 order by dirTag, unique_set_id, created_at" \
-  > 125.gps.b
-
-./bin/read_mysql "SELECT lat as y, lng as x, shape_id as unique_set_id from ttc_gtfs.shape_points where shape_id IN (192,194) order by shape_id, position" \
-  > 125.shape.b
 ./bin/read_mysql "SELECT lat as y, lng as x, shape_id as unique_set_id from ttc_gtfs.shape_points where shape_id IN (192) order by shape_id, position" \
   > 125.shape.192.b
+
+./bin/read_mysql "select x, y, id, unix_timestamp(created_at) as reported_at, secsSinceReport, unique_set_id as vehicle_number, dirTag from nextbus.points where routeTag = 125 order by dirTag, unique_set_id, created_at" \
+  > 125.gps.b
 
 cat 125.gps.b \
   | ./bin/align_points_to_line_strips -f 125.shape.192.b \
   > 125.aligned.b
 
 cat 125.aligned.b \
-  | ./bin/reduce_by_attribute -n vehicle_number -v 8145 \
+  | ./bin/reduce_by_attribute -n dirTag -v 125_0_125 \
   | ./bin/graph_ttc_performance \
   | ./bin/write_png
+
+./bin/read_mysql "select x, y, id, unix_timestamp(created_at) - (select min(unix_timestamp(created_at)) from nextbus.points where routeTag = 125 and secsSinceReport > 6) - secsSinceReport as reported_at, unique_set_id as vehicle_number, dirTag from nextbus.points where routeTag = 125 and secsSinceReport > 6 order by dirTag, unique_set_id, created_at" \
+  | ./bin/reduce_by_attribute -n dirTag -v 125_0_125 \
+  | ./bin/align_points_to_line_strips -f <(./bin/read_mysql "SELECT lat as y, lng as x, shape_id as unique_set_id from ttc_gtfs.shape_points where shape_id = 192 order by shape_id, position") \
+  | ./bin/graph_ttc_performance \
+  | ./bin/write_png
+
 
 #############################################################
 
