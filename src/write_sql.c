@@ -14,6 +14,7 @@ int write_sql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
   char filename[300] = "";
   int drop_tables = 0;
   int expire_old_content = 0; // this is for nextbus
+  int expire_age = 6; // default 6 hours
   
   int c;
   while ((c = getopt(argc, argv, "f:u:p:de")) != -1)
@@ -27,6 +28,10 @@ int write_sql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
       break;
     case 'e':
       expire_old_content = 1;
+      break;
+    case 'a':
+      expire_old_content = 1;
+      expire_age = atoi(optarg);
       break;
     default:
       abort();
@@ -61,7 +66,7 @@ int write_sql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
     int i, j;
     
     if (expire_old_content)
-      fprintf(sql_out, "DELETE FROM points WHERE created_at < now() - interval 3 hour;\n");
+      fprintf(sql_out, "DELETE FROM points WHERE created_at < now() - interval %d hour;\n", expire_age);
     
     for (i = 0 ; i < shape->num_attributes ; i++)
     {
@@ -93,7 +98,7 @@ int write_sql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
     
     //shape->unique_set_id = dbf_id;
     
-    if (shape->num_vertexs == 1)
+    //if (shape->num_vertexs == 1)
     {
       float * v = get_vertex(shape, 0, 0);
       fprintf(sql_out, "INSERT INTO points (created_at, x, y, unique_set_id");
@@ -104,7 +109,7 @@ int write_sql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
         fprintf(sql_out, ", \"%s\"", shape->attributes[i].value);
       fprintf(sql_out, ");\n");
     }
-    else
+    /*else
     {
       fprintf(sql_out, "INSERT INTO DBF (unique_set_id, created_at");
       for (i = 0 ; i < shape->num_attributes ; i++)
@@ -122,7 +127,7 @@ int write_sql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
         if (i % 20 == 0 && i!=0 && i != shape->num_vertexs-1) fprintf(sql_out, ";\nINSERT INTO shape_points (dbf_id, x, y) VALUES ");
       }
       fprintf(sql_out, ";\n");
-    }
+    }*/
     
     free_shape(shape);
     dbf_id ++;
