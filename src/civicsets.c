@@ -8,10 +8,12 @@
 #include <string.h>
 #include <unistd.h>
 
-//#include <mysql.h>
+#include <mysql.h>
 
 //#include "shapefile_src/shapefil.h"
 #include "mongoose.h"
+
+MYSQL mysql;
 
 const char *port = "2222";
 
@@ -39,8 +41,6 @@ void fields(struct mg_connection *conn, const struct mg_request_info *ri, void *
 void shapes(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
 void records(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
 void record_a_position(struct mg_connection *conn, const struct mg_request_info *ri, void *data);*/
-
-//MYSQL mysql;
 
 /*char data_path[] = "/work/data";
 struct mg_connection *dconn = NULL;
@@ -516,51 +516,118 @@ void output_and_delete_image(struct mg_connection *conn, char * filename)
     fclose(fp);
     free(data);
     
-    char command[1000];
-    sprintf(command, "rm %s", filename);
-    system(command);
+    //char command[1000];
+    //sprintf(command, "rm %s", filename);
+    //system(command);
   }
 }
 
 void ttc_performance(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
 {
-  char * route = mg_get_var(conn, "r");
-  if (route == NULL) { mg_printf(conn, "You need to specify a route [like 7, or 510]<br />"); return; }
+  char * routeTag = mg_get_var(conn, "routeTag");
+  if (routeTag == NULL) { mg_printf(conn, "You need to specify a routeTag [like 125, 60 or 510]<br />"); return; }
+  
+  char * dirTag = mg_get_var(conn, "dirTag");
+  if (dirTag == NULL) { mg_printf(conn, "You need to specify a dirTag [like 125_0_125, 60_1_60D or 510_0_510]<br />"); return; }
+  
+  char * shape_id = mg_get_var(conn, "shape_id");
+  if (shape_id == NULL) { mg_printf(conn, "You need to specify a shape_id, from the ttc_gtfs database [like 192, 1027 or something]<br />"); return; }
+  
+  mg_printf(conn, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n");
+  
+  mg_printf(conn, "<body style='font-family:Arial'> \
+    <br /> \
+    Scrolling down goes back in time.<br /> \
+    The top of the image is most recent, the bottom is 3 hours previous.<br /> \
+    <br /> \
+    The far left is where the vehicle begins, the far right when it arrives at the end of the route. <br /> \
+    The vertical ticks are indicators that the GPS in the bus updated at that point.<br /> \
+    <br /> \
+    This is '%s' TTC vehicle (bus or streetcar). <br /> \
+    Looking closely, you might be able to see where this vehicle has difficulty going quickly, or stops regularly.<br /> \
+    The solid red line, the horizontal one - indicates now. Ticks attached to this line are where the vehicle is scheduled to stop.<br /> \
+    <br /> \
+    This is generated the second you hit the page, so bare with it if it seems slow. \
+    <br /> \
+    If you see nothing under the red line, service is not currently running for this route. \
+    <br /> \
+    <br /> \
+    ------ DRIVING FORWARD -----><br /> \
+    <img src='/ttc_performance_image?routeTag=%s&dirTag=%s&shape_id=%s' />", routeTag, routeTag, dirTag, shape_id);
+  
+  free(routeTag);
+  free(dirTag);
+  free(shape_id);
+}
+
+void ttc_performance_image(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
+{
+  char * routeTag = mg_get_var(conn, "routeTag");
+  if (routeTag == NULL) { mg_printf(conn, "You need to specify a routeTag [like 125, 60 or 510]<br />"); return; }
+  
+  char * dirTag = mg_get_var(conn, "dirTag");
+  if (dirTag == NULL) { mg_printf(conn, "You need to specify a dirTag [like 125_0_125, 60_1_60D or 510_0_510]<br />"); return; }
+  
+  char * shape_id = mg_get_var(conn, "shape_id");
+  if (shape_id == NULL) { mg_printf(conn, "You need to specify a shape_id, from the ttc_gtfs database [like 192, 1027 or something]<br />"); return; }
   
   char image[200];
   get_image_name(image);
   
   char command[4000];
   
+  /*sprintf(command, "cat <(./bin/read_mysql \"select 1 as r, 0 as g, 0 as b, 1 as a, lat as y, lng as x, ss.id as id, 1 as reported_at, 0 as vehicle_number from ttc_gtfs.shape_stops ss left join ttc_gtfs.stops s on ss.stop_id = s.id where shape_id = %s\" \
+    | ./bin/align_points_to_line_strips -f \
+      <(./bin/read_mysql \"SELECT lat as y, lng as x, shape_id as unique_set_id from ttc_gtfs.shape_points where shape_id = %s order by shape_id, position\") \
+    | ./bin/graph_ttc_performance -a dist_line_%s \
+    )
+    <(./bin/read_mysql \"select x, y, id, -1 * (unix_timestamp() - unix_timestamp(created_at) - secsSinceReport) as reported_at, unique_set_id as vehicle_number, dirTag from nextbus.points where routeTag = %s and round(secsSinceReport) < 6 order by dirTag, unique_set_id, created_at\" \
+      | ./bin/reduce_by_attribute -n dirTag -v %s \
+      | ./bin/align_points_to_line_strips -f \
+        <(./bin/read_mysql \"SELECT lat as y, lng as x, shape_id as unique_set_id from ttc_gtfs.shape_points where shape_id = %s order by shape_id, position\") \
+      | ./bin/graph_ttc_performance -a dist_line_%s \
+    ) | ./bin/write_png %s", shape_id, shape_id, shape_id, routeTag, dirTag, shape_id, shape_id, image);*/
+  
   int nextbus_rand_int = rand();
   
-  sprintf(command, "./bin/read_mysql \"SELECT lat as y, lng as x, shape_id as unique_set_id from ttc.shape_points where shape_id = 667 order by position\" > nextbus_temp_%d.b", nextbus_rand_int);
+  sprintf(command, "./bin/read_mysql \"SELECT lat as y, lng as x, shape_id as unique_set_id from ttc_gtfs.shape_points where shape_id = %s order by shape_id, position\" \
+    > ttc_shape_points_%d.b", shape_id, nextbus_rand_int);
   
   fprintf(stderr, "%s\n", command);
   system(command);
   
-  sprintf(command, "./bin/read_mysql \"select x, y, id, created_at as reported_at, unique_set_id as vehicle_number, secsSinceReport from nextbus.points where routeTag = 510 and dirTag = '510_0_510' order by unique_set_id, created_at\" "
-  " | ./bin/align_points_to_line_strips -f nextbus_temp_%d.b "
-  " | ./bin/write_sql -d "
-  " | mysql -uroot nextbus_temp ", nextbus_rand_int);
+  sprintf(command, "./bin/read_mysql \"select x, y, id, -1 * (unix_timestamp() - unix_timestamp(created_at) - secsSinceReport) as reported_at, unique_set_id as vehicle_number, dirTag from nextbus.points where routeTag = %s and round(secsSinceReport) < 6 order by dirTag, unique_set_id, created_at\" \
+    | ./bin/reduce_by_attribute -n dirTag -v %s \
+    | ./bin/align_points_to_line_strips -f ttc_shape_points_%d.b \
+    | ./bin/graph_ttc_performance -a dist_line_%s \
+    > nextbus_temp_%d.b ", routeTag, dirTag, nextbus_rand_int, shape_id, nextbus_rand_int);
   
   fprintf(stderr, "%s\n", command);
   system(command);
   
-  sprintf(command, " ./bin/read_mysql \"select (dist_line_667+0.0)/2 as x, unix_timestamp(reported_at) - (select min(unix_timestamp(reported_at)) from nextbus_temp.points) - secsSinceReport as y, vehicle_number as unique_set_id from nextbus_temp.points order by vehicle_number, reported_at\" "
-  " | ./bin/write_png %s", image);
+  sprintf(command, "./bin/read_mysql \"select 1 as r, 0 as g, 0 as b, 1 as a, lat as y, lng as x, ss.id as id, 1 as reported_at, 0 as vehicle_number from ttc_gtfs.shape_stops ss left join ttc_gtfs.stops s on ss.stop_id = s.id where shape_id = %s\" \
+    | ./bin/align_points_to_line_strips -f ttc_shape_points_%d.b \
+    | ./bin/graph_ttc_performance -a dist_line_%s \
+    > nextbus_temp_header_%d.b", shape_id, nextbus_rand_int, shape_id, nextbus_rand_int);
   
   fprintf(stderr, "%s\n", command);
   system(command);
   
-  sprintf(command, "rm nextbus_temp_%d.b", nextbus_rand_int);
+  sprintf(command, "cat nextbus_temp_%d.b nextbus_temp_header_%d.b | ./bin/write_png %s", nextbus_rand_int, nextbus_rand_int, image);
+  
+  fprintf(stderr, "%s\n", command);
+  system(command);
+  
+  sprintf(command, "rm nextbus_temp_%d.b nextbus_temp_header_%d.b ttc_shape_points_%d.b", nextbus_rand_int, nextbus_rand_int, nextbus_rand_int);
   
   fprintf(stderr, "%s\n", command);
   system(command);
   
   output_and_delete_image(conn, image);
   
-  free(route);
+  free(routeTag);
+  free(dirTag);
+  free(shape_id);
 }
 
 void ttc_route(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
@@ -590,8 +657,8 @@ int main(int argc, char **argv)
 {
   srand(time(NULL));
   
-  //if ((mysql_init(&mysql) == NULL)) { printf("mysql_init error\n"); }
-  //if (!mysql_real_connect(&mysql, "localhost", "root", "", "civicsets", 0, NULL, 0)) { printf("mysql_real_connect error\n"); }
+  if ((mysql_init(&mysql) == NULL)) { printf("mysql_init error\n"); }
+  if (!mysql_real_connect(&mysql, "localhost", "root", "", "civicsets", 0, NULL, 0)) { printf("mysql_real_connect error\n"); }
   
   //mysql_query(&mysql, "TRUNCATE TABLE datasets");
   
@@ -615,6 +682,7 @@ int main(int argc, char **argv)
   //mg_set_uri_callback(ctx, "/run", &run, NULL);
   mg_set_uri_callback(ctx, "/ttc_route", &ttc_route, NULL);
   mg_set_uri_callback(ctx, "/ttc_performance", &ttc_performance, NULL);
+  mg_set_uri_callback(ctx, "/ttc_performance_image", &ttc_performance_image, NULL);
   
   //mg_set_uri_callback(ctx, "/image", &image, NULL);
   //mg_set_uri_callback(ctx, "/fields", &fields, NULL);
