@@ -163,13 +163,13 @@ int align_points_to_line_strips(int argc, char ** argv, FILE * pipe_in, FILE * p
           
           dist_g = sin(angle_m_1_2) * dist1_m; // length of perpendicular (law of sines)
           
-          /*if (dist2_m < dist1_m && dist2_m < fabs(closest_dist))
+          if (dist2_m < dist1_m && dist2_m < fabs(closest_dist))
           {
             closest_dist = dist2_m;
             closest_angle = angle2_m + 3.141592654;
             closest_pv = v;
             closest_v = v;
-            draw_marker(v, 0.001);
+            //draw_marker(v, 0.001);
           }
           
           if (dist1_m < dist2_m && dist1_m < fabs(closest_dist))
@@ -178,8 +178,8 @@ int align_points_to_line_strips(int argc, char ** argv, FILE * pipe_in, FILE * p
             closest_angle = angle1_m + 3.141592654;
             closest_pv = pv;
             closest_v = pv;
-            draw_marker(pv, 0.001);
-          }*/
+            //draw_marker(pv, 0.001);
+          }
           
           if (!(angle_m_1_2 > 1.570796327 || angle_m_1_2 < -1.570796327 || (angle_1_2_m < 1.570796327 && angle_1_2_m > -1.570796327)))
           {
@@ -194,6 +194,16 @@ int align_points_to_line_strips(int argc, char ** argv, FILE * pipe_in, FILE * p
           
           pv = v;
         } // line each vertexs
+        
+        /*struct Shape * s = new_shape();
+        s->gl_type = GL_LINES;
+        float v[3] = { orig_v[0], orig_v[1], 0 };
+        append_vertex(s, v);
+        v[0] += sin(closest_angle)*closest_dist;
+        v[1] += cos(closest_angle)*closest_dist;
+        append_vertex(s, v);
+        write_shape(pipe_out, s);
+        free_shape(s);*/
         
         //if (shape->num_vertexs == 1)
         {
@@ -227,7 +237,7 @@ int align_points_to_line_strips(int argc, char ** argv, FILE * pipe_in, FILE * p
         
       } // num_lines
       
-      if (closest_dist < 0.0001)
+      if (closest_dist < 0.005)
       {
         if (shape->num_vertexs == 1)
         {
