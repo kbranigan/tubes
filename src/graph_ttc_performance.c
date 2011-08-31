@@ -38,15 +38,21 @@ int graph_ttc_performance(int argc, char ** argv, FILE * pipe_in, FILE * pipe_ou
       line = new_shape();
       line->gl_type = GL_LINE_STRIP;
       set_attribute(line, "vehicle_number", get_attribute(shape, "vehicle_number"));
-      //struct VertexArray * cva = get_or_add_array(line, GL_COLOR_ARRAY); // just to create it
-      //set_num_dimensions(line, 1, 4);
+      if (shape->num_vertex_arrays == 2)
+      {
+        struct VertexArray * cva = get_or_add_array(line, GL_COLOR_ARRAY); // just to create it
+        set_num_dimensions(line, 1, 4);
+      }
     }
     
     float v[3] = { atof(get_attribute(shape, distance_attribute)), atof(get_attribute(shape, "reported_at")), 0 };
     //float c[4] = { 0, 0, 0, 1 };
     //append_vertex2(line, v, c);
     
-    append_vertex(line, v);
+    if (shape->num_vertex_arrays == 2) // maintain the color
+      append_vertex2(line, v, get_vertex(shape, 1, 0));
+    else
+      append_vertex(line, v);
     
     struct Shape * marker = new_shape();
     marker->gl_type = GL_LINES;
