@@ -105,7 +105,7 @@ int read_mysql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * p
         shape->gl_type = GL_LINE_STRIP;
         
         shape->unique_set_id = atol(row[unique_set_field_id]);
-        if (z_field_id != -1) shape->vertex_arrays[0].num_dimensions++;
+        if (z_field_id != -1) set_num_dimensions(shape, 0, 3); //shape->vertex_arrays[0].num_dimensions++;
         
         //get_or_add_array(shape, GL_VERTEX_ARRAY); // this is auto, but you, helps doc the code
         
@@ -137,7 +137,7 @@ int read_mysql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * p
         b_field_id != -1)
       {
         float v2[4] = { atof(row[r_field_id]), atof(row[g_field_id]), atof(row[b_field_id]), 0 };
-        if (a_field_id != -1) v2[3] = atof(row[r_field_id]);
+        if (a_field_id != -1) v2[3] = atof(row[a_field_id]);
         append_vertex2(shape, v, v2);
       }
       else
