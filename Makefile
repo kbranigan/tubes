@@ -92,7 +92,7 @@ bin/read_csv: bin/scheme.o src/read_csv.c
 	gcc $(extra) bin/scheme.o src/read_csv.c -o bin/read_csv
 
 bin/read_dwg: bin/scheme.o src/read_dwg.c
-	gcc $(extra) bin/scheme.o src/read_dwg.c -o bin/read_dwg -ldwg $(ext)
+	gcc $(extra) bin/scheme.o src/read_dwg.c -o bin/read_dwg -lredwg $(ext)
 
 bin/redis: bin/scheme.o src/redis.c
 	gcc $(extra) bin/scheme.o src/redis.c -o bin/redis -lhiredis $(ext)
