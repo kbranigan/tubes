@@ -1,5 +1,4 @@
 
-//#include <ftw.h>
 #include <time.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -12,6 +11,7 @@
 
 //#include "shapefile_src/shapefil.h"
 #include "mongoose.h"
+#include "civicsets_shapefiles.c"
 
 MYSQL mysql;
 
@@ -19,71 +19,6 @@ const char *port = "2222";
 
 char * cwd = NULL;
 
-int file_exists(const char * fmt, ...)
-{
-  char filename[1000];
-  
-  va_list ap;
-  va_start(ap, fmt);
-  vsnprintf(filename, sizeof(filename), fmt, ap);
-  va_end(ap);
-  
-  FILE * fp;
-  fp = fopen(filename, "r");
-  fclose(fp);
-  return (fp != NULL);
-}
-
-/*void run(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
-void list(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
-void image(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
-void fields(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
-void shapes(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
-void records(struct mg_connection *conn, const struct mg_request_info *ri, void *data);
-void record_a_position(struct mg_connection *conn, const struct mg_request_info *ri, void *data);*/
-
-/*char data_path[] = "/work/data";
-struct mg_connection *dconn = NULL;
-static int display_info(const char *fpath, const struct stat *sb, int tflag, struct FTW *ftwbuf)
-{
-  if (fpath[ftwbuf->base] == '.') return 0;
-  if (strcmp(fpath + strlen(fpath) - 4, ".shp") != 0) return 0;
-  
-  char file[200];
-  strncpy(file, fpath + strlen(data_path), 200);
-  file[strlen(file)-4] = 0;
-  
-  char query[1000];
-  if (file_exists("%s%s.shp", data_path, file))
-  {
-    sprintf(query, "INSERT INTO datasets (filename, name) VALUES (\"%s%s.shp\", \"%s%s\")", data_path, file, data_path, file);
-    mysql_query(&mysql, query);
-    printf("%s\n", query);
-  }
-  if (file_exists("%s%s.dbf", data_path, file))
-  {
-    sprintf(query, "INSERT INTO datasets (filename, name) VALUES (\"%s%s.dbf\", \"%s%s\")", data_path, file, data_path, file);
-    mysql_query(&mysql, query);
-    printf("%s\n", query);
-  }
-  if (file_exists("%s%s.prj", data_path, file))
-  {
-    sprintf(query, "INSERT INTO datasets (filename, name) VALUES (\"%s%s.prj\", \"%s%s\")", data_path, file, data_path, file);
-    mysql_query(&mysql, query);
-    printf("%s\n", query);
-  }
-  
-  mg_printf(dconn, "<tr><td>%s</td>", file);
-  mg_printf(dconn, "<td><a href='/fields?file=%s'>fields</a></td>", file);
-  mg_printf(dconn, "<td><a href='/records?file=%s&id=0'>record 0</a></td>", file);
-  mg_printf(dconn, "<td><a href='/shapes?file=%s&id=0'>shape 0</a></td>", file);
-  mg_printf(dconn, "<td><a href='/image?file=%s&id=0'>image 0</a></td>", file);
-  mg_printf(dconn, "<td><a href='/image?file=%s'>full image</a></td>", file);
-  mg_printf(dconn, "</tr>\n");
-  
-  //mg_printf(dconn, "%s (%d) (%s)<br />\n", fpath + strlen(fpath) - 4);
-  return 0;           // To tell nftw() to continue
-}*/
 
 /*struct Command {
   char * name;
@@ -198,20 +133,6 @@ void run(struct mg_connection *conn, const struct mg_request_info *ri, void *dat
   system(command_full);
   printf("%s\n", command_full);
   free(command_full);
-}
-
-void list(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
-{
-  mg_printf(conn, "<table>\n");
-  
-  //dconn = conn; // dconn used in display_info callback
-  //int flags = FTW_DEPTH | FTW_PHYS;
-  //if (nftw(data_path, display_info, 20, flags) == -1) mg_printf(conn, "nftw FAILED\n");
-  //dconn = NULL;
-  
-  
-  
-  mg_printf(conn, "</table>\n");
 }*/
 
 /*void record_a_position(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
@@ -255,231 +176,6 @@ void list(struct mg_connection *conn, const struct mg_request_info *ri, void *da
   free(recorded_at_c);
   free(lat_c);
   free(lon_c);
-}
-
-void fields(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
-{
-  char * file = mg_get_var(conn, "file");
-  if (file == NULL) { mg_printf(conn, "You need to specify a file."); return; }
-  
-  char filename[100];
-  sprintf(filename, "/work/data/%s", file);
-  
-  DBFHandle d = DBFOpen(filename, "rb");
-  if (d == NULL) { mg_printf(conn, "DBFOpen error (%s)\n", filename); return; }
-	
-  int nRecordCount = DBFGetRecordCount(d);
-  int nFieldCount = DBFGetFieldCount(d);
-  
-  mg_printf(conn, "{\n");
-  mg_printf(conn, "  \"file\": \"%s\",\n", file);
-  mg_printf(conn, "  \"num_records\": \"%d\",\n", nRecordCount);
-  mg_printf(conn, "  \"fields\": {\n");
-  for (int i = 0 ; i < nFieldCount ; i++)
-  {
-    char pszFieldName[12];
-    int pnWidth; int pnDecimals;
-    char type_names[5][20] = {"string", "integer", "double", "logical", "invalid"};
-    
-    DBFFieldType ft = DBFGetFieldInfo(d, i, pszFieldName, &pnWidth, &pnDecimals);
-    mg_printf(conn, "    \"%d\": {\n", i);
-    mg_printf(conn, "      \"name\":\"%s\",\n", pszFieldName);
-    mg_printf(conn, "      \"type\":\"%s\",\n", type_names[ft]);
-    if (pnWidth != 0) mg_printf(conn, "      \"width\":\"%d\",\n", pnWidth);
-    if (pnDecimals != 0) mg_printf(conn, "      \"decimals\":\"%d\"\n", pnDecimals);
-    mg_printf(conn, "    }%s\n", (i==nFieldCount-1)?"":",");
-  }
-  mg_printf(conn, "  }\n");
-  mg_printf(conn, "}\n");
-	
-	if (d != NULL) DBFClose(d);
-  free(file);
-}
-
-void records(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
-{
-  char * file = mg_get_var(conn, "file");
-  if (file == NULL) { mg_printf(conn, "You need to specify a file."); return; }
-  
-  char * id_c = mg_get_var(conn, "id");
-  //if (id_c == NULL) { mg_printf(conn, "You need to specify an id."); return; }
-  long id = (id_c != NULL) ? atoi(id_c) : -1;
-  free(id_c);
-  
-  char filename[100];
-  sprintf(filename, "/work/data/%s", file);
-  
-  DBFHandle d = DBFOpen(filename, "rb");
-  if (d == NULL) { mg_printf(conn, "DBFOpen error (%s)\n", filename); return; }
-	
-	int nFieldCount = DBFGetFieldCount(d);
-  int nRecordCount = DBFGetRecordCount(d);
-  
-  mg_printf(conn, "{\n");
-  mg_printf(conn, "  \"file\": \"%s\",\n", file);
-  
-  if (id == -1)
-  {
-    mg_printf(conn, "  \"num_records\": \"%d\",\n", nRecordCount);
-    mg_printf(conn, "  \"records\":\n  [\n");
-  }
-  else
-    mg_printf(conn, "  \"record\":\n");
-  
-  for (int i = 0 ; i < nRecordCount ; i++)
-  {
-    if (id != -1 && id != i) continue;
-    mg_printf(conn, "    {\n");
-    mg_printf(conn, "      \"id\": \"%d\",\n", i);
-    for (int j = 0 ; j < nFieldCount ; j++)
-    {
-      unsigned int k;
-      char pszFieldName[12];
-      int pnWidth;
-      char *cStr;
-    
-      DBFFieldType ft = DBFGetFieldInfo(d, j, pszFieldName, &pnWidth, NULL);
-      mg_printf(conn, "      \"%s\":", pszFieldName);
-      switch (ft)
-      {
-        case FTString:
-          cStr = (char *)DBFReadStringAttribute(d, i, j);
-          for (k = 0 ; k < strlen(cStr) ; k++) if (cStr[k] == '"') cStr[k] = '\'';
-          mg_printf(conn, "\"%s\"", cStr);
-          break;
-        case FTInteger:
-          mg_printf(conn, "\"%d\"", DBFReadIntegerAttribute(d, i, j));
-          break;
-        case FTDouble:
-          mg_printf(conn, "\"%f\"", DBFReadDoubleAttribute(d, i, j));
-          break;
-        case FTLogical:
-          break;
-        case FTInvalid:
-          break;
-      }
-      mg_printf(conn, "%s\n", (j == nFieldCount-1)?"":",");
-    }
-    mg_printf(conn, "    }%s\n", (id != -1 || i == nRecordCount-1)?"":",");
-  }
-  if (id == -1)
-    mg_printf(conn, "  ]\n");
-  
-  mg_printf(conn, "}\n");
-	
-	if (d != NULL) DBFClose(d);
-  free(file);
-}
-
-void shapes(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
-{
-  char * file = mg_get_var(conn, "file");
-  if (file == NULL) { mg_printf(conn, "You need to specify a file."); return; }
-  
-  char * id_c = mg_get_var(conn, "id");
-  if (id_c == NULL) { mg_printf(conn, "You need to specify an id."); return; }
-  long id = atoi(id_c);
-  free(id_c);
-  
-  char filename[100];
-  sprintf(filename, "/work/data/%s", file);
-  
-	SHPHandle h = SHPOpen(filename, "rb");
-  if (h == NULL) { mg_printf(conn, "SHPOpen error (%s)\n", filename); return; }
-	
-	SHPObject	*psShape = SHPReadObject(h, id);
-  int j, iPart;
-  
-  mg_printf(conn, "{\n");
-  mg_printf(conn, "  \"file\": \"%s\",\n", file);
-  mg_printf(conn, "  \"record_id\": \"%d\",\n", id);
-  mg_printf(conn, "  \"shape_parts\": {\n");
-  for (iPart = 0 ; iPart < psShape->nParts ; iPart++)
-  {
-    int start = psShape->panPartStart[iPart];
-    int end = psShape->nVertices;
-    
-    if (iPart != psShape->nParts - 1) end = psShape->panPartStart[iPart+1];
-    
-    mg_printf(conn, "    \"%d\":[", iPart);
-    for (j = start ; j < end ; j++)
-    {
-      mg_printf(conn, "[%f,%f]%s", psShape->padfX[j], psShape->padfY[j], (j==end-1)?"":",");
-    }
-    mg_printf(conn, "]%s\n", (iPart==psShape->nParts-1)?"":",");
-  }
-  mg_printf(conn, "  }\n");
-  mg_printf(conn, "}\n");
-  
-  if (psShape != NULL) SHPDestroyObject(psShape);
-	if (h != NULL) SHPClose(h);
-}
-  
-void image(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
-{
-  char * file = mg_get_var(conn, "file");
-  if (file == NULL) { mg_printf(conn, "You need to specify a file."); return; }
-  
-  char * row_id_c = mg_get_var(conn, "id");
-  long row_id = (row_id_c == NULL) ? -1 : atoi(row_id_c);
-  
-  char * part_id_c = mg_get_var(conn, "part");
-  long part_id = (part_id_c == NULL) ? -1 : atoi(part_id_c);
-  
-  char dbf_filename[200];
-  sprintf(dbf_filename, "/work/data%s.dbf", file);
-  
-	SHPHandle h = SHPOpen(dbf_filename, "rb");
-  if (h == NULL) { mg_printf(conn, "SHPOpen error (%s)\n", dbf_filename); return; }
-  
-  DBFHandle d = DBFOpen(dbf_filename, "rb");
-  if (d == NULL) { mg_printf(conn, "DBFOpen error (%s)\n", dbf_filename); return; }
-  
-  //int nRecordCount = DBFGetRecordCount(d);
-  
-  mg_printf(conn, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n");
-  
-  mg_printf(conn, "<html>\n<head>\n<title>Civicsets.ca</title>\n</head>\n<body>\n<a href='/'>back to list</a><br />\n");
-  
-  char dir[] = ".";
-  
-  FILE * fp = NULL;
-  char image_filename[300];
-  sprintf(image_filename, "cache_images%s/%ld.%ld", file, row_id, part_id);
-  
-  char png_filename[350];
-  sprintf(png_filename, "%s.png", image_filename);
-  fp = fopen(png_filename, "r");
-  if (fp == NULL)
-  {
-    char command[1000];
-    sprintf(command, "mkdir -p cache_images%s", file);
-    system(command);
-    
-    sprintf(command, "%s/read_shapefile %s %ld %ld | ", dir, dbf_filename, row_id, part_id);
-    
-    SHPObject	*psShape = SHPReadObject(h, 0);
-    if(psShape->nSHPType == SHPT_POLYGON)
-    {
-      strcat(command, dir); strcat(command, "/tesselate | ");
-    }
-    strcat(command, dir); strcat(command, "/add_random_colors | ");
-    strcat(command, dir); strcat(command, "/write_png "); strcat(command, image_filename); strcat(command, ".png");
-    
-    printf("%s\n", command);
-    system(command);
-    
-  }
-  else fclose(fp);
-  
-  mg_printf(conn, "<img src='%s.png' />\n", image_filename, image_filename);
-  
-  mg_printf(conn, "</body>\n</html>\n");
-  
-  if (h != NULL) SHPClose(h);
-	if (d != NULL) DBFClose(d);
-  free(row_id_c);
-  free(part_id_c);
 }*/
 
 void get_image_name(char * temp)
@@ -576,18 +272,6 @@ void ttc_performance_image(struct mg_connection *conn, const struct mg_request_i
   
   char command[4000];
   
-  /*sprintf(command, "cat <(./bin/read_mysql \"select 1 as r, 0 as g, 0 as b, 1 as a, lat as y, lng as x, ss.id as id, 1 as reported_at, 0 as vehicle_number from ttc_gtfs.shape_stops ss left join ttc_gtfs.stops s on ss.stop_id = s.id where shape_id = %s\" \
-    | ./bin/align_points_to_line_strips -f \
-      <(./bin/read_mysql \"SELECT lat as y, lng as x, shape_id as unique_set_id from ttc_gtfs.shape_points where shape_id = %s order by shape_id, position\") \
-    | ./bin/graph_ttc_performance -a dist_line_%s \
-    )
-    <(./bin/read_mysql \"select x, y, id, -1 * (unix_timestamp() - unix_timestamp(created_at) - secsSinceReport) as reported_at, unique_set_id as vehicle_number, dirTag from nextbus.points where routeTag = %s and round(secsSinceReport) < 6 order by dirTag, unique_set_id, created_at\" \
-      | ./bin/reduce_by_attribute -n dirTag -v %s \
-      | ./bin/align_points_to_line_strips -f \
-        <(./bin/read_mysql \"SELECT lat as y, lng as x, shape_id as unique_set_id from ttc_gtfs.shape_points where shape_id = %s order by shape_id, position\") \
-      | ./bin/graph_ttc_performance -a dist_line_%s \
-    ) | ./bin/write_png %s", shape_id, shape_id, shape_id, routeTag, dirTag, shape_id, shape_id, image);*/
-  
   int nextbus_rand_int = rand();
   
   sprintf(command, "./bin/read_mysql \"SELECT lat as y, lng as x, shape_id as unique_set_id from ttc_gtfs.shape_points where shape_id = %s order by shape_id, position\" \
@@ -613,7 +297,7 @@ void ttc_performance_image(struct mg_connection *conn, const struct mg_request_i
   fprintf(stderr, "%s\n", command);
   system(command);
   
-  sprintf(command, "cat nextbus_temp_%d.b nextbus_temp_header_%d.b | ./bin/write_png %s", nextbus_rand_int, nextbus_rand_int, image);
+  sprintf(command, "cat nextbus_temp_%d.b nextbus_temp_header_%d.b | ./bin/write_png -f %s", nextbus_rand_int, nextbus_rand_int, image);
   
   fprintf(stderr, "%s\n", command);
   system(command);
@@ -635,15 +319,103 @@ void ttc_route(struct mg_connection *conn, const struct mg_request_info *ri, voi
   char * route = mg_get_var(conn, "r");
   if (route == NULL) { mg_printf(conn, "You need to specify a route [like ?r=7, or ?r=510]<br />"); return; }
   
+  mg_printf(conn, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n");
+  
+  mg_printf(conn, "<body>\n");
+  
+  char command[1000];
+  
+  MYSQL_RES * res;
+  MYSQL_ROW row;
+  
+  sprintf(command, "SELECT id FROM ttc_gtfs.routes WHERE route_short_name = '%s'", route);
+  fprintf(stderr, "%s\n", command);
+  mysql_query(&mysql, command);
+  res = mysql_store_result(&mysql);
+  row = mysql_fetch_row(res);
+  mysql_free_result(res);
+  int route_id = atoi(row[0]);
+  
+  int i;
+  sprintf(command, "SELECT shape_id FROM ttc_gtfs.trips WHERE route_id = %d GROUP BY shape_id", route_id);
+  fprintf(stderr, "%s\n", command);
+  mysql_query(&mysql, command);
+  res = mysql_store_result(&mysql);
+  while ((row = mysql_fetch_row(res)))
+  {
+    i++;
+    mg_printf(conn, "<img src='/ttc_shape?shape_id=%s' title='%s'>%s\n", row[0], row[0], (i%2==1 ? "<br />" : ""));
+  }
+  mysql_free_result(res);
+  
+  free(route);
+}
+
+void ttc_shape(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
+{
+  char * shape_id = mg_get_var(conn, "shape_id");
+  if (shape_id == NULL) { mg_printf(conn, "You need to specify a shape_id<br />"); return; }
+  
+  char image[200];
+  get_image_name(image);
+  
+  char command[1000];
+  
+  MYSQL_RES * res;
+  MYSQL_ROW row;
+  
+  int num_shape_ids = 0;
+  int * shape_ids = NULL;
+  
+  sprintf(command, "select shape_id from ttc_gtfs.trips where route_id = (SELECT route_id FROM ttc_gtfs.trips WHERE shape_id = '%s' GROUP BY route_id) group by shape_id;", shape_id);
+  //fprintf(stderr, "%s\n", command);
+  mysql_query(&mysql, command);
+  res = mysql_store_result(&mysql);
+  while ((row = mysql_fetch_row(res)))
+  {
+    num_shape_ids++;
+    shape_ids = (int*)realloc(shape_ids, sizeof(int)*num_shape_ids);
+    shape_ids[num_shape_ids-1] = atoi(row[0]);
+  }
+  mysql_free_result(res);
+  
+  sprintf(command, "./bin/read_mysql \"SELECT shape_id = %s as r, 0 as g, 0 as b, round((shape_id = %s) * 0.5) + (!(shape_id = %s))* 0.1 as a, lat as y, lng as x, shape_id as id FROM ttc_gtfs.shape_points WHERE shape_id IN (", shape_id, shape_id, shape_id);
+  {
+    char temp[20];
+    int i;
+    for (i = 0 ; i < num_shape_ids ; i++)
+    {
+      sprintf(temp, "%s%d", (i==0?"":","), shape_ids[i]);
+      strcat(command,temp);
+    }
+  }
+  strcat(command, ") ORDER BY shape_id = '");
+  strcat(command, shape_id);
+  strcat(command, "' asc, shape_id, position\" | ./bin/write_png -w 120 -f ");
+  strcat(command, image);
+  fprintf(stderr, "%s\n", command);
+  
+  system(command);
+  
+  output_and_delete_image(conn, image);
+  
+  free(shape_id);
+}
+
+void ttc_route_realtime(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
+{
+  char * route = mg_get_var(conn, "r");
+  if (route == NULL) { mg_printf(conn, "You need to specify a route [like ?r=7, or ?r=510]<br />"); return; }
+  
   char temp[200];
   get_image_name(temp);
   
   char command[1000];
   
   if (strlen(route) == 0)
-    sprintf(command, "%s/bin/read_mysql \"SELECT x, y, id FROM nextbus_null.points WHERE routeTag IS NULL\" | %s/bin/write_png %s/%s", cwd, cwd, cwd, temp);
+    sprintf(command, "%s/bin/read_mysql \"SELECT x, y, id FROM nextbus_null.points WHERE routeTag IS NULL\" | %s/bin/write_png -f %s/%s", cwd, cwd, cwd, temp);
   else
-    sprintf(command, "%s/bin/read_mysql \"SELECT x, y, id FROM nextbus.points WHERE routeTag = '%d'\" | %s/bin/write_png %s/%s", cwd, atoi(route), cwd, cwd, temp);
+    sprintf(command, "%s/bin/read_mysql \"SELECT x, y, id FROM nextbus.points WHERE routeTag = '%d'\" | %s/bin/write_png -f %s/%s", cwd, atoi(route), cwd, cwd, temp);
   fprintf(stderr, "%s\n", command);
   
   system(command);
@@ -678,13 +450,18 @@ int main(int argc, char **argv)
     sleep(1);
     ret = mg_set_option(ctx, "ports", port);
   }
-  //mg_set_uri_callback(ctx, "/", &list, NULL);
+  
+  mg_set_uri_callback(ctx, "/shapefiles", &shapefiles_list, NULL);
+  mg_set_uri_callback(ctx, "/shapefiles/png", &shapefiles_png, NULL);
+  mg_set_uri_callback(ctx, "/shapefiles/fields", &shapefiles_fields, NULL);
+  
   //mg_set_uri_callback(ctx, "/run", &run, NULL);
+  mg_set_uri_callback(ctx, "/ttc_shape", &ttc_shape, NULL);
   mg_set_uri_callback(ctx, "/ttc_route", &ttc_route, NULL);
+  mg_set_uri_callback(ctx, "/ttc_route_realtime", &ttc_route_realtime, NULL);
   mg_set_uri_callback(ctx, "/ttc_performance", &ttc_performance, NULL);
   mg_set_uri_callback(ctx, "/ttc_performance_image", &ttc_performance_image, NULL);
   
-  //mg_set_uri_callback(ctx, "/image", &image, NULL);
   //mg_set_uri_callback(ctx, "/fields", &fields, NULL);
   //mg_set_uri_callback(ctx, "/shapes", &shapes, NULL);
   //mg_set_uri_callback(ctx, "/records", &records, NULL);
