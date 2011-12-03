@@ -23,6 +23,7 @@ extras: \
 	bin/read_nextbus \
 	bin/read_soundwave \
 	bin/read_foursquare \
+	bin/join_on_attributes \
 	bin/fast_fourier_transform
 
 pipe_in: \
@@ -71,10 +72,10 @@ bin/mongoose.o: src/mongoose.c src/mongoose.h
 	gcc $(extra) src/mongoose.c -c -o bin/mongoose.o -std=c99 -D_POSIX_SOURCE -D_BSD_SOURCE
 
 bin/scheme.o: src/scheme.c src/scheme.h
-	gcc $(extra) src/scheme.c -c -o bin/scheme.o
+	gcc src/scheme.c -c -o bin/scheme.o
 
-bin/civicsets.ca: bin/mongoose.o src/civicsets.c
-	g++ $(extra) -Wall src/civicsets.c bin/mongoose.o -o bin/civicsets.ca -ldl -lpthread $(mysql)
+bin/civicsets.ca: bin/mongoose.o src/civicsets*
+	g++ $(extra) -Wall bin/mongoose.o src/civicsets.c src/ext/shpopen.o src/ext/dbfopen.o -o bin/civicsets.ca -ldl -lpthread $(mysql)
 
 bin/produce_unit_circle: bin/scheme.o src/produce_unit_circle.c
 	gcc $(extra) bin/scheme.o src/produce_unit_circle.c -o bin/produce_unit_circle -lm
@@ -109,8 +110,11 @@ bin/read_nextbus: bin/scheme.o src/read_nextbus.c
 bin/read_foursquare: bin/scheme.o src/read_foursquare.c
 	gcc $(extra) bin/scheme.o src/read_foursquare.c src/ext/cJSON.c -o bin/read_foursquare -lcurl
 
+bin/join_on_attributes: bin/scheme.o src/join_on_attributes.c
+	gcc $(extra) bin/scheme.o src/ext/shpopen.o src/ext/dbfopen.o src/join_on_attributes.c -o bin/join_on_attributes
+
 bin/read_shapefile: bin/scheme.o src/ext/shpopen.c src/ext/dbfopen.c src/read_shapefile.c
-	gcc $(extra) bin/scheme.o src/ext/shpopen.c src/ext/dbfopen.c src/read_shapefile.c -o bin/read_shapefile
+	gcc $(extra) bin/scheme.o src/ext/shpopen.o src/ext/dbfopen.o src/read_shapefile.c -o bin/read_shapefile
 
 bin/group_shapes_on_unique_set_id: bin/scheme.o src/group_shapes_on_unique_set_id.c
 	gcc $(extra) bin/scheme.o src/group_shapes_on_unique_set_id.c -o bin/group_shapes_on_unique_set_id

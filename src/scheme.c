@@ -246,6 +246,7 @@ int write_shape(FILE * fp, struct Shape * shape)
   if (fwrite(&shape->num_vertexs, sizeof(shape->num_vertexs), 1, fp) != 1) return 0;
   if (fwrite(&shape->num_vertex_arrays, sizeof(shape->num_vertex_arrays), 1, fp) != 1) return 0;
   
+  if (shape->num_vertexs > 0 && shape->num_vertex_arrays > 0)
   for (i = 0 ; i < shape->num_vertex_arrays ; i++)
   {
     struct VertexArray * va = &shape->vertex_arrays[i];
@@ -253,8 +254,26 @@ int write_shape(FILE * fp, struct Shape * shape)
     if (fwrite(&va->num_dimensions, sizeof(va->num_dimensions), 1, fp) != 1) return 0;
     if (fwrite(va->vertexs, sizeof(float)*va->num_dimensions*shape->num_vertexs, 1, fp) != 1) return 0;
   }
+  
   fflush(fp);
   return 0;
+}
+
+struct Shape ** read_all_shapes(FILE * fp, unsigned int * num_shapes_p)
+{
+  struct Shape ** shapes = NULL;
+  int num_shapes = 0;
+  
+  struct Shape * shape = NULL;
+  while ((shape = read_shape(fp)))
+  {
+    num_shapes++;
+    shapes = (struct Shape **)realloc(shapes, sizeof(struct Shape*) * num_shapes);
+    shapes[num_shapes-1] = shape;
+  }
+  
+  (*num_shapes_p) = num_shapes;
+  return shapes;
 }
 
 struct Shape * read_shape(FILE * fp)
@@ -265,7 +284,7 @@ struct Shape * read_shape(FILE * fp)
   do
   {
     if (fread(&shape_header, sizeof(shape_header), 1, fp) != 1) return NULL;
-    if (isfinite(shape_header)) { fprintf(stderr, "header (%f) is finite (it's suppose to be infinite, this means your data sucks)\n", shape_header); return NULL; }
+    if (isfinite(shape_header)) { fprintf(stderr, "header (%f) is finite (it's suppose to be infinite, either no data or invalid data was read)\n", shape_header); return NULL; }
     
     // is it a shape, or is it a thing?
     if (shape_header < 0)
@@ -276,7 +295,7 @@ struct Shape * read_shape(FILE * fp)
       
       uint32_t thing_type;
       if (fread(&thing_type, sizeof(thing_type), 1, fp) != 1) return NULL;
-      if (thing_type != STRING_TABLE) { fprintf(stderr, "invalid thing found in the data (number: %d)\n", thing_type); return NULL; }
+      //if (thing_type != STRING_TABLE) { fprintf(stderr, "invalid thing found in the data (number: %d)\n", thing_type); return NULL; }
       
       uint32_t num_strings;
       if (fread(&num_strings, sizeof(num_strings), 1, fp) != 1) return NULL;
@@ -351,15 +370,26 @@ struct Shape * read_shape(FILE * fp)
     for (i = 0 ; i < shape->num_vertex_arrays ; i++)
     {
       struct VertexArray * va = &shape->vertex_arrays[i];
+      memset(va, 0, sizeof(struct VertexArray));
       va->shape = shape;
-      if (fread(&va->array_type, sizeof(va->array_type), 1, fp) != 1) { fprintf(stderr, "fread vertex_array %d array_type error\n", i); return NULL; }
-      if (fread(&va->num_dimensions, sizeof(va->num_dimensions), 1, fp) != 1) { fprintf(stderr, "fread vertex_array %d num_dimensions error\n", i); return NULL; }
-      //if (va->num_dimensions != 3) fprintf(stderr, "va->num_dimensions = %d\n", va->num_dimensions);
       
-      va->vertexs = (float*)malloc(sizeof(float)*shape->num_vertexs*va->num_dimensions);
-      if (va->vertexs == NULL) { fprintf(stderr, "malloc failed in read_shape()\n"); exit(1); }
+      if (shape->num_vertexs > 0)
+      {
+        if (fread(&va->array_type, sizeof(va->array_type), 1, fp) != 1) { fprintf(stderr, "fread vertex_array %d array_type error\n", i); return NULL; }
+        if (fread(&va->num_dimensions, sizeof(va->num_dimensions), 1, fp) != 1) { fprintf(stderr, "fread vertex_array %d num_dimensions error\n", i); return NULL; }
+        //if (va->num_dimensions != 3) fprintf(stderr, "va->num_dimensions = %d\n", va->num_dimensions);
       
-      if (fread(va->vertexs, sizeof(float)*va->num_dimensions*shape->num_vertexs, 1, fp) != 1) { fprintf(stderr, "fread vertex_array %d vertexs error\n", i); return NULL; }
+        va->vertexs = (float*)malloc(sizeof(float)*shape->num_vertexs*va->num_dimensions);
+        if (va->vertexs == NULL) { fprintf(stderr, "malloc failed in read_shape()\n"); exit(1); }
+      
+        if (fread(va->vertexs, sizeof(float)*va->num_dimensions*shape->num_vertexs, 1, fp) != 1) { fprintf(stderr, "fread vertex_array %d vertexs error\n", i); return NULL; }
+      }
+      else
+      {
+        va->array_type = GL_VERTEX_ARRAY;
+        va->num_dimensions = 2;
+        va->vertexs = NULL;
+      }
     }
   }
   
@@ -433,7 +463,15 @@ int free_shape(struct Shape * shape)
   return 1;
 }
 
-void write_command_string(FILE * fp)
+void free_all_shapes(struct Shape ** shapes, unsigned int num_shapes)
+{
+  unsigned int i = 0;
+  for (i = 0 ; i < num_shapes ; i++)
+    free_shape(shapes[i]);
+  free(shapes);
+}
+
+/*void write_command_string(FILE * fp)
 {
   //if (has_wrote_command_string) return;
   //has_wrote_command_string = 1;
@@ -463,7 +501,7 @@ int write_string_table(FILE * fp, int num, char ** strings)
   for (i = 0 ; i < num_strings ; i++)
     fwrite(strings[i], 20, 1, fp);
   return num;
-}
+}*/
 
 int point_in_triangle(vec2d A, vec2d B, vec2d C, vec2d P)
 {
