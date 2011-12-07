@@ -1,4 +1,4 @@
 #!/bin/bash
 kill `pidof read_nextbus`
-./read_nextbus -n 0 | ./write_sql -de | mysql -uroot nextbus
-./read_nextbus -n 0 -r '' | ./write_sql -de | mysql -uroot nextbus_null
+./bin/read_nextbus -n 0 | ./bin/write_sql -de | mysql -uroot nextbus
+./bin/read_nextbus -n 0 -r '' | ./bin/write_sql -de | mysql -uroot nextbus_null
