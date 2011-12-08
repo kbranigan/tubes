@@ -16,11 +16,13 @@ int tile(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_er
   char file_name[1000] = "";
   int tile_dimension = -1;
   float distance = 0.0;
+  int distance_as_percent = 0;
   
   int i;
-  while ((i = getopt(argc, argv, "xyzd:t:f:")) != -1)
+  while ((i = getopt(argc, argv, "xyzd:t:f:p")) != -1)
   switch (i)
   {
+    case 'p': distance_as_percent = 1; break;
     case 'd': distance = atof(optarg); break;
     case 'x': tile_dimension = 0; break;
     case 'y': tile_dimension = 1; break;
@@ -74,7 +76,10 @@ int tile(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_er
     {
       v = get_vertex(shape, 0, j);
       for (k = 0 ; k < va->num_dimensions && k < bbox1->num_minmax && k < bbox2->num_minmax ; k++)
-        v[k] = v[k] - bbox2->minmax[k].min + ((k == tile_dimension) ? (bbox1->minmax[k].max + distance) : bbox1->minmax[k].min);
+        if (distance_as_percent)
+          v[k] = v[k] - bbox2->minmax[k].min + ((k == tile_dimension) ? (bbox1->minmax[k].max + distance * (bbox1->minmax[k].max - bbox1->minmax[k].min)) : bbox1->minmax[k].min);
+        else
+          v[k] = v[k] - bbox2->minmax[k].min + ((k == tile_dimension) ? (bbox1->minmax[k].max + distance) : bbox1->minmax[k].min);
     }
     write_shape(pipe_out, shapes2[i]);
   }
