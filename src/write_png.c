@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <unistd.h>
 
 #define SCHEME_CREATE_MAIN
 #define SCHEME_ASSERT_STDIN_IS_PIPED
@@ -61,9 +62,11 @@ static int _write_png(bitmap_t *bitmap, const char *path)
   png_set_IHDR(png_ptr, info_ptr, bitmap->width, bitmap->height, depth, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
   
   row_pointers = png_malloc(png_ptr, bitmap->height * sizeof(png_byte *));
+  if (row_pointers == NULL) { fprintf(stderr, "png_malloc failed for pointers :(\n"); exit(0); }
   for(y = 0; y < bitmap->height; ++y)
   {
     png_byte *row = png_malloc(png_ptr, sizeof(uint8_t) * bitmap->width * pixel_size);
+    if (row_pointers == NULL) { fprintf(stderr, "png_malloc failed for row :(\n"); exit(0); }
     row_pointers[y] = row;
     for(x = 0; x < bitmap->width; ++x)
     {
@@ -97,7 +100,24 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
 {
   int texture_width = 1200;
   
-  char * filename = argc > 1 ? argv[1] : "output.png";
+  char file_name[1000] = "";
+  int num_attributes = -1;
+  int c;
+  while ((c = getopt(argc, argv, "f:w:")) != -1)
+  switch (c)
+  {
+    case 'f': strncpy(file_name, optarg, sizeof(file_name)); break;
+    case 'w': texture_width = atoi(optarg); break;
+    default:  abort();
+  }
+  
+  if (file_name[0] == 0 && argc == 2 && argv[1] != NULL)
+    strncpy(file_name, argv[1], sizeof(file_name));
+  else if (file_name[0] == 0)
+  {
+    fprintf(stderr, "%s: file name not specified, using 'output.png'\n", argv[0]);
+    strcpy(file_name, "output.png");
+  }
   
   float b[3][2] = {
     {FLT_MAX, -FLT_MAX},
@@ -114,6 +134,7 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
   {
     num_shapes++;
     shapes = (struct Shape **)realloc(shapes, sizeof(struct Shape*)*num_shapes);
+    if (shapes == NULL) { fprintf(stderr, "realloc for shapes failed :(\n"); exit(0); }
     shapes[num_shapes-1] = shape;
     
     long j;
@@ -213,7 +234,7 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
   glReadBuffer((GLenum)GL_COLOR_ATTACHMENT0_EXT);
   glReadPixels(0, 0, texture_width, texture_height, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)png.pixels);
   
-  _write_png(&png, filename);
-  //fprintf(stderr, "%s: %dx%d bmp created named '%s'\n", argv[0], TEXTURE_WIDTH, TEXTURE_HEIGHT, filename);
+  _write_png(&png, file_name);
+  fprintf(stderr, "%s: %dx%d bmp created named '%s'\n", argv[0], texture_width, texture_height, file_name);
 }
 
