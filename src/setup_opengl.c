@@ -23,8 +23,6 @@ int setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, f
   int texture_height = texture_width * ((max_y - min_y) / (max_x - min_x));
   if (texture_height > texture_width * 1.5) texture_height = texture_width * 1.5;
   
-  fprintf(stderr, "%s: image size: %d by %d\n", ARGV[0], texture_width, texture_height);
-  
   #ifdef __APPLE__
   
   CGLContextObj contextObj;
@@ -54,6 +52,7 @@ int setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, f
   OSMesaContext ctx = OSMesaCreateContextExt(OSMESA_RGBA, 32, 8, 16, NULL);
   if (!ctx) { fprintf(stderr, "OSMesaCreateContext failed!\n"); return EXIT_FAILURE; }
   void *buffer = malloc(texture_width * texture_height * 4 * sizeof(GLubyte));
+  if (buffer == NULL) { fprintf(stderr, "malloc error.\n"); return EXIT_FAILURE; }
   if (!OSMesaMakeCurrent(ctx, buffer, GL_UNSIGNED_BYTE, texture_width, texture_height)) { printf("OSMesaMakeCurrent failed!\n"); return EXIT_FAILURE; }
   
   #endif
