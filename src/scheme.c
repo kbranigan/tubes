@@ -1,5 +1,6 @@
 
 #include <math.h>
+#include <float.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -469,6 +470,87 @@ void free_all_shapes(struct Shape ** shapes, unsigned int num_shapes)
   for (i = 0 ; i < num_shapes ; i++)
     free_shape(shapes[i]);
   free(shapes);
+}
+
+struct BBox * get_bbox(struct Shape * shape, struct BBox * bbox)
+{
+  if (bbox == NULL)
+  {
+    bbox = (struct BBox *)malloc(sizeof(struct BBox));
+    bbox->num_minmax = 0;
+    bbox->minmax = NULL;
+  }
+  
+  long j, k;
+  struct VertexArray * va = get_or_add_array(shape, GL_VERTEX_ARRAY);
+  
+  if (va->num_dimensions > bbox->num_minmax)
+  {
+    bbox->minmax = (struct MinMax*)realloc(bbox->minmax, sizeof(struct MinMax)*va->num_dimensions);
+    for (j = bbox->num_minmax ; j < va->num_dimensions ; j++)
+    {
+      bbox->minmax[j].min =  FLT_MAX;
+      bbox->minmax[j].max = -FLT_MAX;
+    }
+    bbox->num_minmax = va->num_dimensions;
+  }
+  
+  for (j = 0 ; j < shape->num_vertexs ; j++)
+  {
+    for (k = 0 ; k < va->num_dimensions ; k++)
+    {
+      if (bbox->minmax[k].min > va->vertexs[j*va->num_dimensions+k])
+          bbox->minmax[k].min = va->vertexs[j*va->num_dimensions+k];
+      if (bbox->minmax[k].max < va->vertexs[j*va->num_dimensions+k])
+          bbox->minmax[k].max = va->vertexs[j*va->num_dimensions+k];
+    }
+  }
+  return bbox;
+}
+
+struct BBox * get_bbox_from_shapes(struct Shape ** shapes, int num_shapes)
+{
+  struct BBox * bbox = NULL;
+  
+  long i;
+  for (i = 0 ; i < num_shapes ; i++)
+    bbox = get_bbox(shapes[i], bbox);
+  
+  return bbox;
+}
+
+struct Shape * get_shape_from_bbox(struct BBox * bbox)
+{
+  struct Shape * shape = new_shape();
+  struct VertexArray * va = get_or_add_array(shape, GL_VERTEX_ARRAY);
+  shape->gl_type = GL_LINE_LOOP;
+  va->num_dimensions = bbox->num_minmax;
+  float v[5] = {0, 0, 0, 0, 0};
+  
+  long i;
+  for (i = 0 ; i < bbox->num_minmax ; i++)
+    v[i] = bbox->minmax[i].min;
+  
+  if (bbox->num_minmax == 2)
+  {
+    append_vertex(shape, v);
+    v[0] = bbox->minmax[0].max;
+    append_vertex(shape, v);
+    v[0] = bbox->minmax[0].max;
+    v[1] = bbox->minmax[1].max;
+    append_vertex(shape, v);
+    v[0] = bbox->minmax[0].min;
+    v[1] = bbox->minmax[1].max;
+    append_vertex(shape, v);
+  }
+  
+  return shape;
+}
+
+void free_bbox(struct BBox * bbox)
+{
+  free(bbox->minmax);
+  free(bbox);
 }
 
 /*void write_command_string(FILE * fp)

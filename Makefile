@@ -45,6 +45,7 @@ pipe_out: \
 
 pipe_inout: \
 	bin/clip \
+	bin/tile \
 	bin/delay \
 	bin/transform \
 	bin/reduce_by_id \
@@ -151,6 +152,9 @@ bin/produce_random_data: bin/scheme.o src/produce_random_data.c
 
 bin/clip: bin/scheme.o src/clip.c src/ext/gpc.c
 	gcc $(extra) bin/scheme.o src/clip.c src/ext/gpc.c -o bin/clip
+
+bin/tile: bin/scheme.o src/tile.c
+	gcc $(extra) bin/scheme.o src/tile.c -o bin/tile
 
 bin/bbox: bin/scheme.o src/bbox.c
 	gcc $(extra) bin/scheme.o src/bbox.c -o bin/bbox

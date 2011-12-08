@@ -101,6 +101,16 @@
   ]
 */
 
+struct MinMax {
+  float min;
+  float max;
+};
+
+struct BBox {
+  int num_minmax;
+  struct MinMax * minmax;
+};
+
 struct VertexArray {
   struct Shape * shape;
   uint32_t array_type;
@@ -159,6 +169,11 @@ extern struct Shape ** read_all_shapes(FILE * fp, unsigned int * num_shapes_p);
 extern int write_shape(FILE * fp, struct Shape * shape);
 extern int free_shape(struct Shape * shape);
 extern void free_all_shapes(struct Shape ** shapes, unsigned int num_shapes);
+
+extern struct BBox * get_bbox(struct Shape * shape, struct BBox * bbox);
+extern struct BBox * get_bbox_from_shapes(struct Shape ** shapes, int num_shapes);
+extern struct Shape * get_shape_from_bbox(struct BBox * bbox);
+extern void free_bbox(struct BBox * bbox);
 
 /*int point_in_triangle(vec2d A, vec2d B, vec2d C, vec2d P);*/
 
