@@ -40,10 +40,7 @@ int read_shapefile(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE
   }
   
   DBFHandle dbf = DBFOpen(file_name, "rb");
-  //if (dbf == NULL) { fprintf(stderr, "DBFOpen error (%s.dbf)\n", file_name); exit(1); }
-  
   SHPHandle shp = SHPOpen(file_name, "rb");
-  //if (shp == NULL) { fprintf(stderr, "SHPOpen error (%s.dbf)\n", file_name); exit(1); }
   
   if (dbf == NULL && shp == NULL)
   {
