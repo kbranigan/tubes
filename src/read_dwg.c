@@ -22,28 +22,25 @@ compile it yourself.  I built the included file from: git clone git://git.sv.gnu
 
 int read_dwg(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
-  char * filename = NULL;
-  char layername[200] = "";
+  char file_name[1000] = "";
+  char layer_name[200] = "";
   int c;
   while ((c = getopt(argc, argv, "f:l:")) != -1)
   switch (c)
   {
-    case 'f':
-      filename = malloc(strlen(optarg)+1);
-      strcpy(filename, optarg);
-      break;
-    case 'l':
-      strncpy(layername, optarg, sizeof(layername));
-      break;
+    case 'f': strncpy(file_name, optarg, sizeof(file_name)); break;
+    case 'l': strncpy(layer_name, optarg, sizeof(layer_name)); break;
+    default:  abort();
   }
   
-  if (filename == NULL && argc == 2 && argv[1] != NULL) filename = argv[1];
+  if (file_name[0] == 0 && argc == 2 && argv[1] != NULL)
+    strncpy(file_name, argv[1], sizeof(file_name));
   
-  FILE * fp = filename == NULL ? pipe_in : fopen(filename, "r");
+  FILE * fp = file_name == NULL ? pipe_in : fopen(file_name, "r");
   
-  if (fp == NULL || filename == NULL)
+  if (fp == NULL || file_name == NULL)
   {
-    fprintf(pipe_err, "ERROR: Usage: %s -f [filename.dwg]\n", argv[0]);
+    fprintf(pipe_err, "ERROR: Usage: %s -f [file_name.dwg]\n", argv[0]);
     return -1;
   }
   
@@ -51,12 +48,13 @@ int read_dwg(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pip
   memset(counts, 0, sizeof(counts));
   
   int i;
+  int write_count = 0;
   
   Dwg_Data dwg;
   
   float v[3] = { 0, 0, 0 };
   dwg.num_entities = 0;
-  int success = dwg_read_file(filename, &dwg);
+  int success = dwg_read_file(file_name, &dwg);
   
   for (i = 0 ; i < dwg.num_entities ; i++)
   {
@@ -69,10 +67,10 @@ int read_dwg(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pip
       {
         Dwg_Entity_LINE * line = dwg.object[i].tio.entity->tio.LINE;
         
-        if (layername[0] != 0)
+        if (layer_name[0] != 0)
         {
           Dwg_Object_LAYER * layer = dwg.object[i].tio.entity->layer->obj->tio.object->tio.LAYER;
-          if (strcmp(layer->entry_name, layername) != 0) break;
+          if (strcmp(layer->entry_name, layer_name) != 0) break;
         }
         
         struct Shape * shape = new_shape();
@@ -89,6 +87,7 @@ int read_dwg(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pip
         append_vertex(shape, v);
         //fprintf(stderr, "%f %f\n", v[0], v[1]);
         
+        write_count++;
         write_shape(pipe_out, shape);
         free_shape(shape);
         
@@ -99,10 +98,10 @@ int read_dwg(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pip
       {
         Dwg_Entity_LWPLINE * lwpLine = dwg.object[i].tio.entity->tio.LWPLINE;
         
-        if (layername[0] != 0)
+        if (layer_name[0] != 0)
         {
           Dwg_Object_LAYER * layer = dwg.object[i].tio.entity->layer->obj->tio.object->tio.LAYER;
-          if (strcmp(layer->entry_name, layername) != 0) break;
+          if (strcmp(layer->entry_name, layer_name) != 0) break;
         }
         
         struct Shape * shape = new_shape();
@@ -126,6 +125,7 @@ int read_dwg(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pip
         
         //fprintf(stderr, "%d\n", lwpLine->flags);
         
+        write_count++;
         write_shape(pipe_out, shape);
         free_shape(shape);
         
@@ -135,10 +135,10 @@ int read_dwg(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pip
       {
         Dwg_Entity_POINT * point = dwg.object[i].tio.entity->tio.POINT;
         
-        if (layername[0] != 0)
+        if (layer_name[0] != 0)
         {
           Dwg_Object_LAYER * layer = dwg.object[i].tio.entity->layer->obj->tio.object->tio.LAYER;
-          if (strcmp(layer->entry_name, layername) != 0) break;
+          if (strcmp(layer->entry_name, layer_name) != 0) break;
         }
         
         struct Shape * shape = new_shape();
@@ -149,6 +149,7 @@ int read_dwg(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pip
         v[1] = point->y;
         append_vertex(shape, v);
         
+        write_count++;
         write_shape(pipe_out, shape);
         free_shape(shape);
         
@@ -171,10 +172,10 @@ int read_dwg(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pip
         
         Dwg_Entity_INSERT * insert = dwg.object[i].tio.entity->tio.INSERT;
         
-        if (layername[0] != 0)
+        if (layer_name[0] != 0)
         {
           Dwg_Object_LAYER * layer = dwg.object[i].tio.entity->layer->obj->tio.object->tio.LAYER;
-          if (strcmp(layer->entry_name, layername) != 0) break;
+          if (strcmp(layer->entry_name, layer_name) != 0) break;
         }
         
         struct Shape * shape = new_shape();
@@ -185,6 +186,7 @@ int read_dwg(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pip
         v[1] = insert->ins_pt.y;
         append_vertex(shape, v);
         
+        write_count++;
         write_shape(pipe_out, shape);
         free_shape(shape);
         
@@ -247,6 +249,16 @@ int read_dwg(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pip
         break;
       }
     }
+  }
+  
+  if (write_count == 0 && layer_name[0] != 0)
+  {
+    fprintf(stderr, "layer '%s' selection provided but no shapes were found.\n", layer_name);
+    
+    fprintf(stderr, "The following layers were found:\n");
+    for (i = 0 ; i < dwg.num_entities ; i++)
+      if (dwg.object[i].type == DWG_TYPE_LAYER)
+        fprintf(stderr, "%s\n", dwg.object[i].tio.object->tio.LAYER->entry_name);
   }
   
   if (0)
