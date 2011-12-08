@@ -74,4 +74,7 @@ int transform(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
     write_shape(pipe_out, shape);
     free_shape(shape);
   }
+  
+  free(scales);
+  free(offsets);
 }
