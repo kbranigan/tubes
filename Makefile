@@ -56,6 +56,7 @@ pipe_inout: \
 	bin/remove_attributes \
 	bin/add_color_from_csv \
 	bin/coordinate_convert \
+	bin/reduce_by_overlap \
 	bin/reduce_by_distance \
 	bin/reduce_by_attribute \
 	bin/reset_unique_set_ids \
@@ -123,6 +124,12 @@ bin/group_shapes_on_unique_set_id: bin/scheme.o src/group_shapes_on_unique_set_i
 
 bin/reduce_by_distance: bin/scheme.o src/reduce_by_distance.c
 	gcc $(extra) bin/scheme.o src/reduce_by_distance.c -o bin/reduce_by_distance -lm
+
+bin/2dtree.o: src/2dtree.cpp
+	g++ src/2dtree.cpp -c -o bin/2dtree.o -Isrc/ext
+
+bin/reduce_by_overlap: bin/scheme.o src/reduce_by_overlap.c bin/2dtree.o
+	g++ $(extra) bin/scheme.o src/reduce_by_overlap.c bin/2dtree.o -Isrc/ext -o bin/reduce_by_overlap
 
 bin/reduce_by_attribute: bin/scheme.o src/reduce_by_attribute.c
 	gcc $(extra) bin/scheme.o src/reduce_by_attribute.c -o bin/reduce_by_attribute
