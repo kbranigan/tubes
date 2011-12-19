@@ -48,6 +48,7 @@ pipe_inout: \
 	bin/tile \
 	bin/delay \
 	bin/transform \
+	bin/add_marker \
 	bin/reduce_by_id \
 	bin/add_attribute \
 	bin/reduce_by_bbox \
@@ -140,6 +141,9 @@ bin/remove_attributes: bin/scheme.o src/remove_attributes.c
 
 bin/pass_through: bin/scheme.o src/pass_through.c
 	gcc $(extra) bin/scheme.o src/pass_through.c -o bin/pass_through
+
+bin/add_marker: bin/scheme.o src/add_marker.c
+	gcc $(extra) bin/scheme.o src/add_marker.c -o bin/add_marker
 
 bin/fast_fourier_transform: bin/scheme.o src/fast_fourier_transform.c
 	gcc $(extra) bin/scheme.o src/fast_fourier_transform.c -o bin/fast_fourier_transform -lfftw3 -lm $(ext)
