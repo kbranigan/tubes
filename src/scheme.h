@@ -2,6 +2,10 @@
 #ifndef SCHEME_H
 #define SCHEME_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -196,7 +200,7 @@ extern const char * get_gl_type_name(int gl_type);
     for (i = 0 ; i < argc ; i++)
       length += strlen(argv[i]) + ((i==argc-1)?0:1); // for each space
     
-    COMMAND = malloc(length);
+    COMMAND = (char*)malloc(length);
     strcpy(COMMAND, "");
     for (i = 0 ; i < argc ; i++)
     {
@@ -231,6 +235,10 @@ extern const char * get_gl_type_name(int gl_type);
       return EXIT_FAILURE;
     #endif
   }
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

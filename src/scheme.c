@@ -89,7 +89,7 @@ struct VertexArray * get_or_add_array(struct Shape * shape, unsigned int array_t
       return &shape->vertex_arrays[i];
   
   shape->num_vertex_arrays++;
-  shape->vertex_arrays = realloc(shape->vertex_arrays, shape->num_vertex_arrays*sizeof(struct VertexArray));
+  shape->vertex_arrays = (struct VertexArray*)realloc(shape->vertex_arrays, shape->num_vertex_arrays*sizeof(struct VertexArray));
   if (shape->vertex_arrays == NULL) { fprintf(stderr, "malloc failed in get_or_add_array()\n"); exit(1); }
   
   struct VertexArray * va = &shape->vertex_arrays[shape->num_vertex_arrays-1];
@@ -99,7 +99,7 @@ struct VertexArray * get_or_add_array(struct Shape * shape, unsigned int array_t
     va->num_dimensions = 3;
   else
     va->num_dimensions = 2;
-  va->vertexs = malloc(sizeof(float)*shape->num_vertexs*va->num_dimensions);
+  va->vertexs = (float*)malloc(sizeof(float)*shape->num_vertexs*va->num_dimensions);
   if (va->vertexs == NULL) { fprintf(stderr, "malloc failed in get_or_add_array()\n"); exit(1); }
   
   return va;
@@ -125,7 +125,7 @@ void set_num_dimensions(struct Shape * shape, unsigned int va_index, unsigned in
   if (num_dimensions > 100) { fprintf(stderr, "set_num_dimensions called with invalid num_dimensions (%d)\n", num_dimensions); return; }
   
   struct VertexArray * va = &shape->vertex_arrays[va_index];
-  float * vertexs = malloc(sizeof(float)*shape->num_vertexs*num_dimensions);
+  float * vertexs = (float*)malloc(sizeof(float)*shape->num_vertexs*num_dimensions);
   if (vertexs == NULL) { fprintf(stderr, "realloc failed in set_num_dimensions()\n"); exit(1); }
   
   unsigned int i, j;
@@ -140,7 +140,7 @@ void set_num_dimensions(struct Shape * shape, unsigned int va_index, unsigned in
 
 void _append_vertex_fv(struct VertexArray * va, float * v)
 {
-  va->vertexs = realloc(va->vertexs, sizeof(float)*(va->shape->num_vertexs+1)*va->num_dimensions);
+  va->vertexs = (float*)realloc(va->vertexs, sizeof(float)*(va->shape->num_vertexs+1)*va->num_dimensions);
   if (va->vertexs == NULL) { fprintf(stderr, "realloc failed in append_vertexv()\n"); exit(1); }
   
   unsigned int i = 0;
@@ -303,7 +303,7 @@ struct Shape * read_shape(FILE * fp)
       if (num_strings > 1000) { fprintf(stderr, "invalid num_strings found in the data (%d)\n", num_strings); return NULL; }
       
       if (strings != NULL) free(strings);
-      strings = malloc(20*num_strings);
+      strings = (char**)malloc(20*num_strings);
       
       unsigned int i;
       for (i = 0 ; i < num_strings ; i++)
@@ -350,7 +350,7 @@ struct Shape * read_shape(FILE * fp)
         if (fread(&attribute->name, sizeof(attribute->name), 1, fp) != 1) { fprintf(stderr, "fread attribute %ld key error\n", i); return NULL; }
       
       if (fread(&attribute->value_length, sizeof(attribute->value_length), 1, fp) != 1) { fprintf(stderr, "fread attribute %ld value length error\n", i); return NULL; }
-      attribute->value = malloc(attribute->value_length+1);
+      attribute->value = (char*)malloc(attribute->value_length+1);
       if (attribute->value == NULL) { fprintf(stderr, "malloc failed in read_shape()\n"); exit(1); }
       if (attribute->value_length > 0)
         if (fread(attribute->value, attribute->value_length, 1, fp) != 1) { fprintf(stderr, "fread attribute %ld value error\n", i); return NULL; }
@@ -418,18 +418,18 @@ void set_attribute(struct Shape * shape, char * name, char * value)
     {
       free(shape->attributes[i].value);
       shape->attributes[i].value_length = (int)strlen(value);
-      shape->attributes[i].value = malloc(shape->attributes[i].value_length+1);
+      shape->attributes[i].value = (char*)malloc(shape->attributes[i].value_length+1);
       strncpy(shape->attributes[i].value, value, shape->attributes[i].value_length);
       shape->attributes[i].value[shape->attributes[i].value_length] = 0;
       return;
     }
   }
   
-  shape->attributes = realloc(shape->attributes, sizeof(struct Attribute)*(shape->num_attributes+1));
+  shape->attributes = (struct Attribute*)realloc(shape->attributes, sizeof(struct Attribute)*(shape->num_attributes+1));
   if (name != NULL)
     strncpy(shape->attributes[shape->num_attributes].name, name, 19);
   shape->attributes[shape->num_attributes].value_length = (int)strlen(value);
-  shape->attributes[shape->num_attributes].value = malloc(shape->attributes[shape->num_attributes].value_length+1);
+  shape->attributes[shape->num_attributes].value = (char*)malloc(shape->attributes[shape->num_attributes].value_length+1);
   strncpy(shape->attributes[shape->num_attributes].value, value, shape->attributes[shape->num_attributes].value_length);
   shape->attributes[shape->num_attributes].value[shape->attributes[shape->num_attributes].value_length] = 0;
   shape->num_attributes++;
