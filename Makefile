@@ -52,6 +52,7 @@ pipe_inout: \
 	bin/reduce_by_id \
 	bin/add_attribute \
 	bin/reduce_by_bbox \
+	bin/highlight_vertex \
 	bin/add_random_colors \
 	bin/remove_attributes \
 	bin/add_color_from_csv \
@@ -94,6 +95,9 @@ bin/graph_ttc_performance: bin/scheme.o src/graph_ttc_performance.c
 
 bin/read_csv: bin/scheme.o src/read_csv.c
 	gcc $(extra) bin/scheme.o src/read_csv.c -o bin/read_csv
+
+bin/highlight_vertex: bin/scheme.o src/highlight_vertex.c
+	gcc $(extra) bin/scheme.o src/highlight_vertex.c -o bin/highlight_vertex
 
 bin/read_dwg: bin/scheme.o src/read_dwg.c
 	gcc $(extra) bin/scheme.o src/read_dwg.c -o bin/read_dwg -lredwg $(ext)
