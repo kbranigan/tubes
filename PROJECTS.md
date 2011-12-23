@@ -10,6 +10,24 @@ Assumes the following:
 
 #############################################################
 
+./bin/read_mysql "SELECT shape_id = 192 as r, 0 as g, 0 as b, round((shape_id = 192) * 0.5) + (!(shape_id = 192))* 0.1 as a, lat as y, lng as x, shape_id as id FROM ttc_gtfs.shape_points WHERE shape_id IN (192,194) ORDER BY shape_id = '192' asc, shape_id, position" | \
+  ./bin/tile <(./bin/read_mysql "SELECT shape_id = 194 as r, 0 as g, 0 as b, round((shape_id = 194) * 0.5) + (!(shape_id = 194))* 0.1 as a, lat as y, lng as x, shape_id as id FROM ttc_gtfs.shape_points WHERE shape_id IN (192,194) ORDER BY shape_id = '194' asc, shape_id, position") | \
+  ./bin/write_png
+
+#############################################################
+
+./bin/read_mysql "SELECT shape_id = 871 as r, 0 as g, 0 as b, round((shape_id = 871) * 0.5) + (!(shape_id = 871))* 0.1 as a, lat as y, lng as x, shape_id as id FROM ttc_gtfs.shape_points WHERE shape_id IN (871,872,873,874,875,876,877,878,879) ORDER BY shape_id = '871' asc, shape_id, position" | \
+  ./bin/tile <(./bin/read_mysql "SELECT shape_id = 872 as r, 0 as g, 0 as b, round((shape_id = 872) * 0.5) + (!(shape_id = 872))* 0.1 as a, lat as y, lng as x, shape_id as id FROM ttc_gtfs.shape_points WHERE shape_id IN (871,872,873,874,875,876,877,878,879) ORDER BY shape_id = '872' asc, shape_id, position") | \
+  ./bin/tile <(./bin/read_mysql "SELECT shape_id = 873 as r, 0 as g, 0 as b, round((shape_id = 873) * 0.5) + (!(shape_id = 873))* 0.1 as a, lat as y, lng as x, shape_id as id FROM ttc_gtfs.shape_points WHERE shape_id IN (871,872,873,874,875,876,877,878,879) ORDER BY shape_id = '873' asc, shape_id, position" | \
+  ./bin/tile <(./bin/read_mysql "SELECT shape_id = 874 as r, 0 as g, 0 as b, round((shape_id = 874) * 0.5) + (!(shape_id = 874))* 0.1 as a, lat as y, lng as x, shape_id as id FROM ttc_gtfs.shape_points WHERE shape_id IN (871,872,873,874,875,876,877,878,879) ORDER BY shape_id = '874' asc, shape_id, position")) | \
+  ./bin/tile <(./bin/read_mysql "SELECT shape_id = 875 as r, 0 as g, 0 as b, round((shape_id = 875) * 0.5) + (!(shape_id = 875))* 0.1 as a, lat as y, lng as x, shape_id as id FROM ttc_gtfs.shape_points WHERE shape_id IN (871,872,873,874,875,876,877,878,879) ORDER BY shape_id = '875' asc, shape_id, position" | \
+  ./bin/tile <(./bin/read_mysql "SELECT shape_id = 876 as r, 0 as g, 0 as b, round((shape_id = 876) * 0.5) + (!(shape_id = 876))* 0.1 as a, lat as y, lng as x, shape_id as id FROM ttc_gtfs.shape_points WHERE shape_id IN (871,872,873,874,875,876,877,878,879) ORDER BY shape_id = '876' asc, shape_id, position")) | \
+  ./bin/tile <(./bin/read_mysql "SELECT shape_id = 877 as r, 0 as g, 0 as b, round((shape_id = 877) * 0.5) + (!(shape_id = 877))* 0.1 as a, lat as y, lng as x, shape_id as id FROM ttc_gtfs.shape_points WHERE shape_id IN (871,872,873,874,875,876,877,878,879) ORDER BY shape_id = '877' asc, shape_id, position" | \
+  ./bin/tile <(./bin/read_mysql "SELECT shape_id = 878 as r, 0 as g, 0 as b, round((shape_id = 878) * 0.5) + (!(shape_id = 878))* 0.1 as a, lat as y, lng as x, shape_id as id FROM ttc_gtfs.shape_points WHERE shape_id IN (871,872,873,874,875,876,877,878,879) ORDER BY shape_id = '878' asc, shape_id, position")) | \
+  ./bin/tile -y -f <(./bin/read_mysql "SELECT shape_id = 879 as r, 0 as g, 0 as b, round((shape_id = 879) * 0.5) + (!(shape_id = 879))* 0.1 as a, lat as y, lng as x, shape_id as id FROM ttc_gtfs.shape_points WHERE shape_id IN (871,872,873,874,875,876,877,878,879) ORDER BY shape_id = '879' asc, shape_id, position") | \
+  ./bin/write_png
+
+#############################################################
 
 ./bin/read_mysql "select lat, lng, arrival_time as y, departure_time, trip_id as id, stop_sequence as x from ttc_gtfs.stop_times st left join ttc_gtfs.trips t using (gtfs_trip_id) left join ttc_gtfs.stops using (gtfs_stop_id) where route_id = 25 and service_id = 1 and shape_id = 192 order by trip_id, stop_sequence" \
   | ./bin/write_png
