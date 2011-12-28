@@ -96,7 +96,7 @@ int bbox(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_er
     fprintf(pipe_err, "bbox_num_dimensions %d\n", bbox_num_dimensions);
     long i;
     for (i = 0 ; i < bbox_num_dimensions ; i++)
-      fprintf(pipe_err, "  %ld: %f to %f\n", i, bbox[i].min, bbox[i].max);
+      fprintf(pipe_err, "  %ld: %f to %f [range: %f]\n", i, bbox[i].min, bbox[i].max, (bbox[i].max - bbox[i].min));
   }
   
   return EXIT_SUCCESS;
