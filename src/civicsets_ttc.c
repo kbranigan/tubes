@@ -187,7 +187,6 @@ void ttc_route(struct mg_connection *conn, const struct mg_request_info *ri, voi
     shape_ids = (char**)realloc(shape_ids, sizeof(char*)*num_shape_ids);
     shape_ids[num_shape_ids-1] = (char*)malloc(strlen(row[0])+1);
     strcpy(shape_ids[num_shape_ids-1], row[0]);
-    fprintf(stderr, "found %s\n", row[0]);
   }
   if (num_shape_ids == 0) { mg_printf(conn, "route %s has no shapes.\n", route); free(route); return; }
   
@@ -234,6 +233,17 @@ void ttc_route(struct mg_connection *conn, const struct mg_request_info *ri, voi
   
   fprintf(stderr, "%s\n", command);
   system(command);
+  
+  for (i = 0 ; i < num_shape_ids ; i++)
+  {
+    sprintf(command, "rm ttc_shape_");
+    strcat(command, shape_ids[i]);
+    strcat(command, "_in_route_");
+    strcat(command, route);
+    strcat(command, ".b");
+    fprintf(stderr, "%s\n", command);
+    system(command);
+  }
   
   output_and_delete_image(conn, image);
   
