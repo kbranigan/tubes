@@ -16,6 +16,30 @@ Assumes the following:
 
 #############################################################
 
+cat <(./bin/read_dem -f data/030/m/030m11/030m11_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m11/030m11_0200_deme.dem) \
+    <(./bin/read_dem -f data/030/m/030m12/030m12_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m12/030m12_0200_deme.dem) \
+    <(./bin/read_dem -f data/030/m/030m13/030m13_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m13/030m13_0200_deme.dem) \
+    <(./bin/read_dem -f data/030/m/030m14/030m14_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m14/030m14_0200_deme.dem) \
+    | ./bin/write_png
+
+cat <(./bin/read_dem -f data/030/m/030m03/030m03_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m03/030m03_0200_deme.dem) \
+    <(./bin/read_dem -f data/030/m/030m04/030m04_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m04/030m04_0200_deme.dem) \
+    <(./bin/read_dem -f data/030/m/030m05/030m05_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m05/030m05_0200_deme.dem) \
+    <(./bin/read_dem -f data/030/m/030m06/030m06_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m06/030m06_0200_deme.dem) \
+    <(./bin/read_dem -f data/031/d/031d03/031d03_0200_demw.dem) <(./bin/read_dem -f data/031/d/031d03/031d03_0200_deme.dem) \
+    <(./bin/read_dem -f data/031/d/031d04/031d04_0200_demw.dem) <(./bin/read_dem -f data/031/d/031d04/031d04_0200_deme.dem) \
+    <(./bin/read_dem -f data/031/d/031d05/031d05_0200_demw.dem) <(./bin/read_dem -f data/031/d/031d05/031d05_0200_deme.dem) \
+    <(./bin/read_dem -f data/031/d/031d06/031d06_0200_demw.dem) <(./bin/read_dem -f data/031/d/031d06/031d06_0200_deme.dem) \
+    <(./bin/read_dem -f data/030/m/030m11/030m11_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m11/030m11_0200_deme.dem) \
+    <(./bin/read_dem -f data/030/m/030m12/030m12_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m12/030m12_0200_deme.dem) \
+    <(./bin/read_dem -f data/030/m/030m13/030m13_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m13/030m13_0200_deme.dem) \
+    <(./bin/read_dem -f data/030/m/030m14/030m14_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m14/030m14_0200_deme.dem) \
+    <(./bin/read_dem -f data/030/m/030m15/030m15_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m15/030m15_0200_deme.dem) \
+    <(./bin/read_dem -f data/030/m/030m16/030m16_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m16/030m16_0200_deme.dem) \
+    | ./bin/write_png
+
+#############################################################
+
 ./bin/read_mysql "SELECT shape_id = 871 as r, 0 as g, 0 as b, round((shape_id = 871) * 0.5) + (!(shape_id = 871))* 0.1 as a, lat as y, lng as x, shape_id as id FROM ttc_gtfs.shape_points WHERE shape_id IN (871,872,873,874,875,876,877,878,879) ORDER BY shape_id = '871' asc, shape_id, position" | \
   ./bin/tile <(./bin/read_mysql "SELECT shape_id = 872 as r, 0 as g, 0 as b, round((shape_id = 872) * 0.5) + (!(shape_id = 872))* 0.1 as a, lat as y, lng as x, shape_id as id FROM ttc_gtfs.shape_points WHERE shape_id IN (871,872,873,874,875,876,877,878,879) ORDER BY shape_id = '872' asc, shape_id, position") | \
   ./bin/tile <(./bin/read_mysql "SELECT shape_id = 873 as r, 0 as g, 0 as b, round((shape_id = 873) * 0.5) + (!(shape_id = 873))* 0.1 as a, lat as y, lng as x, shape_id as id FROM ttc_gtfs.shape_points WHERE shape_id IN (871,872,873,874,875,876,877,878,879) ORDER BY shape_id = '873' asc, shape_id, position" | \
