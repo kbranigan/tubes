@@ -101,13 +101,15 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
   int texture_width = 1200;
   
   char file_name[1000] = "";
+  float rotation = 0;
   int num_attributes = -1;
   int c;
-  while ((c = getopt(argc, argv, "f:w:")) != -1)
+  while ((c = getopt(argc, argv, "f:w:r:")) != -1)
   switch (c)
   {
     case 'f': strncpy(file_name, optarg, sizeof(file_name)); break;
     case 'w': texture_width = atoi(optarg); break;
+    case 'r': rotation = atof(optarg); break;
     default:  abort();
   }
   
@@ -177,6 +179,7 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
   
   glTranslatef((b[0][0]+b[0][1])/2.0, (b[1][0]+b[1][1])/2.0, 0);
   glRotatef(180, 0, 0, 1);
+  glRotatef(rotation, 1, 0, 0);
   glScalef(-1, 1, 1);
   glTranslatef((b[0][0]+b[0][1])/-2.0, (b[1][0]+b[1][1])/-2.0, 0);
   
