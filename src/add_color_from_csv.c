@@ -56,12 +56,12 @@ you can specify the unique id, or any arbitary name:value pair - which is matche
     
     int num_parts = 0;
     char * parts[50];
-    char * pch = strtok (buf, " ,\n");
+    char * pch = strtok (buf, ",\n");
     while (pch != NULL)
     {
       parts[num_parts] = pch;
       num_parts++;
-      pch = strtok (NULL, " ,\n");
+      pch = strtok (NULL, ",\n");
     }
     
     rules = realloc(rules, sizeof(struct ColorRule)*(num_rules+1));
@@ -75,7 +75,7 @@ you can specify the unique id, or any arbitary name:value pair - which is matche
     int i;
     for (i = 0 ; i < num_parts ; i++)
     {
-      pch = strpbrk(parts[i], ":\n\t ");
+      pch = strpbrk(parts[i], ":\n\t");
       if (pch == NULL) continue;
       *(pch++) = 0;
       
@@ -97,31 +97,57 @@ you can specify the unique id, or any arbitary name:value pair - which is matche
   struct Shape * shape = NULL;
   while ((shape = read_shape(pipe_in)))
   {
+    struct ColorRule * rule = NULL;
+    
     int i,j;
     for (i = 0 ; i < num_rules ; i++)
     {
-      int add_color = 0;
-      struct ColorRule * rule = &rules[i];
-      if (rule->unique_set_id != -1 && rule->unique_set_id == shape->unique_set_id)
-        add_color = 1;
-      else if (rule->name[0] != 0)
+      struct ColorRule * temp_rule = &rules[i];
+      if (temp_rule->unique_set_id != -1 && temp_rule->unique_set_id == shape->unique_set_id)
+        rule = temp_rule;
+      else if (temp_rule->name[0] != 0)
         for (j = 0 ; j < shape->num_attributes ; j++)
-          if (strcmp(shape->attributes[j].name, rule->name) == 0 && strcmp(shape->attributes[j].value, rule->value) == 0)
-            add_color = 1;
-      
-      if (add_color == 1)
-      {
-        struct VertexArray * cva = get_or_add_array(shape, GL_COLOR_ARRAY);
-        cva->num_dimensions = 4;
-        cva->vertexs = realloc(cva->vertexs, sizeof(float)*shape->num_vertexs*cva->num_dimensions);
-        
-        float color[4] = { rule->r, rule->g, rule->b, rule->a };
-        for (j = 0 ; j < shape->num_vertexs ; j++)
-          set_vertex(shape, 1, j, color);
-        //fprintf(stderr, ".");
-      }
+          if (strcmp(shape->attributes[j].name, temp_rule->name) == 0 && strcmp(shape->attributes[j].value, temp_rule->value) == 0)
+            rule = temp_rule; //add_color = 1;
     }
     
+    if (rule)
+    {
+      struct VertexArray * cva = get_or_add_array(shape, GL_COLOR_ARRAY);
+      cva->num_dimensions = 4;
+      cva->vertexs = realloc(cva->vertexs, sizeof(float)*shape->num_vertexs*cva->num_dimensions);
+      
+      float color[4] = { rule->r, rule->g, rule->b, rule->a };
+      for (j = 0 ; j < shape->num_vertexs ; j++)
+        set_vertex(shape, 1, j, color);
+    }
+    else 
+    {
+      //if (strcmp(shape->attributes[j].name, temp_rule->name) == 0)
+      fprintf(stderr, "%s\n", get_attribute(shape, "COMMONAME1"));
+      /*for (i = 0 ; i < num_rules ; i++)
+      {
+        struct ColorRule * temp_rule = &rules[i];
+        for (j = 0 ; j < shape->num_attributes ; j++)
+          if (strcmp(shape->attributes[j].name, temp_rule->name) == 0 && strcmp(shape->attributes[j].value, temp_rule->value) == 0)
+          {
+            
+          }
+          else
+          {
+            //if (strcmp(shape->attributes[j].name, temp_rule->name) == 0)
+            //fprintf(stderr, "%s vs %s = %d\n", shape->attributes[j].value, temp_rule->value, strcmp(shape->attributes[j].value, temp_rule->value));
+          }
+      }*/
+      
+      //for (j = 0 ; j < shape->num_attributes ; j++)
+      //  fprintf(stderr, "%s:\"%s\"\n", shape->attributes[j].name, shape->attributes[j].value);
+        //if (strcmp(shape->attributes[j].name, rule->name) == 0 && strcmp(shape->attributes[j].value, rule->value) == 0)
+      
+      //char * value = get_attribute(shape, "COMMONAME1");
+      //fprintf(stderr, "shape dont got a color (%s)\n", value);
+      //exit(1);
+    }
     
     write_shape(pipe_out, shape);
     free_shape(shape);
