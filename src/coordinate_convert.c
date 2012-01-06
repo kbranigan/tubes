@@ -31,13 +31,14 @@ struct latlon {
 struct xtmcoord {
   double easting;
   double northing;
-  double zone;
-  int xtm; // 0 = utm, 1 = mtm
-  double mrm; // only for mtm
+  int xtm;             // 0 = utm, 1 = mtm
+  int zonenumber;      // zone number - http://www.geod.rncan.gc.ca/images/utm.jpg or http://www.geod.rncan.gc.ca/images/mtm.jpg
+  char zoneletter;     // only for utm (UTM Zone Letter, T for toronto area - http://www.dmap.co.uk/utmworld.htm)
+  double ref_meridian; // only for mtm (Reference Meridian)
 };
 
 struct mtmZoner {
-  int zone;
+  int zonenumber;
   double refMeridian;
 };
 
@@ -121,7 +122,7 @@ struct mtmZoner gsrugZoner(double mtmLat, double mtmLong, int mtmZone)
   {
     printf("Cannot figure out MTM zone -- outside Canada, lat=%f, lon=%f\n", mtmLat, mtmLong);
     struct mtmZoner mtmZoner;
-    mtmZoner.zone = 0;
+    mtmZoner.zonenumber = 0;
     mtmZoner.refMeridian = -mtmLong;
     
     return mtmZoner;
@@ -131,7 +132,7 @@ struct mtmZoner gsrugZoner(double mtmLat, double mtmLong, int mtmZone)
   else
   {
     struct mtmZoner mtmZoner;
-    mtmZoner.zone = mtmZone;
+    mtmZoner.zonenumber = mtmZone;
     mtmZoner.refMeridian = -mtmSmers[mtmZone];
     return mtmZoner;
     //var mtmZoner = {zone: mtmZone , refMeridian: -mtmSmers[Number(mtmZone)]};
@@ -139,9 +140,34 @@ struct mtmZoner gsrugZoner(double mtmLat, double mtmLong, int mtmZone)
   }
 }
 
-struct xtmcoord get_xtm(struct latlon ll, int xtm, double mrm)//double lat, double lon, int xtm, double mrm)
+char get_zoneletter(double lat)
 {
-  struct ellipsoid e = geo_constants(22, xtm);
+  if ((84 >= lat) && (lat >= 72)) return 'X';
+  else if ((72 > lat) && (lat >= 64)) return 'W';
+  else if ((64 > lat) && (lat >= 56)) return 'V';
+  else if ((56 > lat) && (lat >= 48)) return 'U';
+  else if ((48 > lat) && (lat >= 40)) return 'T';
+  else if ((40 > lat) && (lat >= 32)) return 'S';
+  else if ((32 > lat) && (lat >= 24)) return 'R';
+  else if ((24 > lat) && (lat >= 16)) return 'Q';
+  else if ((16 > lat) && (lat >= 8)) return 'P';
+  else if (( 8 > lat) && (lat >= 0)) return 'N';
+  else if (( 0 > lat) && (lat >= -8)) return 'M';
+  else if ((-8> lat) && (lat >= -16)) return 'L';
+  else if ((-16 > lat) && (lat >= -24)) return 'K';
+  else if ((-24 > lat) && (lat >= -32)) return 'J';
+  else if ((-32 > lat) && (lat >= -40)) return 'H';
+  else if ((-40 > lat) && (lat >= -48)) return 'G';
+  else if ((-48 > lat) && (lat >= -56)) return 'F';
+  else if ((-56 > lat) && (lat >= -64)) return 'E';
+  else if ((-64 > lat) && (lat >= -72)) return 'D';
+  else if ((-72 > lat) && (lat >= -80)) return 'C';
+  else return 'Z'; // bad
+}
+
+struct xtmcoord get_xtm(struct latlon ll, int xtm, struct ellipsoid e, double ref_meridian)
+{
+  //struct ellipsoid e = geo_constants(22, xtm);
   
   //double mrm = sanitize_refMeridian();
   struct mtmZoner zonerResult;
@@ -157,10 +183,10 @@ struct xtmcoord get_xtm(struct latlon ll, int xtm, double mrm)//double lat, doub
     //zonenum = floor((180.0 - ll.lon) / 3.0) - 76;  // MTM, only in Quebec
     //if (zonenum < 3 || zonenum > 10)
     //  printf("MTM zone numbers only confirmed for 3-10, province of Quebec\nContinuing anyway\n");
-    if (mrm == 0)
+    if (ref_meridian == 0)
     {
       zonerResult = gsrugZoner(ll.lat, -ll.lon, 0);
-      zonenum = zonerResult.zone;
+      zonenum = zonerResult.zonenumber;
     }
     //else
     //  zonenum = "x";
@@ -181,23 +207,20 @@ struct xtmcoord get_xtm(struct latlon ll, int xtm, double mrm)//double lat, doub
   if (e.scaleTm == 0.9999)
   {
     // lonorig = 180 - (zonenum + 76) * 3 - 1.5;
-    if (mrm == 0)
+    if (ref_meridian == 0)
     {
       zonerResult = gsrugZoner(ll.lat, -ll.lon, zonenum);
       lonorig = zonerResult.refMeridian;
     }
     else
     {
-      lonorig = mrm;
+      lonorig = ref_meridian;
       if (abs(ll.lon - lonorig) > 4.)
         fprintf(stderr, "MTM ref meridian more than 4 degrees away from longitude\nContinuing anyway\n");
     }
   }
   
   double lonorigrad = lonorig * DEG2RAD;
-
-  //get letter
-  /*var letter = get_zoneletter(lat);*/
 
   double eccPrimeSquared = (e.eccentricity) / (1 - e.eccentricity);
 
@@ -219,21 +242,22 @@ struct xtmcoord get_xtm(struct latlon ll, int xtm, double mrm)//double lat, doub
   struct xtmcoord c;
   c.easting = easting;
   c.northing = northing;
-  c.zone = zonenum;
+  c.zonenumber = zonenum;
+  c.zoneletter = get_zoneletter(ll.lat);
   c.xtm = xtm;
-  c.mrm = mrm;
+  c.ref_meridian = ref_meridian;
   
   return c;
   
-  /*printf("%f %f %f %f\n", lat, lon, zonenum, zonerResult.refMeridian);
-  printf("easting = %f\n", easting);
-  printf("northing = %f\n", northing);
-  printf("zone = %f\n", zonenum);*/
+  //printf("%f %f %f %f\n", lat, lon, zonenum, zonerResult.refMeridian);
+  //printf("easting = %f\n", easting);
+  //printf("northing = %f\n", northing);
+  //printf("zone = %f\n", zonenum);
 }
 
-struct latlon get_latlon(struct xtmcoord c) //double easting, double northing, double zone, int xtm, double mrm)
+struct latlon get_latlon(struct xtmcoord c, struct ellipsoid e) //double easting, double northing, double zone, int xtm, double mrm)
 {
-  if (c.zone < 0 || c.zone > 60)
+  if (c.zonenumber < 0 || c.zonenumber > 60)
   {
     fprintf(stderr, "Zone number is out of range.\nMust be between 1 and 60.\n");
     return;
@@ -243,15 +267,15 @@ struct latlon get_latlon(struct xtmcoord c) //double easting, double northing, d
     fprintf(stderr, "Northing value is out of range (%f)\n", c.northing);
     return;
   }
-  if (c.mrm == 0 && (c.easting < 160000 || c.easting > 834000))
+  if (c.ref_meridian == 0 && (c.easting < 160000 || c.easting > 834000))
   {
     fprintf(stderr, "Easting value is out of range\n");
     return;
   }
   
-  struct ellipsoid e = geo_constants(22, c.xtm);
+  //struct ellipsoid e = geo_constants(22, c.xtm);
   
-  /*if (zone == "" && mrm == 0 || (zl == 0 && ellipsoid.eastingOrg != 304800.) )  // MTM does not need zone letters
+  /*if (zone == "" && ref_meridian == 0 || (zl == 0 && ellipsoid.eastingOrg != 304800.) )  // MTM does not need zone letters
   {
     printf("You must enter a zone number and letter");
     return;
@@ -261,7 +285,7 @@ struct latlon get_latlon(struct xtmcoord c) //double easting, double northing, d
     fprintf(stderr, "Ellipsoid must be entered\n");
     return;
   }
-  if (c.mrm == 0 && e.scaleTm == 0.9999 && (c.zone < 1 || c.zone > 32))
+  if (c.xtm == 1 && c.ref_meridian == 0 && e.scaleTm == 0.9999 && (c.zonenumber < 1 || c.zonenumber > 32))
     fprintf(stderr, "MTM zone numbers only confirmed for 1-32, in Canada\nContinuing anyway\n");
   
   double axis = e.axis;
@@ -274,28 +298,23 @@ struct latlon get_latlon(struct xtmcoord c) //double easting, double northing, d
   double x = c.easting - eastingOrg; //remove 500,000 meter offset for longitude
   double y = c.northing;
   
-  /*
-  var nhemisphere = 0;
-  if (zletter >= "N" || scaleTm == 0.9999)  // MTM in north hemisphere only
-    nhemishere = 1;
-  else
+  if (c.zoneletter < 'N' && c.zoneletter != ' ' && c.xtm == 0)
     y -= 10000000.0; //remove 10,000,000 meter offset used for southern hemisphere
-  */
   
   struct mtmZoner zonerResult;
   
-  double longorig = (c.zone - 1) * 6 - 180 + 3;  //+3 puts origin in middle of zone
+  double longorig = (c.zonenumber - 1) * 6 - 180 + 3;  //+3 puts origin in middle of zone
   // @dc 180 - (7+76) * 3 - 1.5
   if (scaleTm == 0.9999)
   {
     // longorig = 180 - (zone*1 + 76) * 3 - 1.5;  // without hack, did string concat !!!
-    if (c.mrm == 0)
+    if (c.ref_meridian == 0)
     {
-      zonerResult = gsrugZoner(0., 0., c.zone);
+      zonerResult = gsrugZoner(0., 0., c.zonenumber);
       longorig = zonerResult.refMeridian;
     }
     else
-      longorig = c.mrm;
+      longorig = c.ref_meridian;
   }
 
   // printf("zone = " + (zone*1 + 76));
@@ -326,32 +345,50 @@ struct latlon get_latlon(struct xtmcoord c) //double easting, double northing, d
 
 int coordinate_convert(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
-  if (argc < 4)
+  if (argc < 5)
   {
-    fprintf(stderr, "usage: %s [nad27/wgs84] [utm/mtm] [zone] (mrm)\n", argv[0]);
+    fprintf(stderr, "usage: %s [to/from] [nad27/wgs84] [utm/mtm] [zonenumber] (utm zone letter / mtm reference meridian)\n", argv[0]);
     exit(1);
   }
   
-  struct ellipsoid e;
-  if (strcmp(argv[1], "nad27")==0 || strcmp(argv[1], "NAD27")==0) e = geo_constants(22, 1);
-  else if (strcmp(argv[1], "wgs84")==0 || strcmp(argv[1], "WGS84")==0) e = geo_constants(4, 1);
+  int to_from = 0;
+  struct ellipsoid e; // set by nad27 or wgs84
+  int xtm = 0;
+  int zonenumber = 0;
+  int ref_meridian = 0;
+  char zoneletter = ' ';
+  
+  if (strcmp(argv[1], "to") == 0 || strcmp(argv[1], "TO") == 0)   to_from = 0;
+  else if (strcmp(argv[1], "from") == 0 || strcmp(argv[1], "FROM") == 0) to_from = 1;
   else
   {
-    fprintf(stderr, "invalid ellipsoid, first option should be nad27 or wgs84 (was %s)\n", argv[1]);
+    fprintf(stderr, "invalid to/from, first option should be 'to' or 'from' (was %s)\n", argv[1]);
     exit(1);
   }
   
-  int xtm = -1;
-  if (strcmp(argv[2], "utm")==0 || strcmp(argv[2], "UTM")==0) xtm = 0;
-  else if (strcmp(argv[2], "mtm")==0 || strcmp(argv[2], "MTM")==0) xtm = 1;
+  if (strcmp(argv[3], "utm") == 0 || strcmp(argv[3], "UTM") == 0) xtm = 0;
+  else if (strcmp(argv[3], "mtm") == 0 || strcmp(argv[3], "MTM") == 0) xtm = 1;
   else
   {
-    fprintf(stderr, "invalid xtm, second option should be utm or mtm (was %s)\n", argv[2]);
+    fprintf(stderr, "invalid xtm, third option should be 'utm' or 'mtm' (was %s)\n", argv[3]);
     exit(1);
   }
   
-  int zone = argc > 3 ? atoi(argv[3]) : 0;
-  int mrm = argc > 4 ? atoi(argv[4]) : 0;
+  if (strcmp(argv[2], "nad27") == 0 || strcmp(argv[2], "NAD27") == 0) e = geo_constants(5, xtm);
+  else if (strcmp(argv[2], "nad83") == 0 || strcmp(argv[2], "NAD83") == 0) e = geo_constants(22, xtm);
+  else if (strcmp(argv[2], "wgs84") == 0 || strcmp(argv[2], "WGS84") == 0) e = geo_constants(22, xtm);
+  else
+  {
+    fprintf(stderr, "invalid ellipsoid, second option should be 'nad27' or 'wgs84' (was %s)\n", argv[2]);
+    exit(1);
+  }
+  
+  zonenumber = argc > 4 ? atoi(argv[4]) : 0;
+  
+  if (xtm == 0)      // utm
+    zoneletter = argv[5][0];
+  else if (xtm == 1) // mtm
+    ref_meridian  = argc > 5 ? atoi(argv[5]) : 0;
   
   struct Shape * shape = NULL;
   long i=0, j=0, count=0;
@@ -366,20 +403,35 @@ int coordinate_convert(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, 
       {
         float * vertex = get_vertex(shape, i, j);
         
-        struct xtmcoord c;
-        c.easting = vertex[0];
-        c.northing = vertex[1];
-        c.zone = zone;
-        c.xtm = xtm;
-        c.mrm = mrm;
-        
-        struct latlon ll = get_latlon(c);
-        vertex[0] = ll.lat;
-        vertex[1] = ll.lon;
+        if (to_from)
+        {
+          struct xtmcoord c;
+          c.easting = vertex[0];
+          c.northing = vertex[1];
+          c.zonenumber = zonenumber;
+          c.zoneletter = zoneletter;
+          c.xtm = xtm;
+          c.ref_meridian = ref_meridian;
+          
+          struct latlon ll = get_latlon(c, e);
+          vertex[0] = ll.lat;
+          vertex[1] = ll.lon;
+        }
+        else
+        {
+          struct latlon ll;
+          ll.lat = vertex[0];
+          ll.lon = vertex[1];
+          
+          struct xtmcoord c = get_xtm(ll, xtm, e, ref_meridian);
+          vertex[0] = c.easting;
+          vertex[1] = c.northing;
+        }
         //gluTessVertex(tobj, vertex, vertex);
       }
     }
     write_shape(pipe_out, shape);
+    free_shape(shape);
   }
   
   return 0;
@@ -397,7 +449,7 @@ int coordinate_convert(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, 
   
   c = get_xtm(ll, 1, 0);
   
-  printf("%f %f %f %d %f\n", c.easting, c.northing, c.zone, c.xtm, c.mrm);
+  printf("%f %f %f %d %f\n", c.easting, c.northing, c.zonenumber, c.xtm, c.mrm);
   
   ll = get_latlon(c);
   
