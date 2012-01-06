@@ -16,6 +16,51 @@ Assumes the following:
 
 #############################################################
 
+./bin/read_shapefile -f /work/data/canada/hydro_v3r1/hydro_candd.dbf \
+  | ./bin/clip -f <(./bin/read_shapefile -f /work/data/canada/provinces/prov_ab_p_geo83_e.dbf | ./bin/reduce_by_attribute -n NAME -v ONTARIO) \
+  > hydro.ontario.b
+
+./bin/read_shapefile -f /work/data/canada/municipalities/ontario.dbf \
+  | ./bin/clip -f hydro.ontario.b \
+  > ontario.muni.minus.water.b
+
+cat ontario.muni.minus.water.b \
+ | ./bin/clip -f <(./bin/produce_unit_square -x -79.38698 -y 43.67008 -w 1.5 -h 1.5) \
+ | ./bin/tesselate \
+ | ./bin/add_color_from_csv -f colors_for_andrew.txt \
+ | ./bin/write_png
+
+#############################################################
+
+cat <(./bin/read_dwg -f ../property_data_for_trinity_spadina_ward/49g-13-2000.dwg -l BUILDING_LINE* | ./bin/coordinate_convert from NAD83 UTM 17 T) \
+    <(./bin/read_dwg -f ../property_data_for_trinity_spadina_ward/49j-13-2000.dwg -l BUILDING_LINE* | ./bin/coordinate_convert from NAD83 UTM 17 T) \
+    <(./bin/read_dwg -f ../property_data_for_trinity_spadina_ward/50g-11-2000.dwg -l BUILDING_LINE* | ./bin/coordinate_convert from NAD83 UTM 17 T) \
+    <(./bin/read_dwg -f ../property_data_for_trinity_spadina_ward/50g-12-2000.dwg -l BUILDING_LINE* | ./bin/coordinate_convert from NAD83 UTM 17 T) \
+    <(./bin/read_dwg -f ../property_data_for_trinity_spadina_ward/50g-13-2000.dwg -l BUILDING_LINE* | ./bin/coordinate_convert from NAD83 UTM 17 T) \
+    <(./bin/read_dwg -f ../property_data_for_trinity_spadina_ward/50g-21-2000.dwg -l BUILDING_LINE* | ./bin/coordinate_convert from NAD83 UTM 17 T) \
+    <(./bin/read_dwg -f ../property_data_for_trinity_spadina_ward/50g-22-2000.dwg -l BUILDING_LINE* | ./bin/coordinate_convert from NAD83 UTM 17 T) \
+    <(./bin/read_dwg -f ../property_data_for_trinity_spadina_ward/50g-23-2000.dwg -l BUILDING_LINE* | ./bin/coordinate_convert from NAD83 UTM 17 T) \
+    <(./bin/read_dwg -f ../property_data_for_trinity_spadina_ward/50h-11-2000.dwg -l BUILDING_LINE* | ./bin/coordinate_convert from NAD83 UTM 17 T) \
+    <(./bin/read_dwg -f ../property_data_for_trinity_spadina_ward/50h-12-2000.dwg -l BUILDING_LINE* | ./bin/coordinate_convert from NAD83 UTM 17 T) \
+    <(./bin/read_dwg -f ../property_data_for_trinity_spadina_ward/50h-21-2000.dwg -l BUILDING_LINE* | ./bin/coordinate_convert from NAD83 UTM 17 T) \
+    <(./bin/read_dwg -f ../property_data_for_trinity_spadina_ward/50h-22-2000.dwg -l BUILDING_LINE* | ./bin/coordinate_convert from NAD83 UTM 17 T) \
+    <(./bin/read_dwg -f ../property_data_for_trinity_spadina_ward/50j-11-2000.dwg -l BUILDING_LINE* | ./bin/coordinate_convert from NAD83 UTM 17 T) \
+    <(./bin/read_dwg -f ../property_data_for_trinity_spadina_ward/50j-12-2000.dwg -l BUILDING_LINE* | ./bin/coordinate_convert from NAD83 UTM 17 T) \
+    <(./bin/read_shapefile -f /work/data/canada/toronto/address_points/ADDRESS_POINT_WGS84.dbf -a 0 | ./bin/reduce_by_bbox -f <(./bin/read_shapefile -f /work/data/canada/toronto/wards/icitw_wgs84.dbf | ./bin/reduce_by_attribute -n SCODE_NAME -v 20 | ./bin/bbox)) \
+    <(./bin/read_shapefile -f /work/data/canada/toronto/wards/icitw_wgs84.dbf | ./bin/reduce_by_attribute -n SCODE_NAME -v 20) \
+    | ./bin/add_random_colors \
+    | ./bin/write_png -w 2500
+    
+    | ./bin/clip -f <(./bin/read_shapefile -f /work/data/canada/toronto/wards/icitw_wgs84.dbf | ./bin/reduce_by_attribute -n SCODE_NAME -v 20) \
+    > buildings_in_trinity_spadina_ward20_wgs84.b
+
+    cat buildings_in_trinity_spadina_ward20_wgs84.b \
+    <(./bin/read_shapefile -f /work/data/canada/toronto/wards/icitw_wgs84.dbf | ./bin/reduce_by_attribute -n SCODE_NAME -v 20) \
+    | ./bin/add_random_colors \
+    | ./bin/write_png
+
+#############################################################
+
 cat <(./bin/read_dem -f data/030/m/030m11/030m11_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m11/030m11_0200_deme.dem) \
     <(./bin/read_dem -f data/030/m/030m12/030m12_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m12/030m12_0200_deme.dem) \
     <(./bin/read_dem -f data/030/m/030m13/030m13_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m13/030m13_0200_deme.dem) \
