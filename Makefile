@@ -44,9 +44,11 @@ pipe_out: \
 	bin/produce_unit_square
 
 pipe_inout: \
+	bin/rms \
 	bin/clip \
 	bin/tile \
 	bin/delay \
+	bin/normalize \
 	bin/transform \
 	bin/add_marker \
 	bin/reduce_by_id \
@@ -95,6 +97,12 @@ bin/graph_ttc_performance: bin/scheme.o src/graph_ttc_performance.c
 
 bin/read_csv: bin/scheme.o src/read_csv.c
 	gcc $(extra) bin/scheme.o src/read_csv.c -o bin/read_csv
+
+bin/rms: bin/scheme.o src/rms.c
+	gcc $(extra) bin/scheme.o src/rms.c -o bin/rms
+
+bin/normalize: bin/scheme.o src/normalize.c
+	gcc $(extra) bin/scheme.o src/normalize.c -o bin/normalize
 
 bin/highlight_vertex: bin/scheme.o src/highlight_vertex.c
 	gcc $(extra) bin/scheme.o src/highlight_vertex.c -o bin/highlight_vertex

@@ -1,4 +1,12 @@
 
+#############################################################
+
+Takes the first channel of a wave file, grabs the root mean square of that wave, normalizes it and writes it to json
+
+./bin/read_soundwave -c 1 -f data/Mists_of_Time-4T.wav | ./bin/rms | ./bin/normalize | ./bin/write_json
+
+#############################################################
+
 This is for the viewing ttc vehicles, traveling along the which ever specific shape over time
 Assumes the following:
   'nextbus' mysql database is setup and populated as the following:

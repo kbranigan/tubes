@@ -66,15 +66,15 @@ int read_soundwave(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE
   #endif
   
   struct VertexArray * va = get_or_add_array(shape, GL_VERTEX_ARRAY);
-  int i = 0, k = 0;
   int count = 0;
   while ((readcount = sf_read_double(infile, data, BUFFER_LEN)))
   {
-    double total = 0;
-    k = 0;
+    int k = 0;
     while (k < readcount)
     {
       float v[MAX_CHANNELS];
+      memset(v, 0, sizeof(v));
+      int i;
       for (i = 0 ; i < va->num_dimensions ; i++)
         v[i] = data[k+i];
       
