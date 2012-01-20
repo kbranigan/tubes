@@ -74,13 +74,19 @@ testing: \
 	bin/write_bmp_sphere \
 	bin/read_walk_distance_via_osm_to_bus_stop_from_iroquois
 
+src/ext/shpopen.o: src/ext/shpopen.c
+	gcc -c src/ext/shpopen.c -o src/ext/shpopen.o
+
+src/ext/dbfopen.o: src/ext/dbfopen.c
+	gcc -c src/ext/dbfopen.c -o src/ext/dbfopen.o
+
 bin/mongoose.o: src/mongoose.c src/mongoose.h
 	gcc $(extra) src/mongoose.c -c -o bin/mongoose.o -std=c99 -D_POSIX_SOURCE -D_BSD_SOURCE
 
 bin/scheme.o: src/scheme.c src/scheme.h
 	gcc src/scheme.c -c -o bin/scheme.o
 
-bin/civicsets.ca: bin/mongoose.o src/civicsets*
+bin/civicsets.ca: bin/mongoose.o src/civicsets* src/ext/shpopen.o src/ext/dbfopen.o
 	g++ $(extra) -Wall bin/mongoose.o src/civicsets.c src/ext/shpopen.o src/ext/dbfopen.o -o bin/civicsets.ca -ldl -lpthread $(mysql)
 
 bin/produce_unit_circle: bin/scheme.o src/produce_unit_circle.c
@@ -126,9 +132,9 @@ bin/read_foursquare: bin/scheme.o src/read_foursquare.c
 	gcc $(extra) bin/scheme.o src/read_foursquare.c src/ext/cJSON.c -o bin/read_foursquare -lcurl
 
 bin/join_on_attributes: bin/scheme.o src/join_on_attributes.c
-	gcc $(extra) bin/scheme.o src/ext/shpopen.o src/ext/dbfopen.o src/join_on_attributes.c -o bin/join_on_attributes
+	gcc $(extra) bin/scheme.o src/join_on_attributes.c -o bin/join_on_attributes
 
-bin/read_shapefile: bin/scheme.o src/ext/shpopen.c src/ext/dbfopen.c src/read_shapefile.c
+bin/read_shapefile: bin/scheme.o src/ext/shpopen.c src/ext/dbfopen.c src/read_shapefile.c src/ext/shpopen.o src/ext/dbfopen.o
 	gcc $(extra) bin/scheme.o src/ext/shpopen.o src/ext/dbfopen.o src/read_shapefile.c -o bin/read_shapefile
 
 bin/group_shapes_on_unique_set_id: bin/scheme.o src/group_shapes_on_unique_set_id.c
