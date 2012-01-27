@@ -58,6 +58,7 @@ pipe_inout: \
 	bin/add_random_colors \
 	bin/remove_attributes \
 	bin/add_color_from_csv \
+	bin/add_color_from_source_interpolation \
 	bin/coordinate_convert \
 	bin/reduce_by_overlap \
 	bin/reduce_by_distance \
@@ -199,6 +200,9 @@ bin/add_color_from_mysql: bin/scheme.o src/add_color_from_mysql.c
 
 bin/add_color_from_csv: bin/scheme.o src/add_color_from_csv.c
 	gcc $(extra) bin/scheme.o src/add_color_from_csv.c -o bin/add_color_from_csv
+
+bin/add_color_from_source_interpolation: bin/scheme.o src/add_color_from_source_interpolation.c
+	gcc $(extra) bin/scheme.o src/add_color_from_source_interpolation.c -o bin/add_color_from_source_interpolation
 
 bin/align_points_to_line_strips: bin/scheme.o src/align_points_to_line_strips.c
 	gcc $(extra) bin/scheme.o src/align_points_to_line_strips.c -o bin/align_points_to_line_strips

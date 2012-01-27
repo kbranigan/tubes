@@ -7,6 +7,15 @@ Takes the first channel of a wave file, grabs the root mean square of that wave,
 
 #############################################################
 
+First channel of a wave file, rms, add color according to the FFT of that same data
+
+./bin/read_soundwave -c 1 -f data/mnm.wav | ./bin/rms | \
+  ./bin/add_color_from_source_interpolation -f <(./bin/read_soundwave -c 1 -f data/mnm.wav | ./bin/fft_sliding_window) | \
+  ./bin/normalize | \
+  ./bin/write_json -w
+
+#############################################################
+
 This is for the viewing ttc vehicles, traveling along the which ever specific shape over time
 Assumes the following:
   'nextbus' mysql database is setup and populated as the following:
