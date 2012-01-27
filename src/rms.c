@@ -45,6 +45,7 @@ int rms(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err
     num_rms_samples_per_vertex = 0;
   }
   
+  int l = 0;
   struct Shape * shape = NULL;
   while ((shape = read_shape(pipe_in)))
   {
@@ -59,7 +60,12 @@ int rms(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err
     struct Shape * rms_shape = new_shape();
     rms_shape->gl_type = shape->gl_type;
     set_num_vertexs(rms_shape, num_rms_vertexs);
-    set_num_dimensions(rms_shape, 0, shape->vertex_arrays[0].num_dimensions);
+    
+    for (l = 0 ; l < shape->num_vertex_arrays ; l++)
+    {
+      get_or_add_array(rms_shape, shape->vertex_arrays[l].array_type);
+      set_num_dimensions(rms_shape, l, shape->vertex_arrays[l].num_dimensions);
+    }
     
     char value[50];
     sprintf(value, "%d", num_rms_samples_per_vertex);
@@ -76,14 +82,24 @@ int rms(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err
       {
         if (i * num_rms_samples_per_vertex + j >= shape->num_vertexs) break;
         
-        float * v = get_vertex(shape, 0, i * num_rms_samples_per_vertex + j);
-        for (k = 0 ; k < shape->vertex_arrays[0].num_dimensions ; k++)
-          rms_v[k] += v[k] * v[k];
+        for (k = 0 ; k < shape->num_vertex_arrays ; k++)
+        {
+          float * v = get_vertex(shape, k, i * num_rms_samples_per_vertex + j);
+          for (l = 0 ; l < shape->vertex_arrays[k].num_dimensions ; l++)
+            rms_v[l] += v[l] * v[l];
+        }
       }
       for (k = 0 ; k < shape->vertex_arrays[0].num_dimensions ; k++)
         rms_v[k] = sqrt(rms_v[k] * (1.0 / num_rms_vertexs));
       
       set_vertex(rms_shape, 0, i, rms_v);
+      if (shape->num_vertex_arrays > 1)
+      {
+        for (l = 1 ; l < shape->num_vertex_arrays ; l++)
+        {
+          set_vertex(rms_shape, l, i, get_vertex(shape, l, i * num_rms_samples_per_vertex));
+        }
+      }
     }
     
     write_shape(pipe_out, rms_shape);
