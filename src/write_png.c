@@ -201,9 +201,12 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
     {
       if (shape->num_vertex_arrays > 1 && shape->vertex_arrays[1].array_type == GL_COLOR_ARRAY)
       {
-        struct VertexArray * va = &shape->vertex_arrays[1];
-        if (va->num_dimensions == 3)      glColor3fv(get_vertex(shape, 1, j));
-        else if (va->num_dimensions == 4) glColor4fv(get_vertex(shape, 1, j));
+        struct VertexArray * cva = &shape->vertex_arrays[1];
+        float * cv = get_vertex(shape, 1, j);
+        if (cva->num_dimensions == 1)      glColor3f(cv[0], cv[0], cv[0]);
+        else if (cva->num_dimensions == 2) glColor3f(cv[0], cv[1], 0.0);
+        else if (cva->num_dimensions == 3) glColor3fv(cv);
+        else if (cva->num_dimensions == 4) glColor4fv(cv);
       }
       struct VertexArray * va = &shape->vertex_arrays[0];
       if (va->num_dimensions == 1)      glVertex2f(j, va->vertexs[j]);
