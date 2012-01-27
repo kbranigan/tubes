@@ -24,7 +24,8 @@ extras: \
 	bin/read_soundwave \
 	bin/read_foursquare \
 	bin/join_on_attributes \
-	bin/fast_fourier_transform
+	bin/fft \
+	bin/fft_sliding_window
 
 pipe_in: \
 	bin/bbox \
@@ -171,8 +172,11 @@ bin/pass_through: bin/scheme.o src/pass_through.c
 bin/add_marker: bin/scheme.o src/add_marker.c
 	gcc $(extra) bin/scheme.o src/add_marker.c -o bin/add_marker
 
-bin/fast_fourier_transform: bin/scheme.o src/fast_fourier_transform.c
-	gcc $(extra) bin/scheme.o src/fast_fourier_transform.c -o bin/fast_fourier_transform -lfftw3 -lm $(ext)
+bin/fft: bin/scheme.o src/fft.c
+	gcc $(extra) bin/scheme.o src/fft.c -o bin/fft -lfftw3 -lm $(ext)
+
+bin/fft_sliding_window: bin/scheme.o src/fft_sliding_window.c
+	gcc $(extra) bin/scheme.o src/fft_sliding_window.c -o bin/fft_sliding_window -lfftw3 -lm $(ext)
 
 bin/delay: bin/scheme.o src/delay.c
 	gcc $(extra) bin/scheme.o src/delay.c -o bin/delay
