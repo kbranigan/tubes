@@ -16,14 +16,9 @@ int pass_through(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE *
   //while ((c = getopt(argc, argv, "f:a:")) != -1)
   //switch (c)
   //{
-  //  case 'f':
-  //    strncpy(filename, optarg, 300);
-  //    break;
-  //  case 'a':
-  //    num_attributes = atoi(optarg);
-  //    break;
-  //  default:
-  //    abort();
+  //  case 'f': strncpy(filename, optarg, 300); break;
+  //  case 'a': num_attributes = atoi(optarg); break;
+  //  default: abort();
   //}
   
   struct Shape * shape = NULL;
