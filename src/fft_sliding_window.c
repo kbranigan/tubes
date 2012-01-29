@@ -25,6 +25,7 @@ int fft(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err
   char * filename = NULL;
   int buffer_len = 1024*64;
   int direction = 1; // default = forward
+  float half_way = 500.0;
   int c;
   while ((c = getopt(argc, argv, "b:f:d:c")) != -1)
   switch (c)
@@ -34,6 +35,7 @@ int fft(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err
     case 'd': if (strcmp(optarg, "backward")==0) direction = 0;
          else if (strcmp(optarg, "forward")==0) direction = 1;
               break;
+    case 'h': half_way = atof(optarg); break;
     default: abort(); break;
   }
   
@@ -51,40 +53,47 @@ int fft(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err
     int samplerate = atoi(get_attribute(shape, "samplerate"));
     
     float input_time_duration = 1.0 / samplerate * buffer_len;
-    int index_of_500_hertz = input_time_duration / (1.0 / 500.0);
+    int index_of_half_way_hertz = input_time_duration / (1.0 / half_way);
     
-    int i, j = 0, k;
+    int i, j, k;
     
     struct Shape * out_shape = new_shape();
-    set_num_dimensions(out_shape, 0, 1);
+    set_num_dimensions(out_shape, 0, shape->vertex_arrays[0].num_dimensions);
+    set_num_vertexs(out_shape, shape->num_vertexs / (buffer_len / 2.0) + 1);
     out_shape->gl_type = GL_LINE_STRIP;
     for (i = 0 ; i < shape->num_attributes ; i++)
       set_attribute(out_shape, shape->attributes[i].name, shape->attributes[i].value);
     
-    for (k = 0 ; k < shape->num_vertexs ; k++)
+    for (j = 0 ; j < shape->vertex_arrays[0].num_dimensions ; j++)
     {
-      for (i = 0 ; i < buffer_len ; i++)
+      for (k = 0 ; k < shape->num_vertexs ; )
       {
-        if (i + k >= shape->num_vertexs) break;
-        float * v = get_vertex(shape, 0, i + k);
-        in[i] = v[0];
+        for (i = 0 ; i < buffer_len ; i++)
+        {
+          if (i + k >= shape->num_vertexs) break;
+          float * v = get_vertex(shape, 0, i + k);
+          in[i] = v[j];
+        }
+        
+        p = fftw_plan_dft_1d(buffer_len, in, out, direction == 0 ? FFTW_BACKWARD : FFTW_FORWARD, FFTW_ESTIMATE);
+        fftw_execute(p);
+        
+        float cabs_below_half_way = 0;
+        float cabs_above_half_way = 0;
+        for (i = 1 ; i < buffer_len / 2.0 ; i++)
+        {
+          if (i < index_of_half_way_hertz) cabs_below_half_way += cabs(out[i]);
+          else if (i >= index_of_half_way_hertz) cabs_above_half_way += cabs(out[i]);
+        }
+        
+        float * v = get_vertex(out_shape, 0, k / (buffer_len / 2));
+        v[j] = cabs_below_half_way / cabs_above_half_way;
+        
+        //float v[5] = { cabs_below_half_way / cabs_above_half_way, 0, 0, 0, 0 };
+        //set_vertex(out_shape, v);
+        
+        k += buffer_len / 2;
       }
-      
-      p = fftw_plan_dft_1d(buffer_len, in, out, direction == 0 ? FFTW_BACKWARD : FFTW_FORWARD, FFTW_ESTIMATE);
-      fftw_execute(p);
-      
-      float cabs_below_500 = 0;
-      float cabs_above_500 = 0;
-      for (i = 1 ; i < buffer_len / 2.0 ; i++)
-      {
-        if (i < index_of_500_hertz) cabs_below_500 += cabs(out[i]);
-        else if (i >= index_of_500_hertz) cabs_above_500 += cabs(out[i]);
-      }
-      
-      float v[2] = { cabs_below_500 / cabs_above_500, 0 };
-      append_vertex(out_shape, v);
-      
-      k += buffer_len/2;
     }
     
     write_shape(pipe_out, out_shape);
