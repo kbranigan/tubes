@@ -31,7 +31,7 @@ int add_color_from_source_interpolation(int argc, char ** argv, FILE * pipe_in, 
   
   if (source_shape->num_vertex_arrays != 1) { fprintf(stderr, "%s: ERROR, source shape has %d vertex_arrays (should be only 1)\n", argv[0], source_shape->num_vertex_arrays); return EXIT_FAILURE; }
   if (source_shape->num_vertexs == 0) { fprintf(stderr, "%s: ERROR, source shape has no vertexs\n", argv[0]); return EXIT_FAILURE; }
-  if (source_shape->vertex_arrays[0].num_dimensions != 1) { fprintf(stderr, "%s: ERROR, source shape has %d dimensions, supports only 1\n", argv[0], source_shape->vertex_arrays[0].num_dimensions); return EXIT_FAILURE; }
+  //if (source_shape->vertex_arrays[0].num_dimensions != 1) { fprintf(stderr, "%s: ERROR, source shape has %d dimensions, supports only 1\n", argv[0], source_shape->vertex_arrays[0].num_dimensions); return EXIT_FAILURE; }
   
   //write_shape(pipe_out, source_shape);
   struct BBox * source_bbox = get_bbox(source_shape, NULL);
@@ -39,10 +39,14 @@ int add_color_from_source_interpolation(int argc, char ** argv, FILE * pipe_in, 
   struct Shape * shape = NULL;
   while ((shape = read_shape(pipe_in)))
   {
-    if (shape->vertex_arrays[0].num_dimensions != 1) { fprintf(stderr, "%s: ERROR, shape has %d dimensions, supports only 1\n", argv[0], shape->vertex_arrays[0].num_dimensions); return EXIT_FAILURE; }
+    if (shape->vertex_arrays[0].num_dimensions != source_shape->vertex_arrays[0].num_dimensions)
+    {
+      fprintf(stderr, "%s: ERROR, shape has %d dimensions, source shape has %d\n", argv[0], shape->vertex_arrays[0].num_dimensions, source_shape->vertex_arrays[0].num_dimensions);
+      return EXIT_FAILURE;
+    }
     
     struct VertexArray * cva = get_or_add_array(shape, GL_COLOR_ARRAY);
-    set_num_dimensions(shape, 1, 1); // only need one dimension for this data
+    set_num_dimensions(shape, 1, shape->vertex_arrays[0].num_dimensions);
     
     struct BBox * bbox = get_bbox(shape, NULL);
     
@@ -59,11 +63,16 @@ int add_color_from_source_interpolation(int argc, char ** argv, FILE * pipe_in, 
       
       // kbfu, should table s2 into account, would produce a better result
       
-      float value = (s1[0] - bbox->minmax[0].min) / (bbox->minmax[0].max - bbox->minmax[0].min) + bbox->minmax[0].min;
-      
+      int d;
+      for (d = 0 ; d < shape->vertex_arrays[0].num_dimensions ; d++)
+      {
+        float * sv = get_vertex(source_shape, 0, (int)floor(j));
+        cv[d] = (s1[d] - bbox->minmax[d].min) / (bbox->minmax[d].max - bbox->minmax[d].min) + bbox->minmax[d].min;
+      }
+      //float value = (s1[0] - bbox->minmax[0].min) / (bbox->minmax[0].max - bbox->minmax[0].min) + bbox->minmax[0].min;
       //fprintf(stderr, "s%d[0] = %f s%d[0] = %f\n", (int)floor(j), s1[0], (int)ceil(j), s2[0]);
       
-      cv[0] = value; // i / (float)shape->num_vertexs;
+      //cv[0] = value; // i / (float)shape->num_vertexs;
       //cv[1] = 0.0; // i / (float)shape->num_vertexs;
       //cv[2] = 1.0 - value; // i / (float)shape->num_vertexs;
       
