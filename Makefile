@@ -88,8 +88,8 @@ bin/mongoose.o: src/mongoose.c src/mongoose.h
 bin/scheme.o: src/scheme.c src/scheme.h
 	gcc src/scheme.c -c -o bin/scheme.o
 
-bin/civicsets.ca: bin/mongoose.o src/civicsets* src/ext/shpopen.o src/ext/dbfopen.o
-	g++ $(extra) -Wall bin/mongoose.o src/civicsets.c src/ext/shpopen.o src/ext/dbfopen.o -o bin/civicsets.ca -ldl -lpthread $(mysql)
+bin/civicsets.ca: bin/mongoose.o src/civicsets* src/ext/shpopen.o src/ext/dbfopen.o src/mysql_has.c 
+	g++ $(extra) -Wall bin/mongoose.o src/civicsets.c src/mysql_has.c src/ext/shpopen.o src/ext/dbfopen.o -o bin/civicsets.ca -ldl -lpthread $(mysql)
 
 bin/produce_unit_circle: bin/scheme.o src/produce_unit_circle.c
 	gcc $(extra) bin/scheme.o src/produce_unit_circle.c -o bin/produce_unit_circle -lm
