@@ -18,8 +18,8 @@ void map(struct mg_connection *conn, const struct mg_request_info *ri, void *dat
 
 void record(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
 {
-  if ((mysql_init(&mysql) == NULL)) { printf("mysql_init error\n"); }
-  if (!mysql_real_connect(&mysql, "localhost", "root", "", "", 0, NULL, 0)) { printf("mysql_real_connect error\n"); }
+  //if ((mysql_init(&mysql) == NULL)) { printf("mysql_init error\n"); }
+  //if (!mysql_real_connect(&mysql, "localhost", "root", "", "", 0, NULL, 0)) { printf("mysql_real_connect error\n"); }
   
   char * table_name = mg_get_var(conn, "table");
   if (table_name == NULL) { mg_printf(conn, "'table' argument required.\n"); return; }
