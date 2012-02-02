@@ -217,6 +217,7 @@ int main(int argc, char **argv)
   mg_set_uri_callback(ctx, "/ttc_performance", &ttc_performance, NULL);
   mg_set_uri_callback(ctx, "/ttc_performance_image", &ttc_performance_image, NULL);
   
+  mg_set_uri_callback(ctx, "/map", &map, NULL);
   mg_set_uri_callback(ctx, "/record", &record, NULL);
   
   //mg_set_uri_callback(ctx, "/fields", &fields, NULL);
