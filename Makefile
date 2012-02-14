@@ -122,7 +122,7 @@ bin/redis: bin/scheme.o src/redis.c
 	gcc $(extra) bin/scheme.o src/redis.c -o bin/redis -lhiredis $(ext)
 
 bin/read_soundwave: bin/scheme.o src/read_soundwave.c
-	gcc $(extra) bin/scheme.o src/read_soundwave.c -o bin/read_soundwave -lsndfile $(ext)
+	gcc $(extra) bin/scheme.o src/read_soundwave.c -o bin/read_soundwave -lsndfile -lfftw3 $(ext)
 
 bin/read_mysql: bin/scheme.o src/read_mysql.c
 	gcc $(extra) bin/scheme.o src/read_mysql.c -o bin/read_mysql $(mysql)

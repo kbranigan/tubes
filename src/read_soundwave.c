@@ -14,47 +14,52 @@ compile it yourself.  I built the included file from: http://www.mega-nerd.com/l
 #include <unistd.h>
 #include <complex.h>
 #include <sndfile.h>
+#include <fftw3.h>
 
 #define SCHEME_CREATE_MAIN
 #define SCHEME_ASSERT_STDOUT_IS_PIPED
 #define SCHEME_FUNCTION read_soundwave
 #include "scheme.h"
 
-#define	BUFFER_LEN    1024  
-#define	MAX_CHANNELS  6
+#define BUFFER_LEN    1024  
+#define MAX_CHANNELS  12
 
 int read_soundwave(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
-  int max_channels = 6;
+  int max_channels = MAX_CHANNELS;
   char * filename = NULL;
+  int rms = 0;
+  int fft = 0;
+  int normalize = 0;
+  int output_size = 0;
+  float half_way = 500.0;
   int c;
-  while ((c = getopt(argc, argv, "f:c:")) != -1)
+  while ((c = getopt(argc, argv, "f:c:rtno:h:")) != -1)
   switch (c)
   {
-    case 'f':
-      filename = malloc(strlen(optarg)+1);
-      strcpy(filename, optarg);
-      break;
-    case 'c':
-      max_channels = atoi(optarg);
-      break;
+    case 'f': filename = malloc(strlen(optarg)+1); strcpy(filename, optarg); break;
+    case 'c': max_channels = atoi(optarg); break;
+    case 'r': rms = 1; break;
+    case 't': fft = 1; break;
+    case 'n': normalize = 1; break;
+    case 'o': output_size = atoi(optarg); break;
+    case 'h': half_way = atof(optarg); break;
+    default: abort(); break;
   }
   
-  static double data[BUFFER_LEN];
-  SNDFILE *infile;
+  SNDFILE * infile;
   
-  SF_INFO	sfinfo;
-  int	readcount;
+  SF_INFO sfinfo;
+  int readcount;
   
   if (filename == NULL) { fprintf(pipe_err, "Usage: %s -f [filename.wav]\n", argv[0]); return 1; }
   if (!(infile = sf_open(filename, SFM_READ, &sfinfo))) { fprintf(pipe_err, "Not able to open input file '%s'\n%s\n", filename, sf_strerror(NULL)); return 1; }
   if (sfinfo.channels > MAX_CHANNELS) { fprintf(pipe_err, "Not able to process sound files with more than %d channels\n", MAX_CHANNELS); return 1; }
   if (sfinfo.channels > max_channels) { fprintf(pipe_err, "Warning: input file has %d channels, max_channels set to %d. (truncating the difference)\n", sfinfo.channels, max_channels); }
+  if (sfinfo.frames > 1024*1024 && output_size == 0) { fprintf(pipe_err, "%s: the supplied file has more then 1m samples, that's too many.  Provide '-r' to summarize.\n", argv[0]); return 1; }
   
   struct Shape * shape = new_shape();
   shape->gl_type = GL_LINE_STRIP;
-  set_num_vertexs(shape, sfinfo.frames);
-  set_num_dimensions(shape, 0, (sfinfo.channels > max_channels) ? max_channels : sfinfo.channels);
   
   char temp[50];
   sprintf(temp, "%d", sfinfo.samplerate);
@@ -65,123 +70,122 @@ int read_soundwave(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE
   fprintf(pipe_err, "%s: music file has %ld frames, %d channels\n", argv[0], (long)sfinfo.frames, sfinfo.channels);
   #endif
   
-  struct VertexArray * va = get_or_add_array(shape, GL_VERTEX_ARRAY);
   int count = 0;
-  while ((readcount = sf_read_double(infile, data, BUFFER_LEN)))
+  float v[MAX_CHANNELS];
+  if (output_size)
   {
-    int k = 0;
-    while (k < readcount)
+    int num_samples_in_each_window = ceil((float)sfinfo.frames / (float)output_size);
+    
+    float input_time_duration = 1.0 / sfinfo.samplerate * num_samples_in_each_window;
+    int index_of_half_way_hertz = input_time_duration / (1.0 / half_way);
+    
+    struct VertexArray * va = get_or_add_array(shape, GL_VERTEX_ARRAY);
+    struct VertexArray * cva = get_or_add_array(shape, GL_COLOR_ARRAY);
+    
+    set_num_dimensions(shape, 0, (sfinfo.channels > max_channels) ? max_channels : sfinfo.channels);
+    set_num_vertexs(shape, output_size);
+    
+    char value[50];
+    sprintf(value, "%d", num_samples_in_each_window);
+    set_attribute(shape, "samples per vertex", value);
+    
+    if (rms)
     {
-      float v[MAX_CHANNELS];
-      memset(v, 0, sizeof(v));
-      int i;
-      for (i = 0 ; i < va->num_dimensions ; i++)
-        v[i] = data[k+i];
+      double * data = (double*)malloc(sizeof(double) * num_samples_in_each_window * sfinfo.channels);
       
-      set_vertex(shape, 0, count, v);
-      count++;
-      k += sfinfo.channels;
+      fftw_plan p;
+      complex * in = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * num_samples_in_each_window);
+      complex * out = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * num_samples_in_each_window);
+      p = fftw_plan_dft_1d(num_samples_in_each_window, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+      
+      int count = 0;
+      while ((readcount = sf_read_double(infile, data, num_samples_in_each_window * sfinfo.channels)))
+      {
+        memset(v, 0, sizeof(v));
+        
+        int j = 0;
+        while (j < readcount)
+        {
+          int d;
+          for (d = 0 ; d < sfinfo.channels ; d++)
+            v[d] += data[j+d] * data[j+d];
+          j += sfinfo.channels;
+        }
+        
+        for (j = 0 ; j < sfinfo.channels ; j++)
+          v[j] = sqrt(v[j] * (1.0 / num_samples_in_each_window));
+        
+        set_vertex(shape, 0, count, v);
+        
+        if (fft)
+        {
+          int d = 0;
+          int j = 0;
+          while (j < readcount)
+          {
+            in[d] = data[j];// * data[j+d];
+            j += sfinfo.channels;
+            d++;
+          }
+          
+          fftw_execute(p);
+          
+          float ratio[2] = { 0, 0 };
+          
+          int i;
+          for (i = 1 ; i < num_samples_in_each_window / 2.0 ; i++)
+            ratio[(i < index_of_half_way_hertz)] += cabs(out[i]);
+          
+          float * v = get_vertex(shape, 1, count);// / (num_samples_in_each_window / 2.0));
+          v[0] = ratio[0] / (ratio[0] + ratio[1]);
+          v[1] = ratio[1] / (ratio[0] + ratio[1]);
+        }
+        count++;
+      }
+      
+      fftw_free(in);
+      fftw_free(out);
+      free(data);
+    }
+    
+    if (normalize)
+    {
+      fprintf(pipe_err, "%s: Normalizing result\n", argv[0]);
+      
+      int i, k;
+      struct BBox * bbox = get_bbox(shape, NULL);
+      for (i = 0 ; i < shape->num_vertexs ; i++)
+      {
+        float * v = get_vertex(shape, 0, i);
+        for (k = 0 ; k < va->num_dimensions ; k++)
+          v[k] = (v[k] - bbox->minmax[k].min) / (bbox->minmax[k].max - bbox->minmax[k].min);
+      }
+      free_bbox(bbox);
+    }
+  }
+  else
+  {
+    static double data[BUFFER_LEN];
+    
+    struct VertexArray * va = get_or_add_array(shape, GL_VERTEX_ARRAY);
+    set_num_vertexs(shape, sfinfo.frames);
+    set_num_dimensions(shape, 0, (sfinfo.channels > max_channels) ? max_channels : sfinfo.channels);
+    
+    while ((readcount = sf_read_double(infile, data, BUFFER_LEN)))
+    {
+      int k = 0;
+      while (k < readcount)
+      {
+        int i;
+        for (i = 0 ; i < va->num_dimensions ; i++)
+          v[i] = data[k+i];
+        
+        set_vertex(shape, 0, count, v);
+        count++;
+        k += sfinfo.channels;
+      }
     }
   }
   write_shape(pipe_out, shape);
   free_shape(shape);
 }
-
-/*
-// cc hehe.c -Isrc -lsndfile -Lsrc/.libs/ ; ./a.out
-// cc hehe.c -Isrc -lsndfile -Lsrc/.libs/ -lfftw3 -lm ; ./a.out | ~/work/pipes/read_csv | ~/work/pipes/write_png
-
-#define		BUFFER_LEN	4410//10024
-#define		MAX_CHANNELS	6
-
-int main(int argc, char * argv)
-{
-  static double data[BUFFER_LEN];
-  SNDFILE *infile;//, *outfile;
-  
-  SF_INFO	sfinfo;
-  int	readcount;
-  //const char *infilename = "examples/sine.wav";
-  //const char *infilename = "Mists_of_Time-4T.wav";
-  const char *infilename = "Morning.wav";
-  
-  if (!(infile = sf_open(infilename, SFM_READ, &sfinfo)))
-  {
-    printf ("Not able to open input file %s.\n", infilename);
-    puts (sf_strerror(NULL));
-    return 1;
-  }
-  
-  if (sfinfo.channels > MAX_CHANNELS)
-  {
-    printf ("Not able to process more than %d channels\n", MAX_CHANNELS);
-    return 1;
-  }
-  
-  //printf("sfinfo.samplerate = %d\n", sfinfo.samplerate);
-  //printf("sfinfo.channels = %d\n", sfinfo.channels);
-  
-  //printf("drop table freq;\n");
-  //printf("create table freq (id int primary key auto_increment, i int, a float(15,5));\n");
-  
-  complex * in = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * BUFFER_LEN);
-  complex * out = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * BUFFER_LEN);
-  
-  fftw_plan p;
-  long count = 0;
-  while ((readcount = sf_read_double(infile, data, BUFFER_LEN)))
-  {
-    int total = 0;
-    int k;
-    //for (k = 0 ; k < BUFFER_LEN ; k ++)
-    //  total += data[k];
-        
-    //if (total == 0)
-    //  continue;
-    
-    for (k = 0 ; k < readcount ; k += sfinfo.channels)
-    {
-      in[k/sfinfo.channels] = data[k];
-    }
-    
-    p = fftw_plan_dft_1d(readcount/sfinfo.channels, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
-    fftw_execute(p);
-    
-    float max_in = -10000;
-    float max_out = -10000;
-    for (k = 0 ; k < readcount/sfinfo.channels ; k++)
-    {
-      if (cabs(in[k]) > max_in) max_in = cabs(in[k]);
-      if (cabs(out[k]) > max_out) max_out = cabs(out[k]);
-    }
-    
-    fprintf(stderr, "max_in = %g\n", max_in);
-    fprintf(stderr, "max_out = %g\n", max_out);
-    
-    //printf("INSERT INTO freq (i, a) values ");
-    for (k = 0 ; k < readcount/sfinfo.channels ; k++)
-    {
-      printf("%g,%g,1\n", k / (float)(readcount/sfinfo.channels) * max_in, cabs(in[k]), k);
-      //printf("%g,%g,1\n", k / (float)(readcount/sfinfo.channels) * max_out, cabs(out[k]), k);
-    }
-    //printf("\n");
-    
-    count += readcount;
-    fprintf(stderr,"readcount = %d\n", readcount);
-    break;
-    if (count > 44100)
-      break;
-    //int chan, k;
-    //for (chan = 0 ; chan < sfinfo.channels ; chan++)
-    //  for (k = chan ; k < count ; k += sfinfo.channels)
-    //    count++;
-    //process_data(data, readcount, sfinfo.channels);
-    //sf_write_double(outfile, data, readcount);
-  }
-  //printf("count = %ld\n", count);
-  fftw_destroy_plan(p);
-  
-  sf_close(infile);
-
-}
-*/
