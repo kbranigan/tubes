@@ -8,6 +8,7 @@ compile it yourself.  I built the included file from: http://www.mega-nerd.com/l
 */
 
 #include <math.h>
+#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,24 +27,26 @@ compile it yourself.  I built the included file from: http://www.mega-nerd.com/l
 
 int read_soundwave(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
+  time_t start = time(NULL);
+  
   int max_channels = MAX_CHANNELS;
   char * filename = NULL;
-  int rms = 0;
   int fft = 0;
   int normalize = 0;
   int output_size = 0;
-  float half_way = 500.0;
+  float low_pass = 400.0;
+  float high_pass = 2000.0;
   int c;
-  while ((c = getopt(argc, argv, "f:c:rtno:h:")) != -1)
+  while ((c = getopt(argc, argv, "f:c:tno:l:h:")) != -1)
   switch (c)
   {
     case 'f': filename = malloc(strlen(optarg)+1); strcpy(filename, optarg); break;
     case 'c': max_channels = atoi(optarg); break;
-    case 'r': rms = 1; break;
     case 't': fft = 1; break;
     case 'n': normalize = 1; break;
     case 'o': output_size = atoi(optarg); break;
-    case 'h': half_way = atof(optarg); break;
+    case 'l': low_pass = atof(optarg); break;
+    case 'h': high_pass = atof(optarg); break;
     default: abort(); break;
   }
   
@@ -56,15 +59,29 @@ int read_soundwave(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE
   if (!(infile = sf_open(filename, SFM_READ, &sfinfo))) { fprintf(pipe_err, "Not able to open input file '%s'\n%s\n", filename, sf_strerror(NULL)); return 1; }
   if (sfinfo.channels > MAX_CHANNELS) { fprintf(pipe_err, "Not able to process sound files with more than %d channels\n", MAX_CHANNELS); return 1; }
   if (sfinfo.channels > max_channels) { fprintf(pipe_err, "Warning: input file has %d channels, max_channels set to %d. (truncating the difference)\n", sfinfo.channels, max_channels); }
-  if (sfinfo.frames > 1024*1024 && output_size == 0) { fprintf(pipe_err, "%s: the supplied file has more then 1m samples, that's too many.  Provide '-r' to summarize.\n", argv[0]); return 1; }
+  if (sfinfo.frames > 1024*1024 && output_size == 0) { fprintf(pipe_err, "%s: the supplied file has more then 1m samples (%lld infact), that's too many.  Provide -o [1000] to control output, -t to fft, -n to normalize.\n", argv[0], sfinfo.frames); return 1; }
+  if (sfinfo.frames > 1024*1024*50 && fft) { fprintf(pipe_err, "%s: Warning: the supplied file has more then 50m samples, that's a huge amount.  This process may take upwards of 5 to 10 minutes to complete with -t (fft) active.\n", argv[0]); }
   
-  struct Shape * shape = new_shape();
-  shape->gl_type = GL_LINE_STRIP;
+  int i;
+  struct Shape ** shapes = (struct Shape**)malloc(sizeof(struct Shape*)*max_channels);
+  for (i = 0 ; i < max_channels ; i++)
+  {
+    shapes[i] = new_shape();
+    shapes[i]->gl_type = GL_LINE_STRIP;
   
-  char temp[50];
-  sprintf(temp, "%d", sfinfo.samplerate);
-  set_attribute(shape, "samplerate", temp);
-  set_attribute(shape, "original_filename", filename);
+    char temp[50];
+    sprintf(temp, "%d", sfinfo.samplerate);
+    set_attribute(shapes[i], "samplerate", temp);
+    set_attribute(shapes[i], "original_filename", filename);
+    sprintf(temp, "%d", i);
+    set_attribute(shapes[i], "original_channel", temp);
+    
+    struct VertexArray * va = get_or_add_array(shapes[i], GL_VERTEX_ARRAY);
+    if (fft) get_or_add_array(shapes[i], GL_COLOR_ARRAY);
+    
+    set_num_dimensions(shapes[i], 0, 1);
+    set_num_vertexs(shapes[i], output_size);
+  }
   
   #ifdef DEBUG
   fprintf(pipe_err, "%s: music file has %ld frames, %d channels\n", argv[0], (long)sfinfo.frames, sfinfo.channels);
@@ -77,19 +94,15 @@ int read_soundwave(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE
     int num_samples_in_each_window = ceil((float)sfinfo.frames / (float)output_size);
     
     float input_time_duration = 1.0 / sfinfo.samplerate * num_samples_in_each_window;
-    int index_of_half_way_hertz = input_time_duration / (1.0 / half_way);
-    
-    struct VertexArray * va = get_or_add_array(shape, GL_VERTEX_ARRAY);
-    struct VertexArray * cva = get_or_add_array(shape, GL_COLOR_ARRAY);
-    
-    set_num_dimensions(shape, 0, (sfinfo.channels > max_channels) ? max_channels : sfinfo.channels);
-    set_num_vertexs(shape, output_size);
+    int index_of_low_pass_hertz = input_time_duration / (1.0 / low_pass);
+    int index_of_high_pass_hertz = input_time_duration / (1.0 / high_pass);
     
     char value[50];
     sprintf(value, "%d", num_samples_in_each_window);
-    set_attribute(shape, "samples per vertex", value);
+    for (i = 0 ; i < max_channels ; i++)
+      set_attribute(shapes[i], "samples per vertex", value);
     
-    if (rms)
+    if (output_size)
     {
       double * data = (double*)malloc(sizeof(double) * num_samples_in_each_window * sfinfo.channels);
       
@@ -106,43 +119,55 @@ int read_soundwave(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE
         int j = 0;
         while (j < readcount)
         {
-          int d;
-          for (d = 0 ; d < sfinfo.channels ; d++)
-            v[d] += data[j+d] * data[j+d];
+          for (i = 0 ; i < max_channels ; i++)
+            v[i] += data[j+i] * data[j+i];
           j += sfinfo.channels;
         }
         
-        for (j = 0 ; j < sfinfo.channels ; j++)
-          v[j] = sqrt(v[j] * (1.0 / num_samples_in_each_window));
+        for (i = 0 ; i < max_channels ; i++)
+          v[i] = sqrt(v[i] * (1.0 / num_samples_in_each_window));
         
-        set_vertex(shape, 0, count, v);
+        for (i = 0 ; i < max_channels ; i++)
+          set_vertex(shapes[i], 0, count, &v[i]);
         
         if (fft)
         {
-          int d = 0;
-          int j = 0;
-          while (j < readcount)
+          for (i = 0 ; i < max_channels ; i++)
           {
-            in[d] = data[j];// * data[j+d];
-            j += sfinfo.channels;
-            d++;
+            int d = 0;
+            int j = 0;
+            while (j < readcount)
+            {
+              in[d] = data[j+i] * data[j+i]; // power
+              j += sfinfo.channels;
+              d++;
+            }
+            
+            fftw_execute(p);
+            
+            float ratio[3] = { 0, 0, 0 };
+            
+            for (j = 1 ; j < index_of_low_pass_hertz ; j++)
+              ratio[0] += cabs(out[j]);
+            for (j = index_of_low_pass_hertz ; j < index_of_high_pass_hertz ; j++)
+              ratio[1] += cabs(out[j]);
+            for (j = index_of_high_pass_hertz ; j < (num_samples_in_each_window / 2.0) ; j++)
+              ratio[2] += cabs(out[j]);
+            
+            float * v = get_vertex(shapes[i], 1, count);
+            v[0] = ratio[0] / (ratio[0] + ratio[1] + ratio[2]);
+            if (isnan(v[0])) v[0] = 0;
+            v[1] = ratio[1] / (ratio[0] + ratio[1] + ratio[2]);
+            if (isnan(v[1])) v[1] = 0;
+            v[2] = ratio[2] / (ratio[0] + ratio[1] + ratio[2]);
+            if (isnan(v[2])) v[2] = 0;
           }
-          
-          fftw_execute(p);
-          
-          float ratio[2] = { 0, 0 };
-          
-          int i;
-          for (i = 1 ; i < num_samples_in_each_window / 2.0 ; i++)
-            ratio[(i < index_of_half_way_hertz)] += cabs(out[i]);
-          
-          float * v = get_vertex(shape, 1, count);// / (num_samples_in_each_window / 2.0));
-          v[0] = ratio[0] / (ratio[0] + ratio[1]);
-          v[1] = ratio[1] / (ratio[0] + ratio[1]);
         }
+        if (count % (output_size / 20) == 0) fprintf(stderr, "%d%% complete in %ld seconds\n", (int)round(count / (float)output_size * 100.0), time(NULL) - start);
         count++;
       }
       
+      fftw_destroy_plan(p);
       fftw_free(in);
       fftw_free(out);
       free(data);
@@ -150,22 +175,29 @@ int read_soundwave(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE
     
     if (normalize)
     {
-      fprintf(pipe_err, "%s: Normalizing result\n", argv[0]);
+      struct BBox * bbox = NULL;
+      for (i = 0 ; i < max_channels ; i++)
+        bbox = get_bbox(shapes[i], bbox);
       
-      int i, k;
-      struct BBox * bbox = get_bbox(shape, NULL);
-      for (i = 0 ; i < shape->num_vertexs ; i++)
+      for (i = 0 ; i < max_channels ; i++)
       {
-        float * v = get_vertex(shape, 0, i);
-        for (k = 0 ; k < va->num_dimensions ; k++)
-          v[k] = (v[k] - bbox->minmax[k].min) / (bbox->minmax[k].max - bbox->minmax[k].min);
+        int j;
+        for (j = 0 ; j < shapes[i]->num_vertexs ; j++)
+        {
+          int k;
+          float * v = get_vertex(shapes[i], 0, j);
+          for (k = 0 ; k < bbox->num_minmax ; k++)
+            v[k] = (v[k] - bbox->minmax[k].min) / (bbox->minmax[k].max - bbox->minmax[k].min);
+        }
       }
+      
       free_bbox(bbox);
     }
   }
   else
   {
-    static double data[BUFFER_LEN];
+    fprintf(stderr, "dah\n");
+    /*static double data[BUFFER_LEN];
     
     struct VertexArray * va = get_or_add_array(shape, GL_VERTEX_ARRAY);
     set_num_vertexs(shape, sfinfo.frames);
@@ -184,8 +216,13 @@ int read_soundwave(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE
         count++;
         k += sfinfo.channels;
       }
-    }
+    }*/
   }
-  write_shape(pipe_out, shape);
-  free_shape(shape);
+  for (i = 0 ; i < max_channels ; i++)
+  {
+    write_shape(pipe_out, shapes[i]);
+    free_shape(shapes[i]);
+  }
+  free(shapes);
+  fprintf(pipe_err, "%s: executed in about %ld seconds\n", argv[0], time(NULL) - start);
 }

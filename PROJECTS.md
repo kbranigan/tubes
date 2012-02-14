@@ -1,11 +1,24 @@
 
 #############################################################
 
-Takes the first channel of a wave file, grabs the root mean square of that wave, normalizes it and writes it to json
+read in a soundwave, calculating a sliding window rms with fft for color and normalize ranges to [0,1], output should have 1000 samples
 
+./bin/read_soundwave -f data/mnm.wav -o 1000 -n -t > tempsoundwave.b
+
+cat <(cat tempsoundwave.b | ./bin/reduce_by_attribute -n original_channel -v 0 | ./bin/transform -s 100) \
+    <(cat tempsoundwave.b | ./bin/reduce_by_attribute -n original_channel -v 1 | ./bin/transform -s -100) \
+    | ./bin/write_png
+
+#############################################################
+
+NO LONGER WORKS
+
+Takes the first channel of a wave file, grabs the root mean square of that wave, normalizes it and writes it to json
 ./bin/read_soundwave -c 1 -f data/Mists_of_Time-4T.wav | ./bin/rms | ./bin/normalize | ./bin/write_json
 
 #############################################################
+
+NO LONGER WORKS
 
 First channel of a wave file, rms, add color according to the FFT of that same data
 
