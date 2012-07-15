@@ -12,34 +12,34 @@
 int bbox(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
   int each_shape = 0;
+  float border = 0;
   int c;
-  while ((c = getopt(argc, argv, "e")) != -1)
+  while ((c = getopt(argc, argv, "eb:")) != -1)
   switch (c)
   {
-    case 'e': // one bbox for each shape, only works if stdout is piped
-      each_shape = 1;
-      break;
-    default:
-      abort();
+    case 'e': each_shape = 1; break; // one bbox for each shape, only works if stdout is piped
+    case 'b': border = atof(optarg); break; // percentage
+    default: abort();
   }
   
-  struct Shape * shape = NULL;
+  //int num_bbox_shapes = 0;
+  //struct Shape ** bbox_shapes = NULL;
   
-  int num_bbox_shapes = 0;
-  struct Shape ** bbox_shapes = NULL;
-  
-  int bbox_num_dimensions = 0;
   struct minmax {
     float min;
     float max;
   };
-  struct minmax *bbox = NULL;
+  int bbox_num_dimensions = 0;
+  struct minmax * bbox = NULL;
   
+  int cbbox_num_dimensions = 0;
+  struct minmax * cbbox = NULL;
+  
+  long i, j, k, l=0;
+  struct Shape * shape = NULL;
   while ((shape = read_shape(pipe_in)))
   {
-    long i, j, k;
     struct VertexArray * va = get_or_add_array(shape, GL_VERTEX_ARRAY);
-    
     
     if (each_shape || va->num_dimensions > bbox_num_dimensions)
     {
@@ -65,10 +65,13 @@ int bbox(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_er
     {
       struct Shape * bbox_shape = new_shape();
       
-      float bl[2] = { bbox[0].min, bbox[1].min }; append_vertex(bbox_shape, bl);
-      float br[2] = { bbox[0].max, bbox[1].min }; append_vertex(bbox_shape, br);
-      float tl[2] = { bbox[0].max, bbox[1].max }; append_vertex(bbox_shape, tl);
-      float tr[2] = { bbox[0].min, bbox[1].max }; append_vertex(bbox_shape, tr);
+      float border_x = (bbox[0].max - bbox[0].min) * border / 2.0;
+      float border_y = (bbox[1].max - bbox[1].min) * border / 2.0;
+      
+      float bl[2] = { bbox[0].min - border_x, bbox[1].min - border_y }; append_vertex(bbox_shape, bl);
+      float br[2] = { bbox[0].max + border_x, bbox[1].min - border_y }; append_vertex(bbox_shape, br);
+      float tl[2] = { bbox[0].max + border_x, bbox[1].max + border_y }; append_vertex(bbox_shape, tl);
+      float tr[2] = { bbox[0].min - border_x, bbox[1].max + border_y }; append_vertex(bbox_shape, tr);
       
       write_shape(stdout, bbox_shape);
       free_shape(bbox_shape);
@@ -83,18 +86,21 @@ int bbox(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_er
     struct Shape * bbox_shape = new_shape();
     bbox_shape->gl_type = GL_LINE_LOOP;
     
-    float bl[2] = { bbox[0].min, bbox[1].min }; append_vertex(bbox_shape, bl);
-    float br[2] = { bbox[0].max, bbox[1].min }; append_vertex(bbox_shape, br);
-    float tl[2] = { bbox[0].max, bbox[1].max }; append_vertex(bbox_shape, tl);
-    float tr[2] = { bbox[0].min, bbox[1].max }; append_vertex(bbox_shape, tr);
+    float border_x = (bbox[0].max - bbox[0].min) * border / 2.0;
+    float border_y = (bbox[1].max - bbox[1].min) * border / 2.0;
+    
+    float bl[2] = { bbox[0].min - border_x, bbox[1].min - border_y }; append_vertex(bbox_shape, bl);
+    float br[2] = { bbox[0].max + border_x, bbox[1].min - border_y }; append_vertex(bbox_shape, br);
+    float tl[2] = { bbox[0].max + border_x, bbox[1].max + border_y }; append_vertex(bbox_shape, tl);
+    float tr[2] = { bbox[0].min - border_x, bbox[1].max + border_y }; append_vertex(bbox_shape, tr);
     
     write_shape(stdout, bbox_shape);
     free_shape(bbox_shape);
   }
   else
   {
-    fprintf(pipe_err, "bbox_num_dimensions %d\n", bbox_num_dimensions);
     long i;
+    fprintf(pipe_err, "bbox_num_dimensions %d\n", bbox_num_dimensions);
     for (i = 0 ; i < bbox_num_dimensions ; i++)
       fprintf(pipe_err, "  %ld: %f to %f [range: %f]\n", i, bbox[i].min, bbox[i].max, (bbox[i].max - bbox[i].min));
   }
