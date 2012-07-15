@@ -30,10 +30,10 @@ int read_soundwave(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE
   time_t start = time(NULL);
   
   int max_channels = MAX_CHANNELS;
-  char * filename = NULL;
-  int fft = 0;
-  int normalize = 0;
-  int output_size = 0;
+  char * filename = "data/mnm.wav";
+  int fft = 1;
+  int normalize = 1;
+  int output_size = 1000;
   float low_pass = 400.0;
   float high_pass = 2000.0;
   int c;
@@ -220,7 +220,7 @@ int read_soundwave(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE
   }
   for (i = 0 ; i < max_channels ; i++)
   {
-    write_shape(pipe_out, shapes[i]);
+    //write_shape(pipe_out, shapes[i]);
     free_shape(shapes[i]);
   }
   free(shapes);
