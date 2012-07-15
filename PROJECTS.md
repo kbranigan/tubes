@@ -1,6 +1,127 @@
 
 #############################################################
 
+ - zoom in?
+ - counts, such as number of addresses, number of bus stops
+
+#############################################################
+
+cat <(cat <(./bin/read_dem -f data/030/m/030m11/030m11_0200_demw.dem | ./bin/grayscale) <(./bin/read_dem -f data/030/m/030m11/030m11_0200_deme.dem | ./bin/grayscale) \
+    <(./bin/read_dem -f data/030/m/030m12/030m12_0200_demw.dem | ./bin/grayscale) <(./bin/read_dem -f data/030/m/030m12/030m12_0200_deme.dem | ./bin/grayscale) \
+    <(./bin/read_dem -f data/030/m/030m13/030m13_0200_demw.dem | ./bin/grayscale) <(./bin/read_dem -f data/030/m/030m13/030m13_0200_deme.dem | ./bin/grayscale) \
+    <(./bin/read_dem -f data/030/m/030m14/030m14_0200_demw.dem | ./bin/grayscale) <(./bin/read_dem -f data/030/m/030m14/030m14_0200_deme.dem | ./bin/grayscale) \
+    | ./bin/reduce_by_bbox -f <(cat data/canada.ontario.municipalities_on_land_reduced.b | ./bin/reduce_by_attribute -n LEGALNAME1 -v "City of Toronto" | ./bin/bbox -b 0.1))
+    > data/toronto.elevation.b
+
+gcc src/pass_through_translate_colors_for_toronto_map.c bin/scheme.o -o bin/pass_through_translate_colors_for_toronto_map
+
+  cat <(cat data/toronto.elevation.b | ./bin/transform -a 1 -s 0.25,0.25,0.25,1) \
+  <(cat data/toronto_addresses_colors_according_to_walking_distance_to_myttc_stop.b \
+        data/toronto_addresses_where_walking_distance_to_a_road_was_over_250_meters.b \
+      | ./bin/pass_through_translate_colors_for_toronto_map) \
+  <(cat data/toronto.centreline.*.b | ./bin/add_color_from_csv -f colors_for_streets.csv) \
+  | ./bin/write_png -s particle.png -p 3 -w 1000 -f toronto_map_1.png -z 1
+
+  cat <(cat data/toronto.elevation.b | ./bin/transform -a 1 -s 0.25,0.25,0.25,1) \
+  <(cat data/toronto_addresses_colors_according_to_walking_distance_to_myttc_stop.b \
+        data/toronto_addresses_where_walking_distance_to_a_road_was_over_250_meters.b \
+      | ./bin/pass_through_translate_colors_for_toronto_map) \
+  <(cat data/toronto.centreline.*.b | ./bin/add_color_from_csv -f colors_for_streets.csv) \
+  | ./bin/write_png -s particle.png -p 3 -w 1000 -f toronto_map_2.png -z 2
+
+  cat <(cat data/toronto.elevation.b | ./bin/transform -a 1 -s 0.25,0.25,0.25,1) \
+  <(cat data/toronto_addresses_colors_according_to_walking_distance_to_myttc_stop.b \
+        data/toronto_addresses_where_walking_distance_to_a_road_was_over_250_meters.b \
+      | ./bin/pass_through_translate_colors_for_toronto_map) \
+  <(cat data/toronto.centreline.*.b | ./bin/add_color_from_csv -f colors_for_streets.csv) \
+  | ./bin/write_png -s particle.png -p 3 -w 1000 -f toronto_map_3.png -z 3
+
+  cat <(cat data/toronto.elevation.b | ./bin/transform -a 1 -s 0.25,0.25,0.25,1) \
+  <(cat data/toronto_addresses_colors_according_to_walking_distance_to_myttc_stop.b \
+        data/toronto_addresses_where_walking_distance_to_a_road_was_over_250_meters.b \
+      | ./bin/pass_through_translate_colors_for_toronto_map) \
+  <(cat data/toronto.centreline.*.b | ./bin/add_color_from_csv -f colors_for_streets.csv) \
+  | ./bin/write_png -s particle.png -p 3 -w 1000 -f toronto_map_4.png -z 4
+
+  cat <(cat data/toronto.elevation.b | ./bin/transform -a 1 -s 0.25,0.25,0.25,1) \
+  <(cat data/toronto.centreline.*.b | ./bin/add_color_from_csv -f colors_for_streets.csv) \
+  <(cat data/toronto_addresses_colors_according_to_walking_distance_to_myttc_stop.b \
+        data/toronto_addresses_where_walking_distance_to_a_road_was_over_250_meters.b \
+      | ./bin/pass_through_translate_colors_for_toronto_map) \
+  | ./bin/write_png -s particle.png -p 3 -w 1000 -f toronto_map_5.png -z 5
+
+  cat <(cat data/toronto.elevation.b | ./bin/transform -a 1 -s 0.25,0.25,0.25,1) \
+  <(cat data/toronto_addresses_colors_according_to_walking_distance_to_myttc_stop.b \
+        data/toronto_addresses_where_walking_distance_to_a_road_was_over_250_meters.b \
+      | ./bin/pass_through_translate_colors_for_toronto_map) \
+  <(cat data/toronto.centreline.*.b | ./bin/add_color_from_csv -f colors_for_streets.csv) \
+  | ./bin/write_png -s particle.png -p 3 -w 1000 -f toronto_map_6.png -z 6
+
+  cat <(cat data/toronto.elevation.b | ./bin/transform -a 1 -s 0.25,0.25,0.25,1) \
+  <(cat data/toronto_addresses_colors_according_to_walking_distance_to_myttc_stop.b \
+        data/toronto_addresses_where_walking_distance_to_a_road_was_over_250_meters.b \
+      | ./bin/pass_through_translate_colors_for_toronto_map) \
+  <(cat data/toronto.centreline.*.b | ./bin/add_color_from_csv -f colors_for_streets.csv) \
+  | ./bin/write_png -s particle.png -p 3 -w 1000 -f toronto_map_7.png -z 7
+
+  cat <(cat data/toronto.elevation.b | ./bin/transform -a 1 -s 0.25,0.25,0.25,1) \
+  <(cat data/toronto_addresses_colors_according_to_walking_distance_to_myttc_stop.b \
+        data/toronto_addresses_where_walking_distance_to_a_road_was_over_250_meters.b \
+      | ./bin/pass_through_translate_colors_for_toronto_map) \
+  <(cat data/toronto.centreline.*.b | ./bin/add_color_from_csv -f colors_for_streets.csv) \
+  | ./bin/write_png -s particle.png -p 3 -w 1000 -f toronto_map_8.png -z 8
+
+  cat <(cat data/toronto.elevation.b | ./bin/transform -a 1 -s 0.25,0.25,0.25,1) \
+  <(cat data/toronto_addresses_colors_according_to_walking_distance_to_myttc_stop.b \
+        data/toronto_addresses_where_walking_distance_to_a_road_was_over_250_meters.b \
+      | ./bin/pass_through_translate_colors_for_toronto_map) \
+  <(cat data/toronto.centreline.*.b | ./bin/add_color_from_csv -f colors_for_streets.csv) \
+  | ./bin/write_png -s particle.png -p 3 -w 1000 -f toronto_map_9.png -z 9
+
+/ImageMagick-6.7.5/bin/montage `/bin/ls toronto_map_*` -geometry +0+0 toronto_map.all.png
+
+#############################################################
+
+blah
+
+  cat <(cat data/toronto.elevation.b | ./bin/transform -a 1 -s 0.3,0.3,0.3,1 | ./bin/transform -a 1 -s -1,-1,-1,1 | ./bin/transform -a 1 -o 1,1,1,0) \
+  <(cat data.toronto.rivers.b | ./bin/add_color_from_csv -f <(echo "FCODE_DESC:River,red:0.6,green:0.6,blue:1.0")) \
+  <(cat data/toronto.centreline.*.b | ./bin/add_color_from_csv -f colors_for_streets_white_background.csv) \
+  <(cat data/toronto_addresses_colors_according_to_walking_distance_to_myttc_stop.b \
+        data/toronto_addresses_where_walking_distance_to_a_road_was_over_250_meters.b \
+      | ./bin/pass_through_translate_colors_for_toronto_map) \
+  | ./bin/write_png -s particle.png -p 3 -w 1500 -z 9
+
+#############################################################
+
+cat data/toronto.elevation.b | ./bin/write_png  -s particle.png -p 3 -w 1000 -f toronto_elevation_1.png -z 1
+cat data/toronto.elevation.b | ./bin/write_png  -s particle.png -p 3 -w 1000 -f toronto_elevation_2.png -z 2
+cat data/toronto.elevation.b | ./bin/write_png  -s particle.png -p 3 -w 1000 -f toronto_elevation_3.png -z 3
+cat data/toronto.elevation.b | ./bin/write_png  -s particle.png -p 3 -w 1000 -f toronto_elevation_4.png -z 4
+cat data/toronto.elevation.b | ./bin/write_png  -s particle.png -p 3 -w 1000 -f toronto_elevation_5.png -z 5
+cat data/toronto.elevation.b | ./bin/write_png  -s particle.png -p 3 -w 1000 -f toronto_elevation_6.png -z 6
+cat data/toronto.elevation.b | ./bin/write_png  -s particle.png -p 3 -w 1000 -f toronto_elevation_7.png -z 7
+cat data/toronto.elevation.b | ./bin/write_png  -s particle.png -p 3 -w 1000 -f toronto_elevation_8.png -z 8
+cat data/toronto.elevation.b | ./bin/write_png  -s particle.png -p 3 -w 1000 -f toronto_elevation_9.png -z 9
+
+/ImageMagick-6.7.5/bin/montage `/bin/ls toronto_elevation_*` -geometry +0+0 output.all.png
+
+#############################################################
+
+toronto tickets per minute throughout the day
+
+./bin/read_mysql "select (round(substring(time_of_infraction,-2,2)) + round(substring(time_of_infraction,1,2))*60) as x, count(*) y, 1 as unique_set_id from parking_tickets_toronto.parking_tickets group by x" | ./bin/transform -s 4 | ./bin/write_png
+
+map of toronto tickets
+
+./bin/read_mysql "select lat y, lng x, id, date_of_infraction date, time_of_infraction time from parking_tickets_toronto.parking_tickets where lat is not null AND date_of_infraction = 20101001 AND secs = 1" > toronto_parking_tickets.b
+
+cat toronto_parking_tickets.b | ./bin/reduce_by_attribute -n date -v 20101001 > toronto_parking_tickets.20101001.b
+
+cat toronto_parking_tickets.20101001.b | ./bin/reduce_by_bbox -f <(./bin/produce_unit_square -x -79.395835 -y 43.647616 -w 0.03 -h 0.03) | ./bin/write_png 
+
+#############################################################
+
 read in a soundwave, calculating a sliding window rms with fft for color and normalize ranges to [0,1], output should have 1000 samples
 
 ./bin/read_soundwave -f data/mnm.wav -o 1000 -n -t > tempsoundwave.b
@@ -52,13 +173,60 @@ Assumes the following:
 
 ./bin/read_shapefile -f /work/data/canada/municipalities/ontario.dbf \
   | ./bin/clip -f hydro.ontario.b \
-  > ontario.muni.minus.water.b
+  > ontario.muni.b
 
-cat ontario.muni.minus.water.b \
+cat ontario.muni.b \
  | ./bin/clip -f <(./bin/produce_unit_square -x -79.38698 -y 43.67008 -w 1.5 -h 1.5) \
  | ./bin/tesselate \
  | ./bin/add_color_from_csv -f colors_for_andrew.txt \
  | ./bin/write_png
+
+#############################################################
+
+cat <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/50h-12.dwg -l CURB*) \
+    <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/50h-12.dwg -l BUILDING_LINE*) \
+    <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/50h-12.dwg -l BRIDGES*) \
+    <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/50h-12.dwg -l PATHWAY*) \
+    | ./bin/write_png 
+
+
+cat <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/50g-22.dwg -l CURB*) \
+    <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/50g-22.dwg -l BUILDING_LINE*) \
+    <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/50g-22.dwg -l BRIDGES*) \
+    | ./bin/write_png 
+
+cat <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/50g-12.dwg -l CURB*) \
+    <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/50g-12.dwg -l BUILDING_LINE*) \
+    <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/50g-12.dwg -l BRIDGES*) \
+    | ./bin/write_png 
+
+cat    \
+    <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/50h-13.dwg -l CURB*) \
+    <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/50h-13.dwg -l BUILDING_LINE*) \
+    <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/50h-13.dwg -l BRIDGES*) \
+    <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/50h-13.dwg -l PATHWAY*) \
+    | ./bin/write_png 
+
+cat \
+    <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/50g-23.dwg -l CURB*) \
+    <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/50g-23.dwg -l BUILDING_LINE*) \
+    <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/50g-23.dwg -l BRIDGES*) \
+    | ./bin/write_png 
+    
+cat <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/50g-13.dwg -l CURB*) \
+    <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/50g-13.dwg -l BUILDING_LINE*) \
+    <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/50g-13.dwg -l BRIDGES*) \
+    | ./bin/write_png 
+    
+cat <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/51h-11.dwg -l CURB*) \
+    <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/51h-11.dwg -l BUILDING_LINE*) \
+    | ./bin/write_png 
+    
+cat <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/51g-21.dwg -l CURB*) \
+    <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/51g-21.dwg -l BUILDING_LINE*) \
+    <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/51g-11.dwg -l CURB*) \
+    <(./bin/read_dwg -f /work/data/canada/toronto/city_toronto/51g-11.dwg -l BUILDING_LINE*) \
+    | ./bin/write_png 
 
 #############################################################
 
@@ -80,21 +248,26 @@ cat <(./bin/read_dwg -f ../property_data_for_trinity_spadina_ward/49g-13-2000.dw
     <(./bin/read_shapefile -f /work/data/canada/toronto/wards/icitw_wgs84.dbf | ./bin/reduce_by_attribute -n SCODE_NAME -v 20) \
     | ./bin/add_random_colors \
     | ./bin/write_png -w 2500
-    
+
     | ./bin/clip -f <(./bin/read_shapefile -f /work/data/canada/toronto/wards/icitw_wgs84.dbf | ./bin/reduce_by_attribute -n SCODE_NAME -v 20) \
     > buildings_in_trinity_spadina_ward20_wgs84.b
 
     cat buildings_in_trinity_spadina_ward20_wgs84.b \
     <(./bin/read_shapefile -f /work/data/canada/toronto/wards/icitw_wgs84.dbf | ./bin/reduce_by_attribute -n SCODE_NAME -v 20) \
     | ./bin/add_random_colors \
-    | ./bin/write_png
+    | ./bin/write_png -w 2500
 
 #############################################################
 
-cat <(./bin/read_dem -f data/030/m/030m11/030m11_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m11/030m11_0200_deme.dem) \
+pretty elevation map, with toronto border, it's pretty
+
+cat <(cat <(./bin/read_dem -f data/030/m/030m11/030m11_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m11/030m11_0200_deme.dem) \
     <(./bin/read_dem -f data/030/m/030m12/030m12_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m12/030m12_0200_deme.dem) \
     <(./bin/read_dem -f data/030/m/030m13/030m13_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m13/030m13_0200_deme.dem) \
     <(./bin/read_dem -f data/030/m/030m14/030m14_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m14/030m14_0200_deme.dem) \
+    | ./bin/reduce_by_bbox -f <(cat data/canada.ontario.municipalities_on_land_reduced.b | ./bin/reduce_by_attribute -n LEGALNAME1 -v "City of Toronto" | ./bin/bbox -b 0.1)) \
+    <(cat data/canada.ontario.municipalities_on_land_reduced.b | ./bin/reduce_by_attribute -n LEGALNAME1 -v "City of Toronto" | \
+        ./bin/add_color_from_csv -f <(echo "LEGALNAME1:City of Toronto,red:0.8,green:0.4,blue:0.4")) \
     | ./bin/write_png
 
 cat <(./bin/read_dem -f data/030/m/030m03/030m03_0200_demw.dem) <(./bin/read_dem -f data/030/m/030m03/030m03_0200_deme.dem) \
