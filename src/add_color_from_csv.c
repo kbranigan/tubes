@@ -124,7 +124,7 @@ you can specify the unique id, or any arbitary name:value pair - which is matche
     else 
     {
       //if (strcmp(shape->attributes[j].name, temp_rule->name) == 0)
-      fprintf(stderr, "%s\n", get_attribute(shape, "COMMONAME1"));
+      //fprintf(stderr, "%s\n", get_attribute(shape, "COMMONAME1"));
       /*for (i = 0 ; i < num_rules ; i++)
       {
         struct ColorRule * temp_rule = &rules[i];
