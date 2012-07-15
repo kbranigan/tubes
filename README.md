@@ -1,7 +1,7 @@
-Hookah
+Tubes
 ======
 
-Hookah is just an idea for a series of smaller applications that produce, process and consume raw vertex data.
+Tubes is just an idea for a series of smaller applications that produce, process and consume raw vertex data.
 
 Examples
 --------
