@@ -8,24 +8,19 @@ ext= -Isrc/ext -Lsrc/ext
 
 whichgl= $(applegl)
 
-extra= -lm
+extra= -lm  -g -pg
 
-all: pipe_in  pipe_out  pipe_inout  
+all: pipe_in  pipe_out  pipe_inout  extras
 
 # these require additional libs I put them in here just to indicate that
 extras: \
 	bin/redis \
 	bin/read_dwg \
 	bin/write_png \
-	bin/civicsets.ca \
 	bin/tesselate \
-	bin/read_mysql \
 	bin/read_nextbus \
-	bin/read_soundwave \
 	bin/read_foursquare \
-	bin/join_on_attributes \
-	bin/fft \
-	bin/fft_sliding_window
+	bin/join_on_attributes
 
 pipe_in: \
 	bin/bbox \
@@ -34,7 +29,8 @@ pipe_in: \
 	bin/write_sql \
 	bin/write_json \
 	bin/write_webgl \
-	bin/pass_through
+	bin/pass_through \
+	bin/grayscale
 
 pipe_out: \
 	bin/read_csv \
@@ -59,22 +55,34 @@ pipe_inout: \
 	bin/add_random_colors \
 	bin/remove_attributes \
 	bin/add_color_from_csv \
+	bin/add_color_from_numberic_attribute \
 	bin/add_color_from_source_interpolation \
 	bin/coordinate_convert \
 	bin/reduce_by_overlap \
 	bin/reduce_by_distance \
 	bin/reduce_by_attribute \
 	bin/reset_unique_set_ids \
-	bin/add_color_from_mysql \
 	bin/graph_ttc_performance \
 	bin/align_points_to_line_strips \
+	bin/pass_through_translate_colors_for_toronto_map \
 	bin/group_shapes_on_unique_set_id
 
+broke: \
+	bin/get_osm_graph \
+	bin/fft \
+	bin/fft_sliding_window \
+	bin/read_soundwave \
+	bin/read_mysql \
+	bin/write_pdf \
+	bin/add_color_from_mysql
+
 testing: \
+	bin/civicsets.ca \
 	bin/stream_opengl \
 	bin/write_bmp \
 	bin/write_bmp_sphere \
 	bin/read_walk_distance_via_osm_to_bus_stop_from_iroquois
+
 
 src/ext/shpopen.o: src/ext/shpopen.c
 	gcc -c src/ext/shpopen.c -o src/ext/shpopen.o
@@ -169,6 +177,12 @@ bin/remove_attributes: bin/scheme.o src/remove_attributes.c
 bin/pass_through: bin/scheme.o src/pass_through.c
 	gcc $(extra) bin/scheme.o src/pass_through.c -o bin/pass_through
 
+bin/pass_through_translate_colors_for_toronto_map: bin/scheme.o src/pass_through_translate_colors_for_toronto_map.c
+	gcc $(extra) bin/scheme.o src/pass_through_translate_colors_for_toronto_map.c -o bin/pass_through_translate_colors_for_toronto_map
+
+bin/grayscale: bin/scheme.o src/grayscale.c
+	gcc $(extra) bin/scheme.o src/grayscale.c -o bin/grayscale
+
 bin/add_marker: bin/scheme.o src/add_marker.c
 	gcc $(extra) bin/scheme.o src/add_marker.c -o bin/add_marker
 
@@ -205,6 +219,9 @@ bin/add_color_from_mysql: bin/scheme.o src/add_color_from_mysql.c
 bin/add_color_from_csv: bin/scheme.o src/add_color_from_csv.c
 	gcc $(extra) bin/scheme.o src/add_color_from_csv.c -o bin/add_color_from_csv
 
+bin/add_color_from_numberic_attribute: bin/scheme.o src/add_color_from_numberic_attribute.c
+	gcc $(extra) bin/scheme.o src/add_color_from_numberic_attribute.c -o bin/add_color_from_numberic_attribute
+
 bin/add_color_from_source_interpolation: bin/scheme.o src/add_color_from_source_interpolation.c
 	gcc $(extra) bin/scheme.o src/add_color_from_source_interpolation.c -o bin/add_color_from_source_interpolation
 
@@ -223,8 +240,11 @@ bin/tesselate: bin/scheme.o src/tesselate.c
 bin/transform: bin/scheme.o src/transform.c
 	gcc $(extra) bin/scheme.o src/transform.c -o bin/transform
 
+bin/write_pdf: bin/scheme.o src/write_pdf.c src/setup_opengl.c
+	gcc $(extra) bin/scheme.o src/write_pdf.c -o bin/write_pdf -lhpdf -Iext/hpdf -Lext/hpdf
+
 bin/write_png: bin/scheme.o src/write_png.c src/setup_opengl.c
-	gcc $(extra) bin/scheme.o src/write_png.c -o bin/write_png $(whichgl) -lpng
+	gcc $(extra) bin/scheme.o src/write_png.c -o bin/write_png $(whichgl) -lpng src/ext/libSOIL.a -framework CoreFoundation
 
 bin/write_bmp: bin/scheme.o src/write_bmp.c src/setup_opengl.c
 	gcc $(extra) bin/scheme.o src/write_bmp.c -o bin/write_bmp $(whichgl)
@@ -243,6 +263,9 @@ bin/write_json: bin/scheme.o src/write_json.c
 
 bin/write_webgl: bin/scheme.o bin/mongoose.o src/write_webgl.c
 	gcc $(extra) bin/scheme.o bin/mongoose.o src/write_webgl.c -o bin/write_webgl -ldl -lpthread
+
+bin/get_osm_graph: bin/scheme.o src/get_osm_graph.c
+	g++ $(extra) $(mysql) bin/scheme.o -I../iroquois -L../iroquois -lstdaemon src/get_osm_graph.c -o bin/get_osm_graph
 
 bin/read_walk_distance_via_osm_to_bus_stop_from_iroquois: bin/scheme.o src/read_walk_distance_via_osm_to_bus_stop_from_iroquois.c
 	gcc $(extra) -lcurl bin/scheme.o src/read_walk_distance_via_osm_to_bus_stop_from_iroquois.c -o bin/read_walk_distance_via_osm_to_bus_stop_from_iroquois

@@ -36,7 +36,6 @@ int reduce_by_overlap(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, F
       kdtrees[i] = kdtree_new();
       kdtree_insert_shape(kdtrees[i], shape);
     }
-    //write_shape(pipe_out, shape);
   }
   for (i = 0 ; i < num_shapes ; i++)
   {

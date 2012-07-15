@@ -92,6 +92,7 @@ int read_mysql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * p
     
     while ((row = mysql_fetch_row(res)))
     {
+      if (row[unique_set_field_id] == NULL) continue;
       if (atol(row[unique_set_field_id]) != prev_unique_set_id)
       {
         if (shape != NULL)
@@ -127,9 +128,9 @@ int read_mysql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * p
         }
       }
       
-      float v[3] = { atof(row[x_field_id]), atof(row[y_field_id]), 0.0 };
+      float v[3] = { row[x_field_id]==NULL ? 0 : atof(row[x_field_id]), row[y_field_id]==NULL ? 0 : atof(row[y_field_id]), 0.0 };
       
-      if (z_field_id != -1)
+      if (z_field_id != -1 && row[z_field_id])
         v[2] = atof(row[z_field_id]);
       
       if (r_field_id != -1 &&

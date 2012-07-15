@@ -14,6 +14,7 @@
 #include "civicsets_shapefiles.c"
 #include "civicsets_ttc.c"
 #include "civicsets_record.c"
+#include "civicsets_sources.c"
 
 MYSQL mysql;
 
@@ -219,6 +220,8 @@ int main(int argc, char **argv)
   
   mg_set_uri_callback(ctx, "/map", &map, NULL);
   mg_set_uri_callback(ctx, "/record", &record, NULL);
+  
+  setup_sources(ctx);
   
   //mg_set_uri_callback(ctx, "/fields", &fields, NULL);
   //mg_set_uri_callback(ctx, "/shapes", &shapes, NULL);

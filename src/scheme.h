@@ -42,8 +42,8 @@ extern "C" {
 #define GL_FOG_COORD_ARRAY           33879
 #define GL_SECONDARY_COLOR_ARRAY     33886
 
-#define COMMAND_STRING 14
-#define STRING_TABLE 15
+//#define COMMAND_STRING 14
+//#define STRING_TABLE 15
 
 /*
   c type           name                 values
@@ -217,7 +217,7 @@ extern const char * get_gl_type_name(int gl_type);
       #ifdef SCHEME_ASSERT_STDIN_IS_PIPED
         assert_stdin_is_piped();
       #elif defined(SCHEME_ASSERT_STDOUT_IS_PIPED)
-        assert_stdout_is_piped();
+        //assert_stdout_is_piped();
       #elif defined(SCHEME_ASSERT_STDINOUT_ARE_PIPED)
         assert_stdin_is_piped();
         assert_stdout_is_piped();

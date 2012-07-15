@@ -12,14 +12,17 @@
 #include <GL/osmesa.h>
 #endif
 
+#include "ext/SOIL.h"
+
 GLuint textureId;
 GLuint rboId;
 GLuint fboId;
 //int texture_width = 1600;
 //int texture_height = 0;
 
-int setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, float min_z, float max_z, int texture_width)
+int setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, float min_z, float max_z, int texture_width, int zone_section)
 {
+  
   int texture_height = texture_width * ((max_y - min_y) / (max_x - min_x));
   if (texture_height > texture_width * 1.5) texture_height = texture_width * 1.5;
   
@@ -102,7 +105,8 @@ int setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, f
   glDisable(GL_TEXTURE_2D);
   
   glViewport(0, 0, texture_width, texture_height);
-  glClearColor(1, 1, 1, 1);
+  //glClearColor(1, 1, 1, 1);
+  glClearColor(0.2, 0.2, 0.2, 1);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   
   glMatrixMode(GL_PROJECTION);
@@ -115,9 +119,24 @@ int setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, f
   float diff_z = max_z - min_z;
   
   //glOrtho(min_x-diff_x*0.01, max_x+diff_x*0.01, min_y-diff_y*0.01, max_y+diff_y*0.01, min_z-diff_z*0.01, max_z+diff_z*0.01);
-  glOrtho(min_x-diff_x*0.01, max_x+diff_x*0.01, min_y-diff_y*0.01, max_y+diff_y*0.01, 1, -1);
-  //glOrtho(-1.5, 1.5, 1.5, -1.5, -1.5, 1.5);
   
+       if (zone_section == 1) glOrtho(min_x+diff_x*0.000, min_x+diff_x*0.333, min_y+diff_y*0.000, max_y-diff_y*0.666, 1, -1); // top left
+  else if (zone_section == 2) glOrtho(min_x+diff_x*0.333, min_x+diff_x*0.666, min_y+diff_y*0.000, max_y-diff_y*0.666, 1, -1); // top mid
+  else if (zone_section == 3) glOrtho(min_x+diff_x*0.666, max_x+diff_x*0.000, min_y+diff_y*0.000, max_y-diff_y*0.666, 1, -1); // top right
+  
+  else if (zone_section == 4) glOrtho(min_x+diff_x*0.000, min_x+diff_x*0.333, min_y+diff_y*0.333, min_y+diff_y*0.666, 1, -1); // mid left
+  else if (zone_section == 5) glOrtho(min_x+diff_x*0.333, min_x+diff_x*0.666, min_y+diff_y*0.333, min_y+diff_y*0.666, 1, -1); // mid mid
+  else if (zone_section == 6) glOrtho(min_x+diff_x*0.666, max_x+diff_x*0.000, min_y+diff_y*0.333, min_y+diff_y*0.666, 1, -1); // mid right
+  
+  else if (zone_section == 7) glOrtho(min_x+diff_x*0.000, min_x+diff_x*0.333, min_y+diff_y*0.666, max_y-diff_y*0.000, 1, -1); // top left
+  else if (zone_section == 8) glOrtho(min_x+diff_x*0.333, min_x+diff_x*0.666, min_y+diff_y*0.666, max_y-diff_y*0.000, 1, -1); // top mid
+  else if (zone_section == 9) glOrtho(min_x+diff_x*0.666, max_x+diff_x*0.000, min_y+diff_y*0.666, max_y-diff_y*0.000, 1, -1); // top right
+  
+  else if (zone_section == 10) glOrtho(min_x+diff_x*0.4, min_x+diff_x*0.45, min_y+diff_y*0.3, min_y+diff_y*0.35, 1, -1); // mid mid
+  
+  else glOrtho(min_x-diff_x*0.01, max_x+diff_x*0.01, min_y-diff_y*0.01, max_y+diff_y*0.01, 1, -1); // no zoom
+  
+  //glOrtho(-1.5, 1.5, 1.5, -1.5, -1.5, 1.5);
   //printf("[%f, %f], [%f, %f], [%f, %f]\n", min_x, max_x, min_y, max_y, min_z, max_z);
   
   glMatrixMode(GL_MODELVIEW);

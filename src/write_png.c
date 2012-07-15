@@ -101,15 +101,21 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
   int texture_width = 1200;
   
   char file_name[1000] = "";
+  char sprite_file_name[1000] = "";
+  unsigned int sprite_point_size = 8;
   float rotation = 0;
   int num_attributes = -1;
+  int zoom_section = 0;
   int c;
-  while ((c = getopt(argc, argv, "f:w:r:")) != -1)
+  while ((c = getopt(argc, argv, "f:w:r:s:p:z:")) != -1)
   switch (c)
   {
     case 'f': strncpy(file_name, optarg, sizeof(file_name)); break;
+    case 's': strncpy(sprite_file_name, optarg, sizeof(sprite_file_name)); break;
+    case 'p': sprite_point_size = atoi(optarg); break;
     case 'w': texture_width = atoi(optarg); break;
     case 'r': rotation = atof(optarg); break;
+    case 'z': zoom_section = atoi(optarg); break;
     default:  abort();
   }
   
@@ -174,45 +180,113 @@ int write_png(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
     return 0;
   }
   
-  if (setup_offscreen_render(b[0][0], b[0][1], b[1][0], b[1][1], b[2][0], b[2][1], texture_width) != EXIT_SUCCESS)
+  if (setup_offscreen_render(b[0][0], b[0][1], b[1][0], b[1][1], b[2][0], b[2][1], texture_width, zoom_section) != EXIT_SUCCESS)
     return EXIT_FAILURE;
   
+  //rotation = 35; // kbfu
+  glDisable(GL_DEPTH_TEST);
   glTranslatef((b[0][0]+b[0][1])/2.0, (b[1][0]+b[1][1])/2.0, 0);
   glRotatef(180, 0, 0, 1);
-  glRotatef(rotation, 1, 0, 0);
+  //glRotatef(rotation*.6, 1, 0, 0);
+  //glRotatef(rotation*.3, 0, 0, 1);
   glScalef(-1, 1, 1);
   glTranslatef((b[0][0]+b[0][1])/-2.0, (b[1][0]+b[1][1])/-2.0, 0);
+  
+  //glColor4f(0, 0, 0, 1);
+  GLuint tex_2d = 0;
+  if (sprite_file_name[0] != 0)
+  {
+    tex_2d = SOIL_load_OGL_texture(sprite_file_name, SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y | SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_COMPRESS_TO_DXT);
+    if (tex_2d==0)
+      fprintf(stderr, "SOIL load file '%s' error: '%s'\n", sprite_file_name, SOIL_last_result());
+    else
+    {
+      glEnable(GL_TEXTURE_2D);
+      glBindTexture(GL_TEXTURE_2D, tex_2d);
+      glEnable(GL_POINT_SPRITE);
+      glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
+      glPointSize(sprite_point_size);
+      glEnable(GL_BLEND);
+      //glBlendFunc(GL_DST_COLOR, GL_ZERO);
+      //glBlendFunc(GL_SRC_COLOR, GL_ONE);
+      //glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);//GL_ONE_MINUS_SRC_ALPHA);
+      glColor4f(0, 0, 0, 0.2);
+    }
+  }
+  
   
   long i, j, k;
   for (i = 0 ; i < num_shapes ; i++)
   {
     shape = shapes[i];
     if (shape->num_vertexs == 1)
+    {
       shape->gl_type = GL_POINTS;
+      //shape->gl_type = GL_QUADS;
+      if (sprite_file_name[0] != 0) { glEnable(GL_TEXTURE_2D); glEnable(GL_POINT_SPRITE); glEnable(GL_BLEND);  }
+    }
+    else if (sprite_file_name[0] != 0) { glDisable(GL_TEXTURE_2D); glDisable(GL_POINT_SPRITE); } //glDisable(GL_BLEND); }
     
     glBegin(shape->gl_type);
+    //glColor4f(1,0,0,1);
     
-    if (shape->gl_type == GL_POINTS)
-      glColor4f(0, 0, 0, 1);
-    else
-      glColor4f(0, 0, 0, 0.3);
+    //if (shape->gl_type == GL_POINTS)
+    //  glColor4f(0, 0, 0, 1);
+    //else
+    //  glColor4f(0, 0, 0, 0.3);
     
+    struct VertexArray * va = &shape->vertex_arrays[0];
     for (j = 0 ; j < shape->num_vertexs ; j++)
     {
+      float * cv = get_vertex(shape, 1, j);
       if (shape->num_vertex_arrays > 1 && shape->vertex_arrays[1].array_type == GL_COLOR_ARRAY)
       {
         struct VertexArray * cva = &shape->vertex_arrays[1];
-        float * cv = get_vertex(shape, 1, j);
-        if (cva->num_dimensions == 1)      glColor3f(cv[0], cv[0], cv[0]);
-        else if (cva->num_dimensions == 2) glColor3f(cv[0], cv[1], 0.0);
-        else if (cva->num_dimensions == 3) glColor3fv(cv);
-        else if (cva->num_dimensions == 4) glColor4fv(cv);
+        //if (cv[1] + cv[2] > cv[0]) 
+        //if (shape->num_vertexs == 1)
+        //  { cv[1] = 0; cv[2] = 0; }
+        if (cva->num_dimensions == 1)      glColor4f(cv[0], cv[0], cv[0], 0.2);
+        else if (cva->num_dimensions == 2) glColor4f(cv[0], cv[1], cv[0], 0.2);
+        else if (cva->num_dimensions == 3) glColor4f(cv[0], cv[1], cv[2], 1);
+        //else if (cva->num_dimensions == 4 && shape->num_vertexs == 1) glColor4f(cv[0], cv[0], cv[0], cv[0]);//cv[0]); // hard kbfu
+        else if (cva->num_dimensions == 4) glColor4f(cv[0], cv[1], cv[2], cv[3]);
       }
-      struct VertexArray * va = &shape->vertex_arrays[0];
+      
+      float * v = get_vertex(shape, 0, j);
+      
       if (va->num_dimensions == 1)      glVertex2f(j, va->vertexs[j]);
-      else if (va->num_dimensions == 2) glVertex2fv(get_vertex(shape, 0, j));
-      else if (va->num_dimensions == 3) glVertex3fv(get_vertex(shape, 0, j));
-      else if (va->num_dimensions == 4) glVertex4fv(get_vertex(shape, 0, j));
+      /*else if (0 && va->num_dimensions == 2 && shape->num_vertexs == 1 && shape->num_vertex_arrays > 1)
+      {
+        double h = log(fabs(cv[1]))*0.0005;
+        
+        // kbfu
+        glVertex3d(v[0]-0.00007, v[1]-0.00007, 0);
+        glVertex3d(v[0]-0.00007, v[1]+0.00007, 0);
+        glVertex3d(v[0]+0.00007, v[1]+0.00007, 0);
+        glVertex3d(v[0]+0.00007, v[1]-0.00007, 0);
+        
+        glVertex3d(v[0]-0.00007, v[1]-0.00007, h);
+        glVertex3d(v[0]-0.00007, v[1]+0.00007, h);
+        glVertex3d(v[0]+0.00007, v[1]+0.00007, h);
+        glVertex3d(v[0]+0.00007, v[1]-0.00007, h);
+        
+        glVertex3d(v[0]-0.00007, v[1]+0.00007, 0);
+        glVertex3d(v[0]+0.00007, v[1]-0.00007, 0);
+        glVertex3d(v[0]-0.00007, v[1]+0.00007, h);
+        glVertex3d(v[0]+0.00007, v[1]-0.00007, h);
+        
+        glVertex3d(v[0]-0.00007, v[1]-0.00007, 0);
+        glVertex3d(v[0]+0.00007, v[1]+0.00007, 0);
+        glVertex3d(v[0]+0.00007, v[1]+0.00007, h);
+        glVertex3d(v[0]-0.00007, v[1]-0.00007, h);
+        
+        //glVertex3f(v[0], v[1], 0); // kbfu
+        //glVertex3f(v[0], v[1], log(fabs(cv[1]))*0.0005); // kbfu
+      }*/
+      else if (va->num_dimensions == 2) glVertex2fv(v);
+      else if (va->num_dimensions == 3) glVertex3fv(v);
+      else if (va->num_dimensions == 4) glVertex4fv(v);
     }
     
     glEnd();

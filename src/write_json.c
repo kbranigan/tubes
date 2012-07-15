@@ -64,8 +64,8 @@ int write_json(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * p
       for (i = 0 ; i < shape->num_vertex_arrays ; i++)
       {
         struct VertexArray * va = &shape->vertex_arrays[i];
-        fprintf(fp, "%s%s{%s", (i!=0?",":""), ((i!=0&&add_whitespace)?"\n":""), (add_whitespace ? "\n" : ""));
-        fprintf(fp, "%s\"array_type\":\"%d\",%s", (add_whitespace ? "    " : ""), va->array_type, (add_whitespace ? "\n" : ""));
+        fprintf(fp, "%s{%s", (i!=0?",":""), (add_whitespace ? "\n" : ""));
+        fprintf(fp, "%s\"array_type\":\"%s\",%s", (add_whitespace ? "    " : ""), get_array_type_name(va->array_type), (add_whitespace ? "\n" : ""));
         fprintf(fp, "%s\"num_dimensions\":\"%d\",%s", (add_whitespace ? "    " : ""), va->num_dimensions, (add_whitespace ? "\n" : ""));
         fprintf(fp, "%s\"vertexs\":[", (add_whitespace ? "    " : ""));
         int j;

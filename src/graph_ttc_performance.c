@@ -12,12 +12,16 @@
 int graph_ttc_performance(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
   char distance_attribute[300] = "dist_line_192";
+  int distance_multiple = 1;
   int c;
-  while ((c = getopt(argc, argv, "a:")) != -1)
+  while ((c = getopt(argc, argv, "a:i")) != -1)
   switch (c)
   {
     case 'a':
       strncpy(distance_attribute, optarg, 300);
+      break;
+    case 'i':
+      distance_multiple = -1;
       break;
     default:
       abort();
@@ -45,7 +49,7 @@ int graph_ttc_performance(int argc, char ** argv, FILE * pipe_in, FILE * pipe_ou
       }
     }
     
-    float v[3] = { atof(get_attribute(shape, distance_attribute)), atof(get_attribute(shape, "reported_at")), 0 };
+    float v[3] = { atof(get_attribute(shape, distance_attribute)) * distance_multiple, atof(get_attribute(shape, "reported_at")), 0 };
     //float c[4] = { 0, 0, 0, 1 };
     //append_vertex2(line, v, c);
     

@@ -38,17 +38,20 @@ void get_chars(int count)
 
 int read_dem(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
-  char style_file[300] = "src/read_dem_elevation_style_defaults.txt";
+  char style_file[300] = "elevation_colors.csv";//src/read_dem_elevation_style_defaults.txt";
   char filename[300] = "";
   float water_level = 75;
   int set_invalid_data_to_water_level = 1;
   
   int c;
-  while ((c = getopt(argc, argv, "f:w:c:")) != -1)
+  while ((c = getopt(argc, argv, "f:w:c:s:")) != -1)
   switch (c)
   {
     case 'f':
       strncpy(filename, optarg, 300);
+      break;
+    case 's':
+      strncpy(style_file, optarg, 300);
       break;
     case 'w':
       water_level = atof(optarg);

@@ -27,7 +27,7 @@ int fft(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err
   int direction = 1; // default = forward
   float half_way = 500.0;
   int c;
-  while ((c = getopt(argc, argv, "b:f:d:c")) != -1)
+  while ((c = getopt(argc, argv, "b:f:d:h:")) != -1)
   switch (c)
   {
     case 'b': buffer_len = atoi(optarg); break;

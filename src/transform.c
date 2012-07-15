@@ -63,7 +63,7 @@ int transform(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pi
       struct VertexArray * va = &shape->vertex_arrays[array_index];
       for (i = 0 ; i < shape->num_vertexs ; i++)
       {
-        v = get_vertex(shape, 0, i);
+        v = get_vertex(shape, array_index, i);
         for (j = 0 ; j < va->num_dimensions && j < num_offsets ; j++)
           v[j] += offsets[j];
         for (j = 0 ; j < va->num_dimensions && j < num_scales ; j++)
