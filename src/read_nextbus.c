@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <curl/curl.h>
+#include <libxml/xpath.h>
 #include <libxml/xmlreader.h>
 
 #define SCHEME_CREATE_MAIN
@@ -48,24 +49,12 @@ int read_nextbus(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE *
   while ((c = getopt(argc, argv, "a:t:n:i:r:")) != -1)
   switch (c)
   {
-    case 'a':
-      strncpy(agency, optarg, 10);
-      break;
-    case 't':
-      last_vehicles_update = atol(optarg);
-      break;
-    case 'n':
-      num_requests = atol(optarg);
-      break;
-    case 'i':
-      interval = atol(optarg);
-      break;
-    case 'r':
-      routeTag = malloc(10);
-      strncpy(routeTag, optarg, 10);
-      break;
-    default:
-      abort();
+    case 'a': strncpy(agency, optarg, 10); break;
+    case 't': last_vehicles_update = atol(optarg); break;
+    case 'n': num_requests = atol(optarg); break;
+    case 'i': interval = atol(optarg); break;
+    case 'r': routeTag = malloc(10); strncpy(routeTag, optarg, 10); break;
+    default: abort();
   }
   
   CURL *curl = NULL;
