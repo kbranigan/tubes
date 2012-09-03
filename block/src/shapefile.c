@@ -19,6 +19,8 @@ int main(int argc, char ** argv)
   static long specific_part_id = -1;
   static char filename[1000] = "";
   
+  int number_of_rows = 0;
+  
   static int debug = 0;
   
   char * allcolumns = NULL;
@@ -36,6 +38,7 @@ int main(int argc, char ** argv)
       {"part_id", required_argument, 0, 'p'},
       {"filename", required_argument, 0, 'f'},
       {"columns", required_argument, 0, 'c'},
+      {"number_of_rows", required_argument, 0, 'n'},
       {"debug", no_argument, &debug, 1},
       {0, 0, 0, 0}
     };
@@ -51,6 +54,7 @@ int main(int argc, char ** argv)
       case 'p': specific_part_id = atoi(optarg); break;
       case 'f': strncpy(filename, optarg, sizeof(filename)); break;
       case 'c': { allcolumns = malloc(strlen(optarg)+1); strncpy(allcolumns, optarg, strlen(optarg)); break; }
+      case 'n': number_of_rows = atoi(optarg); break;
       default: abort();
     }
   }
@@ -110,9 +114,9 @@ int main(int argc, char ** argv)
   block = add_double_attribute(block, "min_y", min_y);
   block = add_double_attribute(block, "max_y", max_y);
   
-  block = add_int_column(block, "row_id");
-  block = add_int_column(block, "part_id");
-  block = add_int_column(block, "part_type");
+  block = add_int_column(block, "shape_row_id");
+  block = add_int_column(block, "shape_part_id");
+  block = add_int_column(block, "shape_part_type");
   block = add_double_column(block, "x");
   block = add_double_column(block, "y");
   if (include_z) block = add_double_column(block, "z");
@@ -125,6 +129,17 @@ int main(int argc, char ** argv)
     int value_length;
     DBFFieldType field_type = DBFGetFieldInfo(dbf, column_id, name, &value_length, NULL);
     
+    int32_t max_string_length = 0;
+    if (field_type == FTString)
+    {
+      int shape_row_id = 0;
+      for (shape_row_id = 0 ; shape_row_id < nRecordCount ; shape_row_id++)
+      {
+        char * value = (char*)DBFReadStringAttribute(dbf, shape_row_id, column_id);
+        if (strlen(value) > max_string_length) max_string_length = strlen(value);
+      }
+    }
+    
     int found = 0;
     if (num_specific_columns > 0)
     {
@@ -134,31 +149,33 @@ int main(int argc, char ** argv)
       if (found == 0) continue;
     }
     
-    if (field_type == FTString)      block = add_string_column_with_length(block, name, value_length);
+    if (field_type == FTString)      block = add_string_column_with_length(block, name, max_string_length);
     else if (field_type = FTInteger) block = add_int_column(block, name);
     else if (field_type = FTDouble)  block = add_double_column(block, name);
     else { fprintf(stderr, "%s: unknown field type (%d) encountered\n", argv[0], field_type); abort(); }
   }
   
-  fprintf(stderr, "block->num_columns = %d\n", block->num_columns);
-  
-  int row_id = 0;
+  int shape_row_id = 0;
   int num_rows = 0;
-  for (row_id = 0 ; row_id < nRecordCount ; row_id++)
+  for (shape_row_id = 0 ; shape_row_id < nRecordCount ; shape_row_id++)
   {
-    SHPObject * shape = SHPReadObject(shp, row_id);
+    SHPObject * shape = SHPReadObject(shp, shape_row_id);
     num_rows += shape->nVertices;
     SHPDestroyObject(shape);
   }
   
+  if (number_of_rows != 0) num_rows = number_of_rows;
+  
   block = set_num_rows(block, num_rows);
   
-  int offset = 0;
-  for (row_id = 0 ; row_id < nRecordCount ; row_id++)
+  //block = column_string_set_length(block, find_column_id_by_name(block, "ADDRESS"), 10);
+  
+  int row_id = 0;
+  for (shape_row_id = 0 ; shape_row_id < nRecordCount ; shape_row_id++)
   {
-    if (specific_row_id != -1 && row_id != specific_row_id) continue;
+    if (specific_row_id != -1 && shape_row_id != specific_row_id) continue;
     
-    SHPObject * shape = SHPReadObject(shp, row_id);
+    SHPObject * shape = SHPReadObject(shp, shape_row_id);
     
     if (debug) fprintf(stderr, "shape->nParts = %d\n", shape->nParts);
     int part_id = 0;
@@ -176,14 +193,14 @@ int main(int argc, char ** argv)
         
         int field_id = 0;
         
-        set_cell(block, offset, field_id++, &row_id);
-        set_cell(block, offset, field_id++, &part_id);
-        set_cell(block, offset, field_id++, &part_type);
+        set_cell(block, row_id, field_id++, &shape_row_id);
+        set_cell(block, row_id, field_id++, &part_id);
+        set_cell(block, row_id, field_id++, &part_type);
         
-        double x = shape->padfX[point_id]; set_cell(block, offset, field_id++, &x);
-        double y = shape->padfY[point_id]; set_cell(block, offset, field_id++, &y);
-        if (include_z) { double z = shape->padfZ[point_id]; set_cell(block, offset, field_id++, &z); }
-        if (include_m) { double m = shape->padfM[point_id]; set_cell(block, offset, field_id++, &m); }
+        double x = shape->padfX[point_id]; set_cell(block, row_id, field_id++, &x);
+        double y = shape->padfY[point_id]; set_cell(block, row_id, field_id++, &y);
+        if (include_z) { double z = shape->padfZ[point_id]; set_cell(block, row_id, field_id++, &z); }
+        if (include_m) { double m = shape->padfM[point_id]; set_cell(block, row_id, field_id++, &m); }
         
         if (x > max_x) max_x = x; if (x < min_x) min_x = x;
         if (y > max_y) max_y = y; if (y < min_y) min_y = y;
@@ -200,24 +217,26 @@ int main(int argc, char ** argv)
           {
             int specific_column_id;
             for (specific_column_id = 0 ; specific_column_id < num_specific_columns ; specific_column_id++)
-              if (strcmp(specific_columns[specific_column_id], name)==0) found = 1;
-            if (found == 0) continue;
+              if (strcmp(specific_columns[specific_column_id], name)==0)
+                found = 1;
+            if (found == 0)
+              continue;
           }
           
           switch (field_type) {
             case FTString: {
-              void * value = (void*)DBFReadStringAttribute(dbf, row_id, column_id);
-              set_cell(block, offset, field_id++, value);
+              void * value = (void*)DBFReadStringAttribute(dbf, shape_row_id, column_id);
+              set_cell(block, row_id, field_id++, value);
               break;
             }
             case FTInteger: {
-              int32_t value = DBFReadIntegerAttribute(dbf, row_id, column_id);
-              set_cell(block, offset, field_id++, &value);
+              int32_t value = DBFReadIntegerAttribute(dbf, shape_row_id, column_id);
+              set_cell(block, row_id, field_id++, &value);
               break;
             }
             case FTDouble: {
-              double value = DBFReadDoubleAttribute(dbf, row_id, column_id);
-              set_cell(block, offset, field_id++, &value);
+              double value = DBFReadDoubleAttribute(dbf, shape_row_id, column_id);
+              set_cell(block, row_id, field_id++, &value);
               break;
             }
             default: {
@@ -226,17 +245,19 @@ int main(int argc, char ** argv)
             }
           }
         }
-        offset++;
-        
+        row_id++;
+        if (number_of_rows != 0 && row_id >= number_of_rows) break;
       }
+      if (number_of_rows != 0 && row_id >= number_of_rows) break;
     }
     SHPDestroyObject(shape);
+    if (number_of_rows != 0 && row_id >= number_of_rows) break;
   }
   
-  //memcpy((void*)attribute_get_value(get_attribute(block, find_attribute_id_by_name(block, "min_x"))), &min_x, sizeof(double));
-  //memcpy((void*)attribute_get_value(get_attribute(block, find_attribute_id_by_name(block, "max_x"))), &max_x, sizeof(double));
-  //memcpy((void*)attribute_get_value(get_attribute(block, find_attribute_id_by_name(block, "min_y"))), &min_y, sizeof(double));
-  //memcpy((void*)attribute_get_value(get_attribute(block, find_attribute_id_by_name(block, "max_y"))), &max_y, sizeof(double));
+  memcpy((void*)attribute_get_value(get_attribute_by_name(block, "min_x")), &min_x, sizeof(double));
+  memcpy((void*)attribute_get_value(get_attribute_by_name(block, "max_x")), &max_x, sizeof(double));
+  memcpy((void*)attribute_get_value(get_attribute_by_name(block, "min_y")), &min_y, sizeof(double));
+  memcpy((void*)attribute_get_value(get_attribute_by_name(block, "max_y")), &max_y, sizeof(double));
   
   write_block(stdout, block);
   fprintf(stderr, "%s: Finished.  %d rows, %d columns read from '%s', enjoy!\n", argv[0], block->num_rows, block->num_columns, filename);

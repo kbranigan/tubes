@@ -55,9 +55,9 @@ int main(int argc, char ** argv)
       if (rules == NULL) fprintf(stderr, "rules descriptor file invalid block file\n");
       else
       {
-        if (find_column_id_by_name(rules, "red")   == -1) fprintf(stderr, "rules descriptor has no 'red' field\n");
-        if (find_column_id_by_name(rules, "green") == -1) fprintf(stderr, "rules descriptor has no 'green' field\n");
-        if (find_column_id_by_name(rules, "blue")  == -1) fprintf(stderr, "rules descriptor has no 'blue' field\n");
+        if (get_column_id_by_name(rules, "red")   == -1) fprintf(stderr, "rules descriptor has no 'red' field\n");
+        if (get_column_id_by_name(rules, "green") == -1) fprintf(stderr, "rules descriptor has no 'green' field\n");
+        if (get_column_id_by_name(rules, "blue")  == -1) fprintf(stderr, "rules descriptor has no 'blue' field\n");
         if (rules->num_columns < 2) fprintf(stderr, "rules descriptor doesn't have enough columns\n");
         if (rules->num_rows < 1)    fprintf(stderr, "rules descriptor doesn't have enough rows\n");
       }
@@ -76,10 +76,10 @@ int main(int argc, char ** argv)
       int i;
       for (i = 0 ; i < 4 ; i++)
       {
-        rules_color_column_ids[i] = find_column_id_by_name(rules, colors[i]);
-        if (rules_color_column_ids[i] != -1 && find_column_id_by_name(block, colors[i]) == -1)
+        rules_color_column_ids[i] = get_column_id_by_name(rules, colors[i]);
+        if (rules_color_column_ids[i] != -1 && get_column_id_by_name(block, colors[i]) == -1)
           block = add_float_column(block, colors[i]);
-        block_color_column_ids[i] = find_column_id_by_name(block, colors[i]);
+        block_color_column_ids[i] = get_column_id_by_name(block, colors[i]);
       }
       
       int rule_column_id;

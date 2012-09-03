@@ -37,7 +37,7 @@ int main(int argc, char ** argv)
   struct Block * block = NULL;
   while ((block = read_block(stdin)))
   {
-    int column_id = find_column_id_by_name(block, column_name);
+    int column_id = get_column_id_by_name(block, column_name);
     if (column_id != -1)
     {
       struct Column * column = get_column(block, column_id);

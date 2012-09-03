@@ -36,7 +36,7 @@ int main(int argc, char ** argv)
     };
     
     int option_index = 0;
-    c = getopt_long(argc, argv, "d:c:n:l:", long_options, &option_index);
+    c = getopt_long(argc, argv, "c:n:", long_options, &option_index);
     if (c == -1) break;
     
     switch (c)
@@ -67,12 +67,6 @@ int main(int argc, char ** argv)
     ptr = strtok(NULL, ",");
   }
   
-  int i;
-  for (i = 0 ; i < num_columns ; i++)
-  {
-    fprintf(stderr, "%d: %s\n", i, columns[i]);
-  }
-  
   struct Block * block = NULL;
   while ((block = read_block(stdin)))
   {
@@ -80,7 +74,7 @@ int main(int argc, char ** argv)
     int i;
     for (i = 0 ; i < num_columns ; i++)
     {
-      column_ids[i] = find_column_id_by_name(block, columns[i]);
+      column_ids[i] = get_column_id_by_name(block, columns[i]);
       if (column_ids[i] == -1) fprintf(stderr, "column %s not found\n", columns[i]);
       struct Column * column = get_column(block, column_ids[i]);
       length += get_type_size(column->type) + 1; // (plus one for space and term-null)
@@ -100,8 +94,6 @@ int main(int argc, char ** argv)
         strncat(cell, " ", length);
         strncat(cell, get_cell(block, row_id, column_ids[column_id]), length);
       }
-      
-      //set_cell(block, row_id, block->num_columns-1, temp_value);
     }
     
     write_block(stdout, block);

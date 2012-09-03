@@ -6,26 +6,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#define NO_RUBY // kbfu
-
-#ifndef NO_RUBY
-#include <ruby.h>
-#ifdef HAVE_RUBY_ENCODING_H
-# include <ruby/encoding.h>
-# define ENCODED_STR_NEW2(str, encoding) \
-   ({ \
-    VALUE _string = rb_str_new2((const char *)str); \
-     int _enc = rb_enc_find_index(encoding); \
-     rb_enc_associate_index(_string, _enc); \
-     _string; \
-   })
-#else
-# define ENCODED_STR_NEW2(str, encoding) \
-   rb_str_new2((const char *)str)
-#endif
-#else
-#define Qnil 0
-#endif
 
 #define UTF_8        1
 #define UTF_16_BIG   2
@@ -382,10 +362,6 @@ void free_notices(struct sNotices * notices)
 }
 
 
-#ifndef NO_RUBY
-VALUE Bsv_read(const char * filename, int instruction)
-{
-#else
 struct Block * bsv(char * filename, int instruction)
 {
   //const char * filename = "../colors_for_streets.csv";
@@ -394,10 +370,6 @@ struct Block * bsv(char * filename, int instruction)
   
   struct Block * block = new_block();
   
-  block = add_string_attribute(block, "source", filename);
-  
-#endif
-
   clock_t start;
   start = clock();
   
@@ -413,7 +385,7 @@ struct Block * bsv(char * filename, int instruction)
   
   FILE * fp = fopen(filename, "rb");
   
-  if (fp == NULL) { add_notice(&errors, "Could not open file"); fprintf(stderr, "Could not open file\n"); return Qnil; } // Qnil is 0 if NO_RUBY
+  if (fp == NULL) { add_notice(&errors, "Could not open file"); fprintf(stderr, "Could not open file\n"); return 0; }
   
   int c1 = fgetc(fp);
   int c2 = fgetc(fp);
@@ -528,6 +500,7 @@ struct Block * bsv(char * filename, int instruction)
       free_character_distribution(&counts);
     }
     free(line);
+    if (num_lines_total > 10000) break;
   }
   
   int min_num_null_fields = 100000;
@@ -590,39 +563,26 @@ struct Block * bsv(char * filename, int instruction)
   
   if (instruction == EXTRACT_HEADER)
   {
-    if (header_line_number == -1) return Qnil;
-  
-    #ifndef NO_RUBY
-    VALUE header_row_rb = rb_ary_new();
-    #endif
+    if (header_line_number == -1) return 0;
     
     int j;
     for (j = 0 ; j < header_row.num_fields ; j++)
     {
-      #ifndef NO_RUBY
-      if (header_row.fields[j] == NULL)
-        rb_ary_push(header_row_rb, ENCODED_STR_NEW2("", "UTF-8"));
-      else
-        rb_ary_push(header_row_rb, ENCODED_STR_NEW2(header_row.fields[j], "UTF-8"));
-      #else
       printf("%s%s", header_row.fields[j], (j == header_row.num_fields - 1) ? "\n" : "|");
-      #endif
     }
     
-    #ifndef NO_RUBY
-    return header_row_rb;
-    #else
     return 0;
-    #endif
   }
   else if (instruction == EXTRACT_DATA)
   {
     int i;
     for(i = 0 ; i < header_row.num_fields ; i++)
     {
-      block = add_string_column_with_length(block, header_row.fields[i], 20); // major kbfu, allow for varchars (wow)
-      //fprintf(stderr, "header_row %s !! \n", header_row.fields[i]);
+      block = add_string_column_with_length(block, header_row.fields[i], 60); // major kbfu oh well
     }
+    
+    int32_t * max_column_widths = malloc(sizeof(int32_t)*header_row.num_fields);
+    memset(max_column_widths, 0, sizeof(int32_t)*header_row.num_fields);
     
     while (!feof(fp))
     {
@@ -634,131 +594,65 @@ struct Block * bsv(char * filename, int instruction)
       struct sRow row = { 0, NULL };
       get_bsv_row(&row, line, row_stats[0].delimiter, 0);
       
-      #ifndef NO_RUBY
-      if (instruction == EXTRACT_DATA && rb_block_given_p())
-      {
-        int j;
-        VALUE row_rb = rb_ary_new();
-        for (j = 0 ; j < row.num_fields ; j++)
-          if (row.fields[j] == NULL)
-            rb_ary_push(row_rb, ENCODED_STR_NEW2("", "UTF-8"));
-          else
-            rb_ary_push(row_rb, ENCODED_STR_NEW2(row.fields[j], "UTF-8"));
-        
-        rb_yield(row_rb);
-      }
-      #else
       if (instruction == EXTRACT_DATA)
       {
         block = add_row(block);
         int j;
         for (j = 0 ; j < row.num_fields && j < block->num_columns ; j++)
-          set_cell(block, block->num_rows-1, j, row.fields[j]);
+        {
+          if (row.fields[j] != NULL)
+          {
+            if (strlen(row.fields[j]) > 60)
+            {
+              fprintf(stderr, "strlen(row[%d].fields[%d]) = %ld\n", block->num_rows, j, strlen(row.fields[j]));
+              return block;
+            }
+            if (strlen(row.fields[j]) > max_column_widths[j])
+              max_column_widths[j] = strlen(row.fields[j]);
+            
+            set_cell(block, block->num_rows-1, j, row.fields[j]);
+          }
+          else
+            set_cell(block, block->num_rows-1, j, NULL);
+        }
+        if (block->num_rows % 100000 == 0) fprintf(stderr, "%d rows\n", block->num_rows);
       }
-      /*if (instruction == EXTRACT_DATA && num_content_rows == 1)
-      {
-        fprintf(stderr, "row%d = ", num_content_rows);
-        int j;
-        for (j = 0 ; j < row.num_fields ; j++)
-          fprintf(stderr, "%s%s", row.fields[j], (j == row.num_fields - 1) ? "\n" : "|");
-      }*/
-      #endif
+      
       free(line);
       free_row(&row);
     }
+    
+    struct Block * condensed_block = new_block();
+    condensed_block = add_string_attribute(condensed_block, "source", filename);
+    for (i = 0 ; i < block->num_columns ; i++)
+    {
+      condensed_block = add_string_column_with_length(condensed_block, column_get_name(get_column(block, i)), max_column_widths[i]);
+    }
+    
+    condensed_block = set_num_rows(condensed_block, block->num_rows);
+    
+    for (i = 0 ; i < block->num_rows ; i++)
+    {
+      int j;
+      for (j = 0 ; j < block->num_columns ; j++)
+      {
+        set_cell(condensed_block, i, j, get_cell(block, i, j));
+      }
+    }
+    
+    free_block(block);
+    block = condensed_block;
+    free(max_column_widths);
   }
   
   free_row(&header_row);
   
   num_row_stats = 0;
   free(row_stats);
-  /*
-  if (ferror(fp)) add_notice(&errors, "Error reading from file");
   
-  if (number_of_utf8_extended_characters > 0)
-    add_notice(&notices, "number_of_utf8_extended_characters = %d", number_of_utf8_extended_characters);
-  
-  if (header_line_number != -1) add_notice(&notices, "Header on line: %d", header_line_number);
-  else add_notice(&notices, "Alpha analysis suggests no header");
-  
-  if (number_of_incorrect_number_of_fields > 0) add_notice(&errors, "Number of rows with an incorrect number of fields: %d", number_of_incorrect_number_of_fields);
-  if (num_blank_lines > 0) add_notice(&notices, "Number of blank lines: %d", num_blank_lines);
-  if (num_comment_lines > 0) add_notice(&notices, "Number of comments: %d", num_comment_lines);
-  
-  add_notice(&notices, "Number of content rows: %d", num_content_rows);
-  add_notice(&notices, "Number of lines total: %d", num_lines_total);
-  
-  clock_t end;
-  end = clock();
-  
-  add_notice(&notices, "Appoximate execution time: %f", (float)(end-start)/(float)CLOCKS_PER_SEC);
-  
-  #ifndef NO_RUBY
-  VALUE ret = rb_hash_new();
-  rb_hash_aset(ret, ENCODED_STR_NEW2("file_name", "UTF-8"), ENCODED_STR_NEW2(filename, "UTF-8"));
-  
-  if (errors.num_notices)
-  {
-    VALUE ret2 = rb_ary_new();
-    for (i = 0 ; i < errors.num_notices ; i++)
-      rb_ary_push(ret2, ENCODED_STR_NEW2(errors.notices[i], "UTF-8"));
-    rb_hash_aset(ret, ENCODED_STR_NEW2("errors", "UTF-8"), ret2);
-  }
-  #else
-  if (errors.num_notices > 0)
-    fprintf(stderr, "ERRORS:\n");
-  for (i = 0 ; i < errors.num_notices ; i++)
-    fprintf(stderr, "  %d: %s\n", i, errors.notices[i]);
-  #endif
-  free_notices(&errors);
-  
-  #ifndef NO_RUBY
-  if (notices.num_notices)
-  {
-    VALUE ret3 = rb_ary_new();
-    for (i = 0 ; i < notices.num_notices ; i++)
-      rb_ary_push(ret3, ENCODED_STR_NEW2(notices.notices[i], "UTF-8"));
-    rb_hash_aset(ret, ENCODED_STR_NEW2("notices", "UTF-8"), ret3);
-  }
-  #else
-  if (notices.num_notices > 0)
-    fprintf(stderr, "Notices:\n");
-  for (i = 0 ; i < notices.num_notices ; i++)
-    fprintf(stderr, "  %d: %s\n", i, notices.notices[i]);
-  int ret = 0;
-  #endif
-  */
   free_notices(&notices);
   
   fclose(fp);
   
-  #ifndef NO_RUBY
-  return ret;
-  #else
   return block;
-  #endif
 }
-
-#ifndef NO_RUBY
-VALUE method_yield_data(VALUE self, VALUE file)
-{
-  if (TYPE(file) != T_STRING) rb_raise(rb_eArgError, "filename is not a string, but instead of type '%d' and should be '%d' (in C)", TYPE(file), T_STRING);
-  
-  return Bsv_read(rb_string_value_cstr(&file), EXTRACT_DATA);
-}
-
-VALUE method_extract_header(VALUE self, VALUE file)
-{
-  if (TYPE(file) != T_STRING) rb_raise(rb_eArgError, "filename is not a string, but instead of type '%d' and should be '%d' (in C)", TYPE(file), T_STRING);
-  
-  return Bsv_read(rb_string_value_cstr(&file), EXTRACT_HEADER);
-}
-
-void Init_bsv()
-{
-  VALUE Bsv_module = rb_define_module("Bsv");
-  rb_define_singleton_method(Bsv_module, "read", method_yield_data, 1);
-  rb_define_singleton_method(Bsv_module, "foreach", method_yield_data, 1);
-  rb_define_singleton_method(Bsv_module, "extract_header", method_extract_header, 1);
-}
-#endif

@@ -23,14 +23,17 @@ struct Block * read_old_block(FILE * fp)
   
   block = realloc_block(block);
   
-  if (fread((char*)block + sizeof(struct Block) + sizeof(int32_t)*block->num_attributes,
-      block->attributes_bsize - sizeof(int32_t)*block->num_attributes, 1, fp) != 1) { fprintf(stderr, "fread block failed (error 2)\n"); return NULL; }
+  if (block->num_attributes > 0)
+    if (fread((char*)block + sizeof(struct Block) + sizeof(int32_t)*block->num_attributes,
+      block->attributes_bsize - sizeof(int32_t)*block->num_attributes, 1, fp) != 1) { fprintf(stderr, "fread block failed at attributes (error 2)\n"); return NULL; }
   
-  if (fread((char*)block + sizeof(struct Block) + block->attributes_bsize + sizeof(int32_t)*2*block->num_columns,
-      block->columns_bsize - sizeof(int32_t)*2*block->num_columns, 1, fp) != 1) { fprintf(stderr, "fread block failed (error 2)\n"); return NULL; }
+  if (block->num_columns > 0)
+    if (fread((char*)block + sizeof(struct Block) + block->attributes_bsize + sizeof(int32_t)*2*block->num_columns,
+      block->columns_bsize - sizeof(int32_t)*2*block->num_columns, 1, fp) != 1) { fprintf(stderr, "fread block failed at columns (error 2)\n"); return NULL; }
   
-  if (fread((char*)block + sizeof(struct Block) + block->attributes_bsize + block->columns_bsize, 
-      block->data_bsize, 1, fp) != 1) { fprintf(stderr, "fread block failed (error 2)\n"); return NULL; }
+  if (block->num_rows > 0)
+    if (fread((char*)block + sizeof(struct Block) + block->attributes_bsize + block->columns_bsize, 
+      block->data_bsize, 1, fp) != 1) { fprintf(stderr, "fread block failed at data (error 2)\n"); return NULL; }
   
   int32_t * attribute_offsets = get_attribute_offsets(block);
   
@@ -44,14 +47,15 @@ struct Block * read_old_block(FILE * fp)
   
   int32_t * column_offsets = get_column_offsets(block);
   int32_t * cell_offsets = get_cell_offsets(block);
-  cell_offsets[0] = 0;
   
   int o = 0;
   struct Column * column = get_first_column(block);
   for (i = 0 ; i < block->num_columns ; i++)
   {
     cell_offsets[i] = o;
-    o += get_type_size(column->type);
+    if (column_is_string(column)) o += column->type;
+    else o += get_type_size(column->type);
+    
     column_offsets[i] = (int32_t)((char*)column - (char*)block - sizeof(struct Block) - block->attributes_bsize);
     column = get_next_column(block, column);
   }

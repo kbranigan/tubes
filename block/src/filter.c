@@ -12,7 +12,7 @@ int main(int argc, char ** argv)
   
   static char column_name[1000] = "";
   static char value[1000] = "";
-  static char operator[10] = "IS";
+  static char operator[10] = "IS"; // IS vs NOT
   static int output_header = 1;
   static int debug = 0;
   
@@ -42,15 +42,14 @@ int main(int argc, char ** argv)
     }
   }
   
-  if (column_name[0] == 0) { fprintf(stderr, "%s: column required\n", argv[0]); exit(0); }
-  if (value[0] == 0) { fprintf(stderr, "%s: value required\n", argv[0]); exit(0); }
-  if (operator[0] == 0) { fprintf(stderr, "%s: operator required\n", argv[0]); exit(0); }
+  if (column_name[0] == 0 || value[0] == 0 || operator[0] == 0)
+  { fprintf(stderr, "USAGE: %s --column=\"FULL_ADDRESS\" --value=\"29 CAMDEN ST\"\n", argv[0]); exit(0); }
   
   int i,j;
   struct Block * block = NULL;
   while ((block = read_block(stdin)))
   {
-    int column_id = find_column_id_by_name(block, column_name);
+    int column_id = get_column_id_by_name(block, column_name);
     if (column_id == -1)
     {
       fprintf(stderr, "column '%s' not found.\n", column_name);
@@ -59,7 +58,7 @@ int main(int argc, char ** argv)
       continue;
     }
     struct Column * column = get_column(block, column_id);
-    if (!column_is_string(column))
+    if (!column_is_string(column) && column->type != INT_TYPE)
     {
       fprintf(stderr, "column '%s' is not a string (only string based filtering supported for now).\n", column_name);
       write_block(stdout, block);
@@ -74,20 +73,32 @@ int main(int argc, char ** argv)
       newblock = _add_attribute(newblock, attr->type, attribute_get_name(attr), attribute_get_value(attr));//&attr->name, &attr->name + attr->name_length);
     }
     
+    int ivalue;
+    if (column->type == INT_TYPE) ivalue = atoi(value);
+    
     for (i = 0 ; i < block->num_rows ; i++)
     {
       char * cell = (char*)get_cell(block, i, column_id);//(get_row(block, i)+column_offset);
       
-      if ((strcmp(operator, "NOT")==0 && strncmp(value, cell, column->type) != 0) || 
-          (strcmp(operator, "IS")==0 && strncmp(value, cell, column->type) == 0))
+      if (column->type == INT_TYPE)
+      {
+        if ((strcmp(operator, "NOT")==0 && (*(int32_t*)cell) != ivalue) || 
+            (strcmp(operator, "IS")==0  && (*(int32_t*)cell) == ivalue))
         newblock->num_rows++;
+      }
+      else
+      {
+        if ((strcmp(operator, "NOT")==0 && strncmp(value, cell, column->type) != 0) || 
+            (strcmp(operator, "IS")==0  && strncmp(value, cell, column->type) == 0))
+        newblock->num_rows++;
+      }
     }
-    
     int new_num_rows = newblock->num_rows;
     newblock->num_rows = 0;
+    fprintf(stderr, "new_num_rows = %d\n", new_num_rows);
     
     char temp[1000];
-    sprintf(temp, "'%s' => '%s' (removing %d rows)", column_name, value, block->num_rows - new_num_rows);
+    sprintf(temp, "'%s' %s '%s' (removing %d rows)", column_name, operator, value, block->num_rows - new_num_rows);
     newblock = add_string_attribute(newblock, "filter", temp);
     
     for (i = 0 ; i < block->num_columns ; i++)
@@ -104,11 +115,23 @@ int main(int argc, char ** argv)
     {
       char * cell = (char*)get_cell(block, i, column_id); //(get_row(block, row_id)+column_offset);
       
-      if ((strcmp(operator, "NOT")==0 && strncmp(value, cell, column->type) != 0) || 
-          (strcmp(operator, "IS")==0 && strncmp(value, cell, column->type) == 0))
+      if (column->type == INT_TYPE)
       {
-        memcpy(get_row(newblock, newblock_row_id), get_row(block, i), block->row_bsize);
-        newblock_row_id++;
+        if ((strcmp(operator, "NOT")==0 && *(int32_t*)cell != ivalue) || 
+            (strcmp(operator, "IS")==0  && *(int32_t*)cell == ivalue))
+        {
+          memcpy(get_row(newblock, newblock_row_id), get_row(block, i), block->row_bsize);
+          newblock_row_id++;
+        }
+      }
+      else
+      {
+        if ((strcmp(operator, "NOT")==0 && strncmp(value, cell, column->type) != 0) || 
+            (strcmp(operator, "IS")==0  && strncmp(value, cell, column->type) == 0))
+        {
+          memcpy(get_row(newblock, newblock_row_id), get_row(block, i), block->row_bsize);
+          newblock_row_id++;
+        }
       }
     }
     

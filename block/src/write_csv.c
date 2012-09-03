@@ -5,6 +5,7 @@ int main(int argc, char ** argv)
 {
   static char filename[1000] = "";
   static int output_header = 1;
+  static int output_quotes = 1;
   
   int c;
   while (1)
@@ -13,6 +14,8 @@ int main(int argc, char ** argv)
       {"filename", required_argument, 0, 'f'},
       {"header", no_argument, &output_header, 1},
       {"no-header", no_argument, &output_header, 0},
+      {"quotes", no_argument, &output_quotes, 1},
+      {"no-quotes", no_argument, &output_quotes, 0},
       {0, 0, 0, 0}
     };
     
@@ -52,7 +55,12 @@ int main(int argc, char ** argv)
   {
     int column_id = 0;
     for (column_id = 0 ; column_id < block->num_columns ; column_id++)
-      fprintf(fp, "%s\"%s\"", ((column_id == 0)?"":","), column_get_name(get_column(block, column_id)));
+    {
+      if (output_quotes)
+        fprintf(fp, "%s\"%s\"", ((column_id == 0)?"":","), column_get_name(get_column(block, column_id)));
+      else
+        fprintf(fp, "%s%s", ((column_id == 0)?"":","), column_get_name(get_column(block, column_id)));
+    }
     fprintf(fp, "\n");
   }
   
@@ -68,7 +76,12 @@ int main(int argc, char ** argv)
         case LONG_TYPE:   fprintf(fp, "%s%ld",    ((column_id == 0)?"":","), *(long*)get_cell(block, row_id, column_id)); break;
         case FLOAT_TYPE:  fprintf(fp, "%s%f",     ((column_id == 0)?"":","), *(float*)get_cell(block, row_id, column_id)); break;
         case DOUBLE_TYPE: fprintf(fp, "%s%lf",    ((column_id == 0)?"":","), *(double*)get_cell(block, row_id, column_id)); break;
-        default:          fprintf(fp, "%s\"%s\"", ((column_id == 0)?"":","), (char*)get_cell(block, row_id, column_id)); break;
+        default:
+          if (output_quotes)
+            fprintf(fp, "%s\"%s\"", ((column_id == 0)?"":","), (char*)get_cell(block, row_id, column_id));
+          else
+            fprintf(fp, "%s%s", ((column_id == 0)?"":","), (char*)get_cell(block, row_id, column_id));
+          break;
       }
     }
     fprintf(fp, "\n");

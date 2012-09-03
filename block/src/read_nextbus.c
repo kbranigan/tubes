@@ -124,10 +124,10 @@ int main(int argc, char ** argv)
               xmlTextReaderMoveToElement(reader);
               value = xmlTextReaderGetAttributeNo(reader, attribute_id);
               
-              int block_column_id = find_column_id_by_name(block, name);
+              int block_column_id = get_column_id_by_name(block, name);
               
-              if (strcmp(name, "lat")==0) block_column_id = find_column_id_by_name(block, "y");
-              else if (strcmp(name, "lon")==0) block_column_id = find_column_id_by_name(block, "x");
+              if (strcmp(name, "lat")==0) block_column_id = get_column_id_by_name(block, "y");
+              else if (strcmp(name, "lon")==0) block_column_id = get_column_id_by_name(block, "x");
               
               if (block_column_id != -1)
               {

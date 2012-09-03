@@ -35,6 +35,7 @@ int main(int argc, char ** argv)
   if (filename[0] == 0) { fprintf(stderr, "ERROR %s: filename not provided\n", argv[0]); return EXIT_FAILURE; }
   
   struct Block * block = bsv(filename, EXTRACT_DATA);
+  //block = bsv(filename, EXTRACT_DATA, block);
   write_block(stdout, block);
   free_block(block);
   

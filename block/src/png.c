@@ -232,9 +232,10 @@ int main(int argc, char ** argv)
   char sprite_file_name[1000] = "";
   unsigned int sprite_point_size = 8;
   float rotation = 0;
+  float zoom = 1;
   int num_attributes = -1;
   int c;
-  while ((c = getopt(argc, argv, "f:w:r:s:p:")) != -1)
+  while ((c = getopt(argc, argv, "f:w:r:s:p:z:")) != -1)
   switch (c)
   {
     case 'f': strncpy(file_name, optarg, sizeof(file_name)); break;
@@ -242,6 +243,7 @@ int main(int argc, char ** argv)
     case 'p': sprite_point_size = atoi(optarg); break;
     case 'w': texture_width = atoi(optarg); break;
     case 'r': rotation = atof(optarg); break;
+    case 'z': zoom = atof(optarg); break;
     default:  abort();
   }
   
@@ -259,103 +261,131 @@ int main(int argc, char ** argv)
     {FLT_MAX, -FLT_MAX}
   };
   
-  struct Block * block = read_block(stdin);
+  int texture_height = 0;
   
-  char coord_names[3][20] = { "x", "y", "z" };
-  char color_names[4][20] = { "red", "green", "blue", "alpha" };
-  
-  int block_coord_column_ids[3] = { -1, -1, -1 };
-  int block_color_column_ids[4] = { -1, -1, -1, -1 };
-  
-  int i;
-  for (i = 0 ; i < 3 ; i++)
-    block_coord_column_ids[i] = find_column_id_by_name(block, coord_names[i]);
-  for (i = 0 ; i < 4 ; i++)
-    block_color_column_ids[i] = find_column_id_by_name(block, color_names[i]);
-  
-  int rowc = find_column_id_by_name(block, "row_id");
-  int ptc = find_column_id_by_name(block, "part_type");
-  
-  int row_id;
-  for (row_id = 0 ; row_id < block->num_rows ; row_id++)
+  struct Block * block = NULL;
+  while ((block = read_block(stdin)))
   {
-    for (i = 0 ; i < 3 ; i++)
-    {
-      if (block_coord_column_ids[i] == -1) continue;
-      double coord = get_cell_as_double(block, row_id, block_coord_column_ids[i]);
-      if (coord < b[i][0]) b[i][0] = coord;
-      if (coord > b[i][1]) b[i][1] = coord;
-    }
-  }
-  
-  int texture_height = texture_width * ((b[1][1] - b[1][0]) / (b[0][1] - b[0][0]));
-  if (texture_height > texture_width * 1.5) texture_height = texture_width * 1.5;
-  
-  if (texture_width <= 1 || texture_height <= 1)
-  {
-    fprintf(stderr, "%s: ERROR, texture size: %d by %d\n", argv[0], texture_width, texture_height);
-    return 0;
-  }
-  
-  if (setup_offscreen_render(b[0][0], b[0][1], b[1][0], b[1][1], b[2][0], b[2][1], texture_width) != EXIT_SUCCESS)
-    return EXIT_FAILURE;
-  
-  glTranslatef((b[0][0]+b[0][1])/2.0, (b[1][0]+b[1][1])/2.0, 0);
-  glRotatef(180, 0, 0, 1);
-  glRotatef(rotation, 1, 0, 0);
-  glScalef(-1, 1, 1);
-  glTranslatef((b[0][0]+b[0][1])/-2.0, (b[1][0]+b[1][1])/-2.0, 0);
-  
-  glColor4f(0, 0, 0, 1);
-  GLuint tex_2d = 0;
-  if (sprite_file_name[0] != 0)
-  {
-    tex_2d = SOIL_load_OGL_texture(sprite_file_name, SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, 
-                SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y | SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_COMPRESS_TO_DXT);
-    if (tex_2d==0)
-      fprintf(stderr, "SOIL load file '%s' error: '%s'\n", sprite_file_name, SOIL_last_result());
-    else
-    {
-      //glEnable(GL_TEXTURE_2D);
-      glBindTexture(GL_TEXTURE_2D, tex_2d);
-      //glEnable(GL_POINT_SPRITE);
-      glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
-      glPointSize(sprite_point_size);
-      //glEnable(GL_BLEND);
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-      glColor4f(0, 0, 0, 0.1);
-    }
-  }
-  
-  int prev_shapefile_row_id = -1;
-  for (row_id = 0 ; row_id < block->num_rows ; row_id++)
-  {
-    double coord[3] = { 0, 0, 0 };
-    for (i = 0 ; i < 3 ; i++)
-      if (block_coord_column_ids[i] != -1)
-        coord[i] = get_cell_as_double(block, row_id, block_coord_column_ids[i]);
+    int32_t radius_column_id = get_column_id_by_name(block, "radius");
     
-    double color[4] = { 0, 0, 0, 1 };
+    char coord_names[3][20] = { "x", "y", "z" };
+    char color_names[4][20] = { "red", "green", "blue", "alpha" };
+    
+    int block_coord_column_ids[3] = { -1, -1, -1 };
+    int block_color_column_ids[4] = { -1, -1, -1, -1 };
+    
+    int i;
+    for (i = 0 ; i < 3 ; i++)
+      block_coord_column_ids[i] = get_column_id_by_name(block, coord_names[i]);
     for (i = 0 ; i < 4 ; i++)
-      if (block_color_column_ids[i] != -1)
-        color[i] = get_cell_as_double(block, row_id, block_color_column_ids[i]);
+      block_color_column_ids[i] = get_column_id_by_name(block, color_names[i]);
     
-    int shapefile_row_id = *(int*)get_cell(block, row_id, rowc);
-    int part_type = *(int*)get_cell(block, row_id, ptc);
-    if (shapefile_row_id != prev_shapefile_row_id)
+    int rowc = get_column_id_by_name(block, "shape_row_id");
+    if (rowc == -1) rowc = get_column_id_by_name(block, "row_id");
+    int ptc = get_column_id_by_name(block, "shape_part_type");
+    if (ptc == -1) ptc = get_column_id_by_name(block, "part_type");
+    
+    int row_id;
+    for (row_id = 0 ; row_id < block->num_rows ; row_id++)
     {
-      if (prev_shapefile_row_id != -1) glEnd();
-      if (ptc == -1 || part_type == 1) glBegin(GL_POINTS);
-      else if (part_type == 5) glBegin(GL_LINE_STRIP);
-      else { fprintf(stderr, "part_type == %d ?\n", part_type); exit(0); }
+      for (i = 0 ; i < 3 ; i++)
+      {
+        if (block_coord_column_ids[i] == -1) continue;
+        double coord = get_cell_as_double(block, row_id, block_coord_column_ids[i]);
+        if (coord < b[i][0]) b[i][0] = coord;
+        if (coord > b[i][1]) b[i][1] = coord;
+      }
     }
     
-    glVertex3dv(coord);
-    glColor4dv(color);
-    
-    prev_shapefile_row_id = shapefile_row_id;
+    if (texture_height == 0)
+    {
+      texture_height = texture_width * ((b[1][1] - b[1][0]) / (b[0][1] - b[0][0]));
+      if (texture_height > texture_width * 1.5) texture_height = texture_width * 1.5;
+      
+      if (texture_width <= 1 || texture_height <= 1)
+      {
+        fprintf(stderr, "%s: ERROR, texture size: %d by %d\n", argv[0], texture_width, texture_height);
+        return 0;
+      }
+      
+      if (setup_offscreen_render(b[0][0], b[0][1], b[1][0], b[1][1], b[2][0], b[2][1], texture_width) != EXIT_SUCCESS)
+        return EXIT_FAILURE;
+      
+      glTranslatef((b[0][0]+b[0][1])/2.0, (b[1][0]+b[1][1])/2.0, 0);
+      glRotatef(180, 0, 0, 1);
+      glRotatef(rotation, 1, 0, 0);
+      glScalef(-1, 1, 1);
+      if (zoom != 1) glScalef(zoom, zoom, zoom);
+      //glScalef(50,50,50);
+      glTranslatef((b[0][0]+b[0][1])/-2.0, (b[1][0]+b[1][1])/-2.0, 0);
+      
+      glColor4f(0, 0, 0, 1);
+      GLuint tex_2d = 0;
+      if (sprite_file_name[0] != 0)
+      {
+        tex_2d = SOIL_load_OGL_texture(sprite_file_name, SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, 
+                    SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y | SOIL_FLAG_NTSC_SAFE_RGB | SOIL_FLAG_COMPRESS_TO_DXT);
+        if (tex_2d==0)
+          fprintf(stderr, "SOIL load file '%s' error: '%s'\n", sprite_file_name, SOIL_last_result());
+        else
+        {
+          //glEnable(GL_TEXTURE_2D);
+          glBindTexture(GL_TEXTURE_2D, tex_2d);
+          //glEnable(GL_POINT_SPRITE);
+          glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
+          glPointSize(sprite_point_size);
+          //glEnable(GL_BLEND);
+          glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+          glColor4f(0, 0, 0, 0.1);
+        }
+      }
+    }
+    /*fprintf(stderr, "rowc = %d\n", rowc);
+    fprintf(stderr, "ptc = %d\n", ptc);
+    fprintf(stderr, "radius_column_id = %d\n", radius_column_id);*/
+    int prev_shapefile_row_id = -1;
+    for (row_id = 0 ; row_id < block->num_rows ; row_id++)
+    {
+      double coord[3] = { 0, 0, 0 };
+      for (i = 0 ; i < 3 ; i++)
+        if (block_coord_column_ids[i] != -1)
+          coord[i] = get_cell_as_double(block, row_id, block_coord_column_ids[i]);
+      
+      double color[4] = { 0, 0, 0, 1 };
+      for (i = 0 ; i < 4 ; i++)
+        if (block_color_column_ids[i] != -1)
+          color[i] = get_cell_as_double(block, row_id, block_color_column_ids[i]);
+      
+      if (rowc != -1)
+      {
+        int shapefile_row_id = *(int*)get_cell(block, row_id, rowc);
+        int part_type = *(int*)get_cell(block, row_id, ptc);
+        if (shapefile_row_id != prev_shapefile_row_id)
+        {
+          if (prev_shapefile_row_id != -1) glEnd();
+          if (ptc == -1 || part_type == 1) glBegin(GL_POINTS);
+          else if (part_type == 5) glBegin(GL_LINE_STRIP);
+          else { fprintf(stderr, "part_type == %d ?\n", part_type); exit(0); }
+        }
+        prev_shapefile_row_id = shapefile_row_id;
+        
+        glColor4dv(color);
+        glVertex3dv(coord);
+      }
+      else if (radius_column_id != -1)
+      {
+        double radius = get_cell_as_double(block, row_id, radius_column_id) * 0.5;
+        glColor4dv(color);
+        glBegin(GL_POLYGON);
+        float barf = 0;
+        for (barf = 0 ; barf < 3.14159265*2.0 ; barf+=0.314159265/2.0)
+          glVertex3d(coord[0]+cos(barf)*radius, coord[1]+sin(barf)*radius, coord[2]);
+        glVertex3d(coord[0]+cos(0)*radius, coord[1]+sin(0)*radius, coord[2]);
+        glEnd();
+      }
+    }
+    glEnd();
   }
-  glEnd();
   
   bitmap_t png;
   png.width = texture_width;

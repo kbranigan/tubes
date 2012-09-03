@@ -1,5 +1,5 @@
 
-all: \
+all:  \
 	bin/read_csv \
 	bin/write_csv \
 	bin/shapefile \
@@ -16,55 +16,97 @@ all: \
 	bin/read_mysql_table \
 	bin/upgrade_block \
 	bin/png \
+	bin/test \
 	bin/bounds
 
-bin/shapefile: src/block.c src/shapefile.c
-	gcc src/block.c src/shapefile.c ext/dbfopen.c ext/shpopen.c -o bin/shapefile
+kevin: \
+	kevin/toronto_addresses_and_tickets_join \
+	kevin/add_color_to_addresses_tickets_by_wday_and_time \
+	kevin/add_distance_to_nearest_neighbour \
+	kevin/create_edge_to_street \
+	kevin/host_ticket_data \
+	kevin/test
 
-bin/block_test: src/block.c src/block_test.c
-	gcc -g src/block.c src/block_test.c -o bin/block_test
+kevin/toronto_addresses_and_tickets_join: bin/block.o bin/block_hashtable.o kevin/toronto_addresses_and_tickets_join.c bin/hashtable.o
+	gcc -lm bin/block.o kevin/toronto_addresses_and_tickets_join.c bin/hashtable.o bin/block_hashtable.o -o kevin/toronto_addresses_and_tickets_join
 
-bin/inspect: src/block.c src/inspect.c
-	gcc src/block.c src/inspect.c -o bin/inspect
+kevin/add_color_to_addresses_tickets_by_wday_and_time: bin/block.o kevin/add_color_to_addresses_tickets_by_wday_and_time.c bin/hashtable.o
+	gcc -lm bin/block.o kevin/add_color_to_addresses_tickets_by_wday_and_time.c bin/hashtable.o -o kevin/add_color_to_addresses_tickets_by_wday_and_time
 
-bin/bounds: src/block.c src/bounds.c
-	gcc src/block.c src/bounds.c -o bin/bounds
+kevin/add_distance_to_nearest_neighbour: bin/block.o bin/block_kdtree.o kevin/add_distance_to_nearest_neighbour.c
+	g++ bin/block.o kevin/add_distance_to_nearest_neighbour.c bin/block_kdtree.o -o kevin/add_distance_to_nearest_neighbour
 
-bin/strcat: src/block.c src/strcat.c
-	gcc src/block.c src/strcat.c -o bin/strcat
+kevin/create_edge_to_street: bin/block.o bin/block_kdtree.o kevin/create_edge_to_street.c
+	g++ bin/block.o kevin/create_edge_to_street.c bin/block_kdtree.o -o kevin/create_edge_to_street
 
-bin/add_color: src/block.c src/add_color.c
-	gcc -g src/block.c src/add_color.c -o bin/add_color
+kevin/host_ticket_data: bin/block.o bin/block_kdtree.o ext/mongoose.c kevin/host_ticket_data.c
+	g++ -lpthread -ldl bin/block.o bin/block_kdtree.o ext/mongoose.c kevin/host_ticket_data.c -o kevin/host_ticket_data
 
-bin/nextbus: src/block.c src/nextbus.c
-	gcc src/block.c src/nextbus.c -o bin/nextbus -lcurl `xml2-config --cflags --libs`
+kevin/test: bin/block.o kevin/test.c bin/hashtable.o bin/block_kdtree.o
+	g++ bin/block.o kevin/test.c bin/hashtable.o bin/block_kdtree.o -o kevin/test
 
-bin/upgrade_block: src/block.c src/upgrade_block.c
-	gcc src/block.c src/upgrade_block.c -o bin/upgrade_block
+bin/hashtable.o: ext/hashtable.c
+	gcc ext/hashtable.c -c -o bin/hashtable.o
 
-bin/columns: src/block.c src/columns.c
-	gcc src/block.c src/columns.c -o bin/columns
+bin/block.o: src/block.c
+	gcc src/block.c -c -o bin/block.o
 
-bin/read_dem: src/block.c src/read_dem.c
-	gcc src/block.c src/read_dem.c -o bin/read_dem
+bin/block_hashtable.o: bin/block.o src/block_hashtable.c
+	gcc src/block_hashtable.c -c -o bin/block_hashtable.o
 
-bin/read_nextbus: src/block.c src/read_nextbus.c
-	gcc src/block.c src/read_nextbus.c -o bin/read_nextbus -lcurl `xml2-config --cflags --libs`
+bin/block_kdtree.o: bin/block.o src/block_kdtree.c
+	g++ src/block_kdtree.c -c -o bin/block_kdtree.o
 
-bin/read_csv: src/block.c src/read_csv.c src/bsv.c
-	gcc src/block.c src/read_csv.c -o bin/read_csv
+bin/shapefile: bin/block.o src/shapefile.c
+	gcc -lm bin/block.o src/shapefile.c ext/dbfopen.c ext/shpopen.c -o bin/shapefile
 
-bin/write_csv: src/block.c src/write_csv.c
-	gcc src/block.c src/write_csv.c -o bin/write_csv
+bin/block_test: bin/block.o src/block_test.c
+	gcc -lm bin/block.o src/block_test.c -o bin/block_test
 
-bin/filter: src/block.c src/filter.c
-	gcc src/block.c src/filter.c -o bin/filter
+bin/inspect: bin/block.o src/inspect.c
+	gcc -lm bin/block.o src/inspect.c -o bin/inspect
 
-bin/read_mysql: src/block.c src/read_mysql.c
-	gcc src/block.c src/read_mysql.c -o bin/read_mysql -I/usr/local/include/mysql -L/usr/local/lib/mysql -lmysqlclient
+bin/bounds: bin/block.o src/bounds.c
+	gcc -lm bin/block.o src/bounds.c -o bin/bounds
 
-bin/read_mysql_table: src/block.c src/read_mysql_table.c
-	gcc src/block.c src/read_mysql_table.c -o bin/read_mysql_table -I/usr/local/include/mysql -L/usr/local/lib/mysql -lmysqlclient
+bin/strcat: bin/block.o src/strcat.c
+	gcc -lm bin/block.o src/strcat.c -o bin/strcat
 
-bin/png: src/block.c src/png.c
-	gcc src/block.c src/png.c ../src/ext/SOIL/src/*.c -o bin/png -I../src/ext/SOIL/src -framework OpenGL -framework CoreFoundation -lpng
+bin/add_color: bin/block.o src/add_color.c
+	gcc -lm bin/block.o src/add_color.c -o bin/add_color
+
+bin/nextbus: bin/block.o src/nextbus.c
+	gcc -lm bin/block.o src/nextbus.c -o bin/nextbus -lcurl `xml2-config --cflags --libs`
+
+bin/upgrade_block: bin/block.o src/upgrade_block.c
+	gcc -lm bin/block.o src/upgrade_block.c -o bin/upgrade_block
+
+bin/columns: bin/block.o src/columns.c
+	gcc -lm bin/block.o src/columns.c -o bin/columns
+
+bin/read_dem: bin/block.o src/read_dem.c
+	gcc -lm bin/block.o src/read_dem.c -o bin/read_dem
+
+bin/read_nextbus: bin/block.o src/read_nextbus.c
+	gcc -lm bin/block.o src/read_nextbus.c -o bin/read_nextbus -lcurl `xml2-config --cflags --libs`
+
+bin/read_csv: bin/block.o src/read_csv.c src/bsv.c
+	gcc -lm bin/block.o src/read_csv.c -o bin/read_csv
+
+bin/write_csv: bin/block.o src/write_csv.c
+	gcc -lm bin/block.o src/write_csv.c -o bin/write_csv
+
+bin/filter: bin/block.o src/filter.c
+	gcc -lm bin/block.o src/filter.c -o bin/filter
+
+bin/test: bin/block.o src/test.c
+	gcc -lm bin/block.o src/test.c -o bin/test
+
+bin/read_mysql: bin/block.o src/read_mysql.c
+	gcc -lm bin/block.o src/read_mysql.c -o bin/read_mysql -I/usr/local/include/mysql -L/usr/local/lib/mysql -lmysqlclient
+
+bin/read_mysql_table: bin/block.o src/read_mysql_table.c
+	gcc -lm bin/block.o src/read_mysql_table.c -o bin/read_mysql_table -I/usr/local/include/mysql -L/usr/local/lib/mysql -lmysqlclient
+
+bin/png: bin/block.o src/png.c
+	gcc -lm bin/block.o src/png.c ../src/ext/SOIL/src/*.c -o bin/png -I../src/ext/SOIL/src -framework OpenGL -framework CoreFoundation -lpng

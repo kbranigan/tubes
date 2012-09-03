@@ -121,14 +121,14 @@ int main(int argc, char ** argv)
               struct Column * column = get_column(block, column_id);
               if (column == NULL)
               {
-                column = get_column(block, find_column_id_by_name(block, name));
+                column = get_column_by_name(block, name);
                 if (column == NULL) fprintf(stderr, "bad: new column %s\n", name);
               }
               
               //if (strcmp(&column->name, name) != 0)
               if (strcmp(column_get_name(column), name) != 0)
               {
-                column = get_column(block, find_column_id_by_name(block, name));
+                column = get_column_by_name(block, name);
                 if (strcmp(column_get_name(column), name) != 0) fprintf(stderr, "bad, %s vs %s\n", column_get_name(column), name);
               }
               
