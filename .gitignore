@@ -4,3 +4,7 @@ data/*
 *.sql
 cache_images/*
 images/*
+*.block
+*.o
+*.csv
+*.gz
