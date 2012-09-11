@@ -14,7 +14,7 @@
 #define EXTRACT_HEADER 1
 #define EXTRACT_DATA 2
 
-#define ROWS_TO_EVALUATE_FOR_HEADER_SEARCH 100
+#define ROWS_TO_EVALUATE_FOR_HEADER_SEARCH 10
 
 //#define HEADER_SEARCH_DEBUG
 
@@ -500,7 +500,7 @@ struct Block * bsv(char * filename, int instruction)
       free_character_distribution(&counts);
     }
     free(line);
-    if (num_lines_total > 10000) break;
+    if (num_lines_total > ROWS_TO_EVALUATE_FOR_HEADER_SEARCH) break;
   }
   
   int min_num_null_fields = 100000;
@@ -545,6 +545,7 @@ struct Block * bsv(char * filename, int instruction)
   #endif
   
   rewind(fp);
+  if (encoding == UTF_16_BIG || encoding == UTF_16_SMALL) { fgetc(fp); fgetc(fp); }
   
   for (k = 0 ; k < header_line_number ; k++)
   {

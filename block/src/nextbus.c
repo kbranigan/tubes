@@ -85,7 +85,7 @@ int main(int argc, char ** argv)
     {
       int count = 0;
       struct Block * block = new_block();
-      block = add_long_attribute(block, "last_vehicles_update", last_vehicles_update);
+      block = add_int64_attribute(block, "last_vehicles_update", last_vehicles_update);
       block = add_string_attribute(block, "source_url", url);
       if (routeTag != NULL) block = add_string_attribute(block, "routeTag", routeTag);
       if (agency != NULL) block = add_string_attribute(block, "agency", agency);

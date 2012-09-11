@@ -114,9 +114,9 @@ int main(int argc, char ** argv)
   block = add_double_attribute(block, "min_y", min_y);
   block = add_double_attribute(block, "max_y", max_y);
   
-  block = add_int_column(block, "shape_row_id");
-  block = add_int_column(block, "shape_part_id");
-  block = add_int_column(block, "shape_part_type");
+  block = add_int32_column(block, "shape_row_id");
+  block = add_int32_column(block, "shape_part_id");
+  block = add_int32_column(block, "shape_part_type");
   block = add_double_column(block, "x");
   block = add_double_column(block, "y");
   if (include_z) block = add_double_column(block, "z");
@@ -150,7 +150,7 @@ int main(int argc, char ** argv)
     }
     
     if (field_type == FTString)      block = add_string_column_with_length(block, name, max_string_length);
-    else if (field_type = FTInteger) block = add_int_column(block, name);
+    else if (field_type = FTInteger) block = add_int32_column(block, name);
     else if (field_type = FTDouble)  block = add_double_column(block, name);
     else { fprintf(stderr, "%s: unknown field type (%d) encountered\n", argv[0], field_type); abort(); }
   }

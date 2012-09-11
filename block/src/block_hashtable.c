@@ -32,7 +32,8 @@ void * create_hashtable_on_column(struct Block * block, char * column_name)
   
   int row_id, column_id = get_column_id_by_name(block, column_name);
   if (column_id == -1) { fprintf(stderr, "create_hash_on_string_column couldn't find '%s' column.\n", column_name); return NULL; }
-  if (!column_is_string(get_column(block, column_id))) { fprintf(stderr, "create_hash_on_string_column called on column which is not a string.\n"); return NULL; }
+  //if (!column_is_string(get_column(block, column_id))) { fprintf(stderr, "create_hash_on_string_column called on column which is not a string.\n"); return NULL; }
+  if (!get_column(block, column_id)->type != TYPE_CHAR) { fprintf(stderr, "create_hash_on_string_column called on column which is not a string.\n"); return NULL; }
   
   struct hashtable * ht = create_hashtable(16, hash_from_string_fn, strings_equal_fn);
   

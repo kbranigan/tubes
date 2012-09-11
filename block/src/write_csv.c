@@ -70,19 +70,25 @@ int main(int argc, char ** argv)
     int column_id = 0;
     for (column_id = 0 ; column_id < block->num_columns ; column_id++)
     {
-      struct Column * column = get_column(block, column_id);
+      if (column_id > 0) fprintf(fp, ",");
+      fprintf_cell(fp, block, row_id, column_id);
+      /*struct Column * column = get_column(block, column_id);
       switch (column->type) {
-        case INT_TYPE:    fprintf(fp, "%s%d",     ((column_id == 0)?"":","), *(int32_t*)get_cell(block, row_id, column_id)); break;
-        case LONG_TYPE:   fprintf(fp, "%s%ld",    ((column_id == 0)?"":","), *(long*)get_cell(block, row_id, column_id)); break;
-        case FLOAT_TYPE:  fprintf(fp, "%s%f",     ((column_id == 0)?"":","), *(float*)get_cell(block, row_id, column_id)); break;
-        case DOUBLE_TYPE: fprintf(fp, "%s%lf",    ((column_id == 0)?"":","), *(double*)get_cell(block, row_id, column_id)); break;
+        case TYPE_INT:
+          if (column->bsize == 4) { fprintf(fp, "%s%d",     ((column_id == 0)?"":","), *(int32_t*)get_cell(block, row_id, column_id)); break; }
+          else if (column->bsize == 8) { fprintf(fp, "%s%ld",     ((column_id == 0)?"":","), *(long*)get_cell(block, row_id, column_id)); break; }
+          else { fprintf(stderr, "bad %s %s:(%d)\n", __func__, __FILE__, __LINE__); break; }
+        case TYPE_FLOAT:
+          if (column->bsize == 4) { fprintf(fp, "%s%f",     ((column_id == 0)?"":","), *(float*)get_cell(block, row_id, column_id)); break; }
+          else if (column->bsize == 8) { fprintf(fp, "%s%lf",    ((column_id == 0)?"":","), *(double*)get_cell(block, row_id, column_id)); break; }
+          else { fprintf(stderr, "bad %s %s:(%d)\n", __func__, __FILE__, __LINE__); break; }
         default:
           if (output_quotes)
             fprintf(fp, "%s\"%s\"", ((column_id == 0)?"":","), (char*)get_cell(block, row_id, column_id));
           else
             fprintf(fp, "%s%s", ((column_id == 0)?"":","), (char*)get_cell(block, row_id, column_id));
           break;
-      }
+      }*/
     }
     fprintf(fp, "\n");
   }

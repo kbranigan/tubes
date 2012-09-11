@@ -80,18 +80,18 @@ int main(int argc, char ** argv)
     struct Block * block = new_block();
     block = add_string_attribute(block, "agency", agency);
     if (routeTag) block = add_string_attribute(block, "routeTag", routeTag);
-    block = add_long_attribute(block, "request_index", request_index);
-    block = add_long_attribute(block, "num_requests", num_requests);
-    block = add_long_attribute(block, "last_vehicles_update", last_vehicles_update);
+    block = add_int64_attribute(block, "request_index", request_index);
+    block = add_int64_attribute(block, "num_requests", num_requests);
+    block = add_int64_attribute(block, "last_vehicles_update", last_vehicles_update);
     
-    block = add_int_column(block, "id");
-    block = add_int_column(block, "routeTag");
+    block = add_int32_column(block, "id");
+    block = add_int32_column(block, "routeTag");
     block = add_string_column_with_length(block, "dirTag", 25);
     block = add_float_column(block, "x");
     block = add_float_column(block, "y");
-    block = add_int_column(block, "secsSinceReport");
+    block = add_int32_column(block, "secsSinceReport");
     block = add_string_column_with_length(block, "predictable", 5);
-    block = add_int_column(block, "heading");
+    block = add_int32_column(block, "heading");
     block = add_float_column(block, "speedKmHr");
     
     if (chunk.size == 0)

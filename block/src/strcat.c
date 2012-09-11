@@ -77,7 +77,7 @@ int main(int argc, char ** argv)
       column_ids[i] = get_column_id_by_name(block, columns[i]);
       if (column_ids[i] == -1) fprintf(stderr, "column %s not found\n", columns[i]);
       struct Column * column = get_column(block, column_ids[i]);
-      length += get_type_size(column->type) + 1; // (plus one for space and term-null)
+      length += column->bsize + 1; //get_type_size(column->type) + 1; // (plus one for space and term-null)
     }
     
     block = add_string_column_with_length(block, column_name, length);

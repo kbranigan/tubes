@@ -45,44 +45,50 @@ extern int stdout_is_piped();
 extern void assert_stdout_is_piped();
 extern void assert_stdin_or_out_is_piped();
 
-extern char block_type_names[6][20];
+//extern char block_type_names[6][20];
 
-#define MIN_STRING_LENGTH 5
-#define TUBE_BLOCK_VERSION 2 // when this changes, ALL cached blocks need to be re-calculated
+#define TUBE_BLOCK_VERSION 3 // when this changes, ALL cached blocks need to be re-calculated
 
-#define INT_TYPE 1
-#define LONG_TYPE 2
-#define FLOAT_TYPE 3
-#define DOUBLE_TYPE 4
-#define STRING_TYPE MIN_STRING_LENGTH // only for attributes
-// column type for a string is just it's length, so 5 or 10 or whatever is valid, minimum of 5
+enum TYPE {
+  TYPE_INT   = 1,
+  TYPE_UINT  = 2,
+  TYPE_FLOAT = 3,
+  TYPE_CHAR  = 4
+};
 
-#define SIZEOF_STRUCT_BLOCK (sizeof(int32_t)*7)
+/* TODO
+union CELL {
+  int64_t   i;
+  uint64_t ui;
+  double    f;
+};*/
+
+#define SIZEOF_STRUCT_BLOCK (sizeof(uint32_t)*8)
 
 struct Block {
   // sizeof(struct Block) gives the size before the start of the data, total memory footprint is sizeof(struct Block) + all_bsize
   // float header
   // int32_t is_block
-  int32_t version;          // should always be equal to TUBE_BLOCK_VERSION
-  int32_t attributes_bsize; // num_attributes*sizeof(int32_t) + foreach_attribute(sizeof(int32_t)*3 + name_length + value_length)
-  int32_t columns_bsize;
-  int32_t data_bsize;
-  int32_t row_bsize;
-  int32_t num_attributes;
-  int32_t num_columns;
-  int32_t num_rows;
-  /// int32_t attribute_offsets[num_attributes];
+  uint32_t version;          // should always be equal to TUBE_BLOCK_VERSION
+  uint32_t attributes_bsize; // num_attributes*sizeof(int32_t) + foreach_attribute(sizeof(int32_t)*3 + name_length + value_length)
+  uint32_t columns_bsize;
+  uint32_t data_bsize;
+  uint32_t row_bsize;
+  uint32_t num_attributes;
+  uint32_t num_columns;
+  uint32_t num_rows;
+  /// uint32_t attribute_offsets[num_attributes];
   /// [attributes]
-  /// int32_t column_offsets[num_columns];  // where are the column meta data
-  /// int32_t cell_offsets[num_columns];    // where in each row are the cells
+  /// uint32_t column_offsets[num_columns];  // where are the column meta data
+  /// uint32_t cell_offsets[num_columns];    // where in each row are the cells
   /// [columns]
   /// [rows]
 };
 
 struct Attribute {
-  int32_t type;
-  int32_t name_length;
-  int32_t value_length;
+  enum TYPE type;
+  uint32_t name_length;
+  uint32_t value_length;
   //char name[name_length];
   //char value[value_length];
   
@@ -94,8 +100,9 @@ void attribute_set_name(struct Attribute * attribute, char * name);
 void attribute_set_value(struct Attribute * attribute, void * value);
 
 struct Column {
-  int32_t type;
-  int32_t name_length;
+  enum TYPE type;
+  uint32_t bsize;
+  uint32_t name_length;
   //char name[name_length];
 };
 
@@ -113,9 +120,9 @@ void free_block(struct Block * block);
 struct Block * realloc_block(struct Block * block);
 
 struct Attribute * get_attribute(struct Block * block, int32_t attribute_id);
-struct Block * _add_attribute(struct Block * block, int32_t type, char * name, void * value);
-struct Block * add_int_attribute(struct Block * block, char * name, int32_t value);
-struct Block * add_long_attribute(struct Block * block, char * name, long value);
+struct Block * _add_attribute(struct Block * block, enum TYPE type, uint32_t bsize, char * name, void * value);
+struct Block * add_int32_attribute(struct Block * block, char * name, int32_t value);
+struct Block * add_int64_attribute(struct Block * block, char * name, int64_t value);
 struct Block * add_float_attribute(struct Block * block, char * name, float value);
 struct Block * add_double_attribute(struct Block * block, char * name, double value);
 struct Block * add_string_attribute(struct Block * block, char * name, char * value);
@@ -127,6 +134,10 @@ int32_t * get_attribute_offsets(struct Block * block);
 struct Attribute * get_first_attribute(struct Block * block);
 struct Attribute * get_next_attribute(struct Block * block, struct Attribute * attribute);
 
+struct Block * copy_all_attributes(struct Block * block, struct Block * src);
+
+void fprintf_attribute_value(FILE * fp, struct Block * block, int32_t attribute_id);
+
 struct Block * add_xy_columns(struct Block * block);
 struct Block * add_xyz_columns(struct Block * block);
 struct Block * add_rgb_columns(struct Block * block);
@@ -134,14 +145,23 @@ struct Block * add_rgba_columns(struct Block * block);
 void blank_column_values(struct Block * block, char * column_name);
 
 struct Column * get_column(struct Block * block, int32_t column_id);
-struct Block * _add_column(struct Block * block, int32_t type, char * name);
-struct Block * add_int_column(struct Block * block, char * name);
-struct Block * add_long_column(struct Block * block, char * name);
+struct Block * _add_column(struct Block * block, enum TYPE type, uint32_t bsize, char * name);
+
+struct Block * add_int32_column(struct Block * block, char * name);
+struct Block * add_int64_column(struct Block * block, char * name);
 struct Block * add_float_column(struct Block * block, char * name);
 struct Block * add_double_column(struct Block * block, char * name);
 struct Block * add_string_column_with_length(struct Block * block, char * name, int32_t length);
-int column_is_string(struct Column * column);
+
+struct Block * add_int32_column_and_blank(struct Block * block, char * name);
+struct Block * add_int64_column_and_blank(struct Block * block, char * name);
+struct Block * add_float_column_and_blank(struct Block * block, char * name);
+struct Block * add_double_column_and_blank(struct Block * block, char * name);
+struct Block * add_string_column_with_length_and_blank(struct Block * block, char * name, int32_t length);
+
+//int column_is_string(struct Column * column);
 int32_t get_column_id_by_name(struct Block * block, char * column_name);
+int32_t get_column_id_by_name_or_exit(struct Block * block, char * column_name);
 struct Column * get_column_by_name(struct Block * block, char * column_name);
 
 struct Block * column_string_set_length(struct Block * block, int32_t column_id, int32_t length);
@@ -159,10 +179,11 @@ struct Block * add_row_with_data(struct Block * block, int num_columns, ...);
 int32_t get_row_bsize_from_columns(struct Block * block);
 
 void * get_cell(struct Block * block, int32_t row_id, int32_t column_id);
-int get_cell_as_int(struct Block * block, int32_t row_id, int32_t column_id);
-long get_cell_as_long(struct Block * block, int32_t row_id, int32_t column_id);
+int32_t get_cell_as_int32(struct Block * block, int32_t row_id, int32_t column_id);
+int64_t get_cell_as_int64(struct Block * block, int32_t row_id, int32_t column_id);
 float get_cell_as_float(struct Block * block, int32_t row_id, int32_t column_id);
 double get_cell_as_double(struct Block * block, int32_t row_id, int32_t column_id);
+char * get_cell_as_char(struct Block * block, int32_t row_id, int32_t column_id);
 
 void set_cell(struct Block * block, int32_t row_id, int32_t column_id, void * data);
 void set_cell_from_int(struct Block * block, int32_t row_id, int32_t column_id, int32_t data);
@@ -174,12 +195,13 @@ void set_xyz(struct Block * block, int32_t row_id, float x, float y, float z);
 void set_rgb(struct Block * block, int32_t row_id, float r, float g, float b);
 void set_rgba(struct Block * block, int32_t row_id, float r, float g, float b, float a);
 
+void fprintf_cell(FILE * fp, struct Block * block, int32_t row_id, int32_t column_id);
+
 struct Block * add_command(struct Block * block, int argc, char ** argv);
 
 void inspect_block(struct Block * block);
 
-char * get_type_name(int32_t type);
-int32_t get_type_size(int32_t type);
+char * get_type_name(enum TYPE type, int32_t bsize);
 
 #ifdef __cplusplus
 }

@@ -7,16 +7,16 @@ struct Block * test_block()
   
   ////
   
-  block = add_int_attribute(block, "testing int", 5);
-  block = add_long_attribute(block, "testing long", 500);
+  block = add_int32_attribute(block, "testing int", 5);
+  block = add_int64_attribute(block, "testing long", 500);
   block = add_float_attribute(block, "testing float", 5.1);
   block = add_double_attribute(block, "testing double", 6.1);
   block = add_string_attribute(block, "testing string", "hello there!");
-  block = add_int_attribute(block, "testing after a string", 7);
+  block = add_int32_attribute(block, "testing after a string", 7);
   
   ////
   
-  block = add_int_column(block, "id");
+  block = add_int32_column(block, "id");
   block = add_float_column(block, "lat");
   block = add_float_column(block, "lng");
   block = add_string_column_with_length(block, "address", 20);
@@ -47,7 +47,7 @@ struct Block * test_block()
   
   ////
   
-  block = add_int_column(block, "dd");
+  block = add_int32_column(block, "dd");
   
   for (i = 0 ; i < block->num_rows ; i++)
   {

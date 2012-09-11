@@ -26,7 +26,7 @@ int main(int argc, char ** argv)
   ////// add attribute
   old_num_attributes = block->num_attributes;
   old_attributes_bsize = block->attributes_bsize;
-  block = add_int_attribute(block, "testint", 15);
+  block = add_int32_attribute(block, "testint", 15);
   assert(block->num_attributes==old_num_attributes+1);
   assert(block->attributes_bsize==old_attributes_bsize+32);
   assert(get_attribute_id_by_name(block, "testint")==block->num_attributes-1);
@@ -37,7 +37,7 @@ int main(int argc, char ** argv)
     ////// add column
     old_num_columns = block->num_columns;
     old_columns_bsize = block->columns_bsize;
-    block = add_int_column(block, "intcol");
+    block = add_int32_column(block, "intcol");
     assert(block->num_columns==old_num_columns+1);
     assert(block->columns_bsize==old_columns_bsize+24);
     assert(get_column_id_by_name(block, "intcol")==block->num_columns-1);
@@ -47,7 +47,7 @@ int main(int argc, char ** argv)
   ////// add attribute
   old_num_attributes = block->num_attributes;
   old_attributes_bsize = block->attributes_bsize;
-  block = add_long_attribute(block, "testlong", 50);
+  block = add_int64_attribute(block, "testlong", 50);
   assert(block->num_attributes==old_num_attributes+1);
   assert(block->attributes_bsize==old_attributes_bsize+36);
   assert(get_attribute_id_by_name(block, "testlong")==block->num_attributes-1);
@@ -79,14 +79,14 @@ int main(int argc, char ** argv)
       set_cell_from_int(block, i, 0, i*15);
       assert(block->num_rows==old_num_rows+1);
       assert(block->data_bsize==old_data_bsize+block->row_bsize);
-      assert(get_cell_as_int(block, i, 0)==i*15);
+      assert(get_cell_as_int32(block, i, 0)==i*15);
     }
       
   ////// general test
   assert(*(int32_t*)attribute_get_value(get_attribute(block, get_attribute_id_by_name(block, "testint")))==15);
   assert(strcmp(column_get_name(get_column(block, get_column_id_by_name(block, "intcol"))), "intcol")==0);
   for (i = 0 ; i < block->num_rows ; i++)
-    assert(get_cell_as_int(block, i, 0)==i*15);
+    assert(get_cell_as_int32(block, i, 0)==i*15);
   
   ////// add attribute
   old_num_attributes = block->num_attributes;
@@ -103,7 +103,7 @@ int main(int argc, char ** argv)
   assert(*(int32_t*)attribute_get_value(get_attribute(block, get_attribute_id_by_name(block, "testint")))==15);
   assert(strcmp(column_get_name(get_column(block, get_column_id_by_name(block, "intcol"))), "intcol")==0);
   for (i = 0 ; i < block->num_rows ; i++)
-    assert(get_cell_as_int(block, i, 0)==i*15);
+    assert(get_cell_as_int32(block, i, 0)==i*15);
   
     ////// add column
     old_num_columns = block->num_columns;
@@ -122,7 +122,7 @@ int main(int argc, char ** argv)
     ////// add column
     old_num_columns = block->num_columns;
     old_columns_bsize = block->columns_bsize;
-    block = add_int_column(block, "intcol2");
+    block = add_int32_column(block, "intcol2");
     assert(block->num_columns==old_num_columns+1);
     assert(block->columns_bsize==old_columns_bsize+28);
     assert(get_column_id_by_name(block, "intcol2")==block->num_columns-1);
@@ -137,16 +137,16 @@ int main(int argc, char ** argv)
     assert(strcmp(column_get_name(get_column(block, get_column_id_by_name(block, "intcol"))), "intcol")==0);
     for (i = 0 ; i < block->num_rows ; i++)
     {
-      assert(get_cell_as_int(block, i, 0)==i*15);
+      assert(get_cell_as_int32(block, i, 0)==i*15);
       char temp[20]; sprintf(temp, "string row %d", i);
       assert(strcmp(temp, get_cell(block, i, 1))==0);
-      assert(get_cell_as_int(block, i, 2)==(15*block->num_rows - i*15));
+      assert(get_cell_as_int32(block, i, 2)==(15*block->num_rows - i*15));
     }
     
     ////// add column
     old_num_columns = block->num_columns;
     old_columns_bsize = block->columns_bsize;
-    block = add_long_column(block, "longcol1");
+    block = add_int64_column(block, "longcol1");
     assert(block->num_columns==old_num_columns+1);
     assert(block->columns_bsize==old_columns_bsize+28);
     assert(get_column_id_by_name(block, "longcol1")==block->num_columns-1);

@@ -45,18 +45,9 @@ void setup_segfault_handling(char ** command)
   signal(SIGSEGV, block_segfault_handler);
 }
 
-char block_type_names[6][20] = {
-  "unknown", "int", "long", "float", "double", "str   5"
-};
-
-size_t block_header_size()
-{
-  return sizeof(int32_t)*8;
-}
-
 struct Block * new_block()
 {
-  if (sizeof(struct Block) != block_header_size()) { fprintf(stderr, "sizeof(struct Block) is the wrong size (%ld) - should be %ld, perhaps padding or memory alignment works differently for your machine?\n", sizeof(struct Block), block_header_size()); exit(1); }
+  if (sizeof(struct Block) != SIZEOF_STRUCT_BLOCK) { fprintf(stderr, "sizeof(struct Block) is the wrong size (%ld) - should be %ld, perhaps padding or memory alignment works differently for your machine?\n", sizeof(struct Block), SIZEOF_STRUCT_BLOCK); exit(1); }
   
   struct Block * block = (struct Block*)malloc(sizeof(struct Block));
   memset(block, 0, sizeof(struct Block));
@@ -147,16 +138,16 @@ int32_t memory_pad(int32_t i)
   return ceil((i+1) / 4.0) * 4.0;
 }
 
-int32_t get_type_size(int32_t type)
+/*int32_t get_type_size(int32_t type)
 {
-  if (type == INT_TYPE)               return sizeof(int32_t);
-  else if (type == LONG_TYPE)         return sizeof(long);
-  else if (type == FLOAT_TYPE)        return sizeof(float);
-  else if (type == DOUBLE_TYPE)       return sizeof(double);
+  if (type == TYPE.INT)               return sizeof(int32_t);
+  else if (type == TYPE.LONG)         return sizeof(long);
+  else if (type == TYPE.FLOAT)        return sizeof(float);
+  else if (type == TYPE.DOUBLE)       return sizeof(double);
   else if (type >= MIN_STRING_LENGTH) return memory_pad(type+1);
   else fprintf(stderr, "column_get_cell_size invalid type '%d'\n", type);
   return 0;
-}
+}*/
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -182,11 +173,6 @@ struct Attribute * get_attribute(struct Block * block, int32_t attribute_id)
   
   int32_t * attribute_offsets = get_attribute_offsets(block);
   return (struct Attribute*)((char*)block + sizeof(struct Block) + attribute_offsets[attribute_id]);
-}
-
-int attribute_is_string(struct Attribute * attribute)
-{
-  return (attribute->type >= MIN_STRING_LENGTH);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -228,11 +214,6 @@ struct Column * get_column(struct Block * block, int32_t column_id)
   return column;
 }
 
-int column_is_string(struct Column * column)
-{
-  return (column->type >= MIN_STRING_LENGTH);
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void * get_row(struct Block * block, int32_t row_id)
@@ -249,7 +230,7 @@ int32_t get_row_bsize_from_columns(struct Block * block)
   for (column_id = 0 ; column_id < block->num_columns ; column_id++)
   {
     struct Column * column = get_column(block, column_id);
-    single_row_bsize += get_type_size(column->type);
+    single_row_bsize += column->bsize;
   }
   
   return single_row_bsize;
@@ -265,6 +246,17 @@ int32_t get_column_id_by_name(struct Block * block, char * column_name)
     if (strcmp(column_name, column_get_name(column))==0) return column_id;
   }
   return -1;
+}
+
+int32_t get_column_id_by_name_or_exit(struct Block * block, char * column_name)
+{
+  int32_t id = get_column_id_by_name(block, column_name);
+  if (id == -1)
+  {
+    fprintf(stderr, "get_column_id_by_name_or_exit failed on column '%s'\n", column_name);
+    exit(EXIT_FAILURE);
+  }
+  return id;
 }
 
 struct Column * get_column_by_name(struct Block * block, char * column_name)
@@ -296,18 +288,18 @@ void * attribute_get_value(struct Attribute * attribute) { return (char*)attribu
 void attribute_set_name(struct Attribute * attribute, char * name)   { strncpy((char*)attribute + sizeof(struct Attribute), name, attribute->name_length); }
 void attribute_set_value(struct Attribute * attribute, void * value)
 {
-  if (attribute_is_string(attribute)) strncpy((char*)attribute + sizeof(struct Attribute) + attribute->name_length, (char*)value, attribute->value_length);
-  else memcpy((char*)attribute + sizeof(struct Attribute) + attribute->name_length, value, get_type_size(attribute->type));
+  if (attribute->type == TYPE_CHAR) strncpy((char*)attribute + sizeof(struct Attribute) + attribute->name_length, (char*)value, attribute->value_length);
+  else memcpy((char*)attribute + sizeof(struct Attribute) + attribute->name_length, value, attribute->value_length);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct Block * _add_attribute(struct Block * block, int32_t type, char * name, void * value)
+struct Block * _add_attribute(struct Block * block, enum TYPE type, uint32_t bsize, char * name, void * value)
 {
   if (block == NULL) { fprintf(stderr, "add_attribute called on a NULL block\n"); return NULL; }
   
   int32_t name_length = memory_pad(strlen(name)+1);
-  int32_t value_length = type==STRING_TYPE ? memory_pad(strlen((char*)value)+1) : get_type_size(type);
+  int32_t value_length = type==TYPE_CHAR ? memory_pad(strlen((char*)value)+1) : bsize;
   
   int32_t old_attributes_bsize = block->attributes_bsize;
   int32_t single_attribute_bsize = sizeof(struct Attribute) + name_length + value_length;
@@ -354,11 +346,40 @@ struct Block * _add_attribute(struct Block * block, int32_t type, char * name, v
   return block;
 }
 
-struct Block * add_int_attribute(struct Block * block, char * name, int32_t value)   { return _add_attribute(block, INT_TYPE, name, &value); }
-struct Block * add_long_attribute(struct Block * block, char * name, long value)     { return _add_attribute(block, LONG_TYPE, name, &value); }
-struct Block * add_float_attribute(struct Block * block, char * name, float value)   { return _add_attribute(block, FLOAT_TYPE, name, &value); }
-struct Block * add_double_attribute(struct Block * block, char * name, double value) { return _add_attribute(block, DOUBLE_TYPE, name, &value); }
-struct Block * add_string_attribute(struct Block * block, char * name, char * value) { return _add_attribute(block, STRING_TYPE, name, value); }
+struct Block * add_int32_attribute(struct Block * block, char * name, int32_t value) { return _add_attribute(block, TYPE_INT, sizeof(int32_t), name, &value); }
+struct Block * add_int64_attribute(struct Block * block, char * name, int64_t value)    { return _add_attribute(block, TYPE_INT, sizeof(int64_t), name, &value); }
+struct Block * add_float_attribute(struct Block * block, char * name, float value)   { return _add_attribute(block, TYPE_FLOAT, sizeof(float), name, &value); }
+struct Block * add_double_attribute(struct Block * block, char * name, double value) { return _add_attribute(block, TYPE_FLOAT, sizeof(double), name, &value); }
+struct Block * add_string_attribute(struct Block * block, char * name, char * value) { return _add_attribute(block, TYPE_CHAR, strlen(value), name, value); }
+
+struct Block * copy_all_attributes(struct Block * block, struct Block * src)
+{
+  int i;
+  for (i = 0 ; i < src->num_attributes ; i++)
+  {
+    struct Attribute * attr = get_attribute(src, i);
+    block = _add_attribute(block, attr->type, attr->value_length, attribute_get_name(attr), attribute_get_value(attr));
+  }
+}
+
+void fprintf_attribute_value(FILE * fp, struct Block * block, int32_t attribute_id)
+{
+  struct Attribute * attr = get_attribute(block, attribute_id);
+  switch (attr->type) {
+    case TYPE_INT:
+      if      (attr->value_length == 4) { fprintf(fp, "%d", *(int32_t*)attribute_get_value(attr)); break; }
+      else if (attr->value_length == 8) { fprintf(fp, "%lld", *(int64_t*)attribute_get_value(attr)); break; }
+      else { fprintf(stderr, "bad %s %s:(%d)\n", __func__, __FILE__, __LINE__); break; }
+    case TYPE_FLOAT:
+      if      (attr->value_length == 4) { fprintf(fp, "%f", *(float*)attribute_get_value(attr)); break; }
+      else if (attr->value_length == 8) { fprintf(fp, "%lf", *(double*)attribute_get_value(attr)); break; }
+      else { fprintf(stderr, "bad %s %s:(%d)\n", __func__, __FILE__, __LINE__); break; }
+    case TYPE_CHAR:
+      fprintf(fp, "%s", (char*)attribute_get_value(attr)); break;
+    default:
+      fprintf(stderr, "bad %s %s:(%d)\n", __func__, __FILE__, __LINE__); break;
+  }
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -367,7 +388,7 @@ void column_set_name(struct Column * column, char * name) { strncpy(column_get_n
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct Block * _add_column(struct Block * block, int32_t type, char * name)
+struct Block * _add_column(struct Block * block, enum TYPE type, uint32_t bsize, char * name)
 {
   if (block == NULL) { fprintf(stderr, "add_field called on a NULL block\n"); return NULL; }
   
@@ -376,7 +397,8 @@ struct Block * _add_column(struct Block * block, int32_t type, char * name)
   int32_t old_data_bsize = block->data_bsize;
   int32_t old_row_bsize = block->row_bsize;
   
-  block->row_bsize += get_type_size(type);
+  if (type == TYPE_CHAR) bsize = memory_pad(bsize); // when adding a string, it sends over strlen size
+  block->row_bsize += bsize;
   
   int32_t single_column_bsize = sizeof(struct Column) + name_length;
   
@@ -419,12 +441,13 @@ struct Block * _add_column(struct Block * block, int32_t type, char * name)
   {
     //fprintf(stderr, "%d: %d (add %d)\n", i, o, get_type_size(column->type));
     cell_offsets[i] = o;
-    o += get_type_size(column->type);
+    o += column->bsize;//get_type_size(column->type);
     column_offsets[i] = (int32_t)((char*)column - (char*)block - sizeof(struct Block) - block->attributes_bsize);
     column = get_next_column(block, column);
   }
   
   column->type = type;
+  column->bsize = bsize;
   column->name_length = name_length;
   column_set_name(column, name);
   column_offsets[block->num_columns-1] = (int32_t)((char*)column - (char*)block - sizeof(struct Block) - block->attributes_bsize);
@@ -434,11 +457,17 @@ struct Block * _add_column(struct Block * block, int32_t type, char * name)
   return block;
 }
 
-struct Block * add_int_column(struct Block * block, char * name)    { return _add_column(block, INT_TYPE, name); }
-struct Block * add_long_column(struct Block * block, char * name)   { return _add_column(block, LONG_TYPE, name); }
-struct Block * add_float_column(struct Block * block, char * name)  { return _add_column(block, FLOAT_TYPE, name); }
-struct Block * add_double_column(struct Block * block, char * name) { return _add_column(block, DOUBLE_TYPE, name); }
-struct Block * add_string_column_with_length(struct Block * block, char * name, int32_t length) { if (length < MIN_STRING_LENGTH) length = MIN_STRING_LENGTH; return _add_column(block, length, name); }
+struct Block * add_int32_column(struct Block * block, char * name)  { return _add_column(block, TYPE_INT, sizeof(int32_t), name); }
+struct Block * add_int64_column(struct Block * block, char * name)  { return _add_column(block, TYPE_INT, sizeof(int64_t), name); }
+struct Block * add_float_column(struct Block * block, char * name)  { return _add_column(block, TYPE_FLOAT, sizeof(float), name); }
+struct Block * add_double_column(struct Block * block, char * name) { return _add_column(block, TYPE_FLOAT, sizeof(double), name); }
+struct Block * add_string_column_with_length(struct Block * block, char * name, int32_t length) { return _add_column(block, TYPE_CHAR, length, name); }
+
+struct Block * add_int32_column_and_blank(struct Block * block, char * name)  { block = add_int32_column(block, name); blank_column_values(block, name); return block; }
+struct Block * add_int64_column_and_blank(struct Block * block, char * name)  { block = add_int64_column(block, name); blank_column_values(block, name); return block; }
+struct Block * add_float_column_and_blank(struct Block * block, char * name)  { block = add_float_column(block, name); blank_column_values(block, name); return block; }
+struct Block * add_double_column_and_blank(struct Block * block, char * name) { block = add_double_column(block, name); blank_column_values(block, name); return block; }
+struct Block * add_string_column_with_length_and_blank(struct Block * block, char * name, int32_t length) { block = add_string_column_with_length(block, name, length); blank_column_values(block, name); return block; }
 
 struct Block * add_xy_columns(struct Block * block)
 {
@@ -480,70 +509,15 @@ void blank_column_values(struct Block * block, char * column_name)
   int row_id;
   for (row_id = 0 ; row_id < block->num_rows ; row_id++)
   {
-    memset(get_cell(block, row_id, column_id), 0, get_type_size(column->type));
+    memset(get_cell(block, row_id, column_id), 0, column->bsize);//get_type_size(column->type));
   }
 }
 
-struct Block * column_string_set_length(struct Block * block, int32_t column_id, int32_t length)
+/*struct Block * column_string_set_length(struct Block * block, int32_t column_id, int32_t length)
 {
-  fprintf(stderr, "not implemented\n");
+  fprintf(stderr, "column_string_set_length() not implemented\n");
   exit(0);
-  if (block == NULL) { fprintf(stderr, "column_string_set_length called on NULL block\n"); return block; }
-  if (column_id == -1 || column_id > block->num_columns) { fprintf(stderr, "column_string_set_length called on column id '%d', column not found.\n", column_id); return block; }
-  struct Column * column = get_column(block, column_id);
-  if (!column_is_string(column)) { fprintf(stderr, "column_string_set_length called on a column which isn't a string.\n"); return block; }
-  if (get_type_size(column->type) == get_type_size(length)) return block;
-  
-  int32_t original_row_bsize = block->row_bsize;
-  block->row_bsize += (get_type_size(column->type) - get_type_size(length));
-  
-  int32_t bsize_before = 0;
-  int32_t bsize_after = 0;
-  
-  int i;
-  for (i = 0 ; i < block->num_columns ; i++)
-  {
-    if (i < column_id)      bsize_before += get_type_size(get_column(block, i)->type);
-    else if (i > column_id) bsize_after  += get_type_size(get_column(block, i)->type);
-  }
-  
-  fprintf(stderr, "original_row_bsize = %d\n", original_row_bsize);
-  fprintf(stderr, "new_row_bsize = %d\n", block->row_bsize);
-  fprintf(stderr, "bsize_before = %d\n", bsize_before);
-  fprintf(stderr, "bsize_after = %d\n", bsize_after);
-  fprintf(stderr, "length = %d (%d)\n", length, get_type_size(length));
-  
-  if (get_type_size(length) < get_type_size(column->type)) // reduced in bsize
-  {
-    char * old_row = (char*)get_cell(block, 0, 0);
-    int row_id;
-    for (row_id = 0 ; row_id < block->num_rows ; row_id++)
-    {
-      char * row = (char*)get_row(block, row_id);//get_cell(block, row_id, 0);
-      memmove(row, old_row, bsize_before);
-      memmove(row + bsize_before + get_type_size(column->type), old_row + bsize_before + get_type_size(length), bsize_after);
-      old_row += original_row_bsize;
-    }
-    column->type = get_type_size(length);
-    block = realloc_block(block);
-  }
-  else if (get_type_size(length) > get_type_size(column->type)) // increased in bsize
-  {
-    fprintf(stderr, "NOT IMPLEMENTED column_string_set_length() with an increase in size\n");
-    exit(0);
-    char * old_row = (char*)get_cell(block, 0, 0);
-    int row_id;
-    //for (row_id = 0 ; row_id < block->num_rows ; row_id++)
-    {
-      
-    }
-    block = realloc_block(block);
-  }
-  
-  column->type = get_type_size(length);
-  
-  return block;
-}
+}*/
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -553,34 +527,36 @@ void * get_cell(struct Block * block, int32_t row_id, int32_t column_id)
   return (char*)get_row(block, row_id) + cell_offsets[column_id];
 }
 
-int get_cell_as_int(struct Block * block, int32_t row_id, int32_t column_id)
+int32_t get_cell_as_int32(struct Block * block, int32_t row_id, int32_t column_id)
 {
   void * cell = get_cell(block, row_id, column_id);
   struct Column * column = get_column(block, column_id);
   
-  int temp = -1;
+  int32_t temp = -1;
   
-  if (column->type == INT_TYPE) temp = *(int32_t*)cell;
-  else if (column->type == LONG_TYPE) temp = *(long*)cell;
-  else if (column->type == FLOAT_TYPE) temp = *(float*)cell;
-  else if (column->type == DOUBLE_TYPE) temp = *(double*)cell;
-  else if (column_is_string(column)) temp = atoi((char*)cell);
+  if      (column->type == TYPE_INT   && column->bsize == 4) temp = *(int32_t*)cell;
+  else if (column->type == TYPE_INT   && column->bsize == 8) temp = *(int64_t*)cell;
+  else if (column->type == TYPE_FLOAT && column->bsize == 4) temp = *(float*)cell;
+  else if (column->type == TYPE_FLOAT && column->bsize == 8) temp = *(double*)cell;
+  else if (column->type == TYPE_CHAR) temp = atoi((char*)cell);
+  else { fprintf(stderr, "bad %s\n", __func__); return 0; }
   
   return temp;
 }
 
-long get_cell_as_long(struct Block * block, int32_t row_id, int32_t column_id)
+int64_t get_cell_as_int64(struct Block * block, int32_t row_id, int32_t column_id)
 {
   void * cell = get_cell(block, row_id, column_id);
   struct Column * column = get_column(block, column_id);
   
-  long temp = 0;
+  int64_t temp = 0;
   
-  if (column->type == INT_TYPE) temp = *(int32_t*)cell;
-  else if (column->type == LONG_TYPE) temp = *(long*)cell;
-  else if (column->type == FLOAT_TYPE) temp = *(float*)cell;
-  else if (column->type == DOUBLE_TYPE) temp = *(double*)cell;
-  else if (column_is_string(column)) temp = atol((char*)cell);
+  if      (column->type == TYPE_INT   && column->bsize == 4) temp = *(int32_t*)cell;
+  else if (column->type == TYPE_INT   && column->bsize == 8) temp = *(int64_t*)cell;
+  else if (column->type == TYPE_FLOAT && column->bsize == 4) temp = *(float*)cell;
+  else if (column->type == TYPE_FLOAT && column->bsize == 8) temp = *(double*)cell;
+  else if (column->type == TYPE_CHAR) temp = atol((char*)cell);
+  else { fprintf(stderr, "bad %s\n", __func__); return 0; }
   
   return temp;
 }
@@ -592,11 +568,12 @@ float get_cell_as_float(struct Block * block, int32_t row_id, int32_t column_id)
   
   float temp = 0;
   
-  if (column->type == INT_TYPE) temp = *(int32_t*)cell;
-  else if (column->type == LONG_TYPE) temp = *(long*)cell;
-  else if (column->type == FLOAT_TYPE) temp = *(float*)cell;
-  else if (column->type == DOUBLE_TYPE) temp = *(double*)cell;
-  else if (column_is_string(column)) temp = atof((char*)cell);
+  if      (column->type == TYPE_INT   && column->bsize == 4) temp = *(int32_t*)cell;
+  else if (column->type == TYPE_INT   && column->bsize == 8) temp = *(int64_t*)cell;
+  else if (column->type == TYPE_FLOAT && column->bsize == 4) temp = *(float*)cell;
+  else if (column->type == TYPE_FLOAT && column->bsize == 8) temp = *(double*)cell;
+  else if (column->type == TYPE_CHAR) temp = atof((char*)cell);
+  else { fprintf(stderr, "bad %s\n", __func__); return 0; }
   
   return temp;
 }
@@ -608,13 +585,30 @@ double get_cell_as_double(struct Block * block, int32_t row_id, int32_t column_i
   
   double temp = 0;
   
-  if (column->type == INT_TYPE) temp = *(int32_t*)cell;
-  else if (column->type == LONG_TYPE) temp = *(long*)cell;
-  else if (column->type == FLOAT_TYPE) temp = *(float*)cell;
-  else if (column->type == DOUBLE_TYPE) temp = *(double*)cell;
-  else if (column_is_string(column)) temp = atof((char*)cell);
+  if      (column->type == TYPE_INT   && column->bsize == 4) temp = *(int32_t*)cell;
+  else if (column->type == TYPE_INT   && column->bsize == 8) temp = *(int64_t*)cell;
+  else if (column->type == TYPE_FLOAT && column->bsize == 4) temp = *(float*)cell;
+  else if (column->type == TYPE_FLOAT && column->bsize == 8) temp = *(double*)cell;
+  else if (column->type == TYPE_CHAR) temp = atof((char*)cell);
+  else { fprintf(stderr, "bad %s\n", __func__); return 0; }
   
   return temp;
+}
+
+char * get_cell_as_char_temp = NULL;
+char * get_cell_as_char(struct Block * block, int32_t row_id, int32_t column_id)
+{
+  void * cell = get_cell(block, row_id, column_id);
+  struct Column * column = get_column(block, column_id);
+  
+  if (get_cell_as_char_temp == NULL) get_cell_as_char_temp = malloc(500);
+  
+  if      (column->type == TYPE_INT   && column->bsize == 4) snprintf(get_cell_as_char_temp, 500, "%d",  *(int32_t*)cell);
+  else if (column->type == TYPE_INT   && column->bsize == 8) snprintf(get_cell_as_char_temp, 500, "%ld", *(long*)cell);
+  else if (column->type == TYPE_FLOAT && column->bsize == 4) snprintf(get_cell_as_char_temp, 500, "%f",  *(float*)cell);
+  else if (column->type == TYPE_FLOAT && column->bsize == 8) snprintf(get_cell_as_char_temp, 500, "%lf", *(double*)cell);
+  else if (column->type == TYPE_CHAR) strncpy(get_cell_as_char_temp, (char*)cell, 500);
+  else { fprintf(stderr, "bad %s\n", __func__); return 0; }
 }
 
 void set_cell(struct Block * block, int row_id, int column_id, void * value)
@@ -626,9 +620,9 @@ void set_cell(struct Block * block, int row_id, int column_id, void * value)
   struct Column * column = get_column(block, column_id);
   void * cell = get_cell(block, row_id, column_id);
   if (value == NULL)
-    memset(cell, 0, get_type_size(column->type));
+    memset(cell, 0, column->bsize);//get_type_size(column->type));
   else
-    memcpy(cell, value, get_type_size(column->type));
+    memcpy(cell, value, column->bsize);//get_type_size(column->type));
 }
 
 void set_cell_from_int(struct Block * block, int32_t row_id, int32_t column_id, int32_t data)
@@ -639,12 +633,12 @@ void set_cell_from_int(struct Block * block, int32_t row_id, int32_t column_id, 
   
   struct Column * column = get_column(block, column_id);
   void * cell = get_cell(block, row_id, column_id);
-  if (column->type == INT_TYPE) *(int*)cell = data;
-  else if (column->type == LONG_TYPE) *(long*)cell = data;
-  else if (column->type == FLOAT_TYPE) *(float*)cell = data;
-  else if (column->type == DOUBLE_TYPE) *(double*)cell = data;
-  else { fprintf(stderr, "set_cell_from_int into a string field - donno if works - failing\n"); exit(0); }
-  //else if (column_is_string(column)) snprintf((char*)cell, column->type, "%d", data);
+  if      (column->type == TYPE_INT && column->bsize == 4) *(int32_t*)cell = data;
+  else if (column->type == TYPE_INT && column->bsize == 8) *(int64_t*)cell = data;
+  else if (column->type == TYPE_FLOAT && column->bsize == 4) *(float*)cell = data;
+  else if (column->type == TYPE_FLOAT && column->bsize == 8) *(double*)cell = data;
+  else if (column->type == TYPE_CHAR) snprintf((char*)cell, column->bsize, "%d", data);
+  else fprintf(stderr, "bad %s\n", __func__);
 }
 
 void set_cell_from_double(struct Block * block, int32_t row_id, int32_t column_id, double data)
@@ -655,12 +649,12 @@ void set_cell_from_double(struct Block * block, int32_t row_id, int32_t column_i
   
   struct Column * column = get_column(block, column_id);
   void * cell = get_cell(block, row_id, column_id);
-  if (column->type == INT_TYPE) *(int*)cell = data;
-  else if (column->type == LONG_TYPE) *(long*)cell = data;
-  else if (column->type == FLOAT_TYPE) *(float*)cell = data;
-  else if (column->type == DOUBLE_TYPE) *(double*)cell = data;
-  else { fprintf(stderr, "set_cell_from_double into a string field - donno if works - failing\n"); exit(0); }
-  //else if (column_is_string(column)) snprintf((char*)cell, column->type, "%d", data);
+  if      (column->type == TYPE_INT && column->bsize == 4) *(int32_t*)cell = data;
+  else if (column->type == TYPE_INT && column->bsize == 8) *(int64_t*)cell = data;
+  else if (column->type == TYPE_FLOAT && column->bsize == 4) *(float*)cell = data;
+  else if (column->type == TYPE_FLOAT && column->bsize == 8) *(double*)cell = data;
+  else if (column->type == TYPE_CHAR) snprintf((char*)cell, column->bsize, "%f", data);
+  else fprintf(stderr, "bad %s\n", __func__);
 }
 
 void set_cell_from_string(struct Block * block, int32_t row_id, int32_t column_id, char * data)
@@ -671,11 +665,27 @@ void set_cell_from_string(struct Block * block, int32_t row_id, int32_t column_i
   
   struct Column * column = get_column(block, column_id);
   void * cell = get_cell(block, row_id, column_id);
-  if (column_is_string(column)) strncpy((char*)cell, data, column->type);
-  else if (column->type == INT_TYPE) *(int*)cell = atoi(data);
-  else if (column->type == LONG_TYPE) *(long*)cell = atol(data);
-  else if (column->type == FLOAT_TYPE) *(float*)cell = atof(data);
-  else if (column->type == DOUBLE_TYPE) *(double*)cell = atof(data);
+  if      (column->type == TYPE_INT && column->bsize == 4) *(int32_t*)cell = atoi(data);
+  else if (column->type == TYPE_INT && column->bsize == 8) *(int64_t*)cell = atol(data);
+  else if (column->type == TYPE_FLOAT && column->bsize == 4) *(float*)cell = atof(data);
+  else if (column->type == TYPE_FLOAT && column->bsize == 8) *(double*)cell = atof(data);
+  else if (column->type == TYPE_CHAR) strncpy((char*)cell, data, column->bsize);
+  else fprintf(stderr, "bad %s\n", __func__);
+}
+
+void fprintf_cell(FILE * fp, struct Block * block, int32_t row_id, int32_t column_id)
+{
+  struct Column * column = get_column(block, column_id);
+  switch (column->type) {
+    case TYPE_INT:
+      if      (column->bsize == 4) { fprintf(fp, "%d", *(int32_t*)get_cell(block, row_id, column_id)); break; }
+      else if (column->bsize == 8) { fprintf(fp, "%ld", *(long*)get_cell(block, row_id, column_id)); break; }
+      else { fprintf(stderr, "bad %s %s:(%d)\n", __func__, __FILE__, __LINE__); break; }
+    case TYPE_FLOAT:
+      if      (column->bsize == 4) { fprintf(fp, "%f", *(float*)get_cell(block, row_id, column_id)); break; }
+      else if (column->bsize == 8) { fprintf(fp, "%lf", *(double*)get_cell(block, row_id, column_id)); break; }
+      else { fprintf(stderr, "bad %s %s:(%d)\n", __func__, __FILE__, __LINE__); break; }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -752,11 +762,12 @@ struct Block * add_row_with_data(struct Block * block, int num_columns, ...)
   for (column_id = 0 ; column_id < block->num_columns ; column_id++)
   {
     struct Column * column = get_column(block, column_id);
-    if (column->type == INT_TYPE)         { int32_t value = va_arg(v1, int);          set_cell(block, row_id, column_id, &value); }
-    else if (column->type == LONG_TYPE)   { long value = va_arg(v1, long);            set_cell(block, row_id, column_id, &value); }
-    else if (column->type == FLOAT_TYPE)  { float value = (float)va_arg(v1, double);  set_cell(block, row_id, column_id, &value); }
-    else if (column->type == DOUBLE_TYPE) { double value = va_arg(v1, double);        set_cell(block, row_id, column_id, &value); }
-    else if (column_is_string(column))    { char * value = va_arg(v1, char *);        set_cell(block, row_id, column_id, value); }
+    if      (column->type == TYPE_INT && column->bsize == 4)   { int32_t value = va_arg(v1, int);          set_cell(block, row_id, column_id, &value); }
+    else if (column->type == TYPE_INT && column->bsize == 8)   { long value = va_arg(v1, long);            set_cell(block, row_id, column_id, &value); }
+    else if (column->type == TYPE_FLOAT && column->bsize == 4) { float value = (float)va_arg(v1, double);  set_cell(block, row_id, column_id, &value); }
+    else if (column->type == TYPE_FLOAT && column->bsize == 8) { double value = va_arg(v1, double);        set_cell(block, row_id, column_id, &value); }
+    else if (column->type == TYPE_CHAR)    { char * value = va_arg(v1, char *);        set_cell(block, row_id, column_id, value); }
+    else fprintf(stderr, "bad %s\n", __func__);
   }
   va_end(v1);
   
@@ -768,7 +779,7 @@ struct Block * add_row_with_data(struct Block * block, int num_columns, ...)
 void inspect_block(struct Block * block)
 {
   if (block == NULL) { fprintf(stderr, "inspect_block called on a NULL block\n"); return; }
-  fprintf(stderr, "\nblock (%d+%d+%d=%d total size in bytes - with %ld byte header)\n", block->attributes_bsize, block->columns_bsize, block->data_bsize, block->attributes_bsize + block->columns_bsize + block->data_bsize, block_header_size());
+  fprintf(stderr, "\nblock (%d+%d+%d=%d total size in bytes - with %ld byte header)\n", block->attributes_bsize, block->columns_bsize, block->data_bsize, block->attributes_bsize + block->columns_bsize + block->data_bsize, SIZEOF_STRUCT_BLOCK);
   
   if (block->num_attributes == 0)
     fprintf(stderr, "     ->no_attributes\n");
@@ -787,12 +798,15 @@ void inspect_block(struct Block * block)
       struct Attribute * attribute = get_attribute(block, attribute_id);
       char * name = attribute_get_name(attribute);
       void * value = attribute_get_value(attribute);
-      if (attribute->type == INT_TYPE)         fprintf(stderr, "       [%2d][%7s] \"%s\" = %d\n", attribute_id, get_type_name(attribute->type), name, *(int32_t*)value);
-      else if (attribute->type == LONG_TYPE)   fprintf(stderr, "       [%2d][%7s] \"%s\" = %ld\n", attribute_id, get_type_name(attribute->type), name, *(long*)value);
-      else if (attribute->type == FLOAT_TYPE)  fprintf(stderr, "       [%2d][%7s] \"%s\" = %f\n", attribute_id, get_type_name(attribute->type), name, *(float*)value);
-      else if (attribute->type == DOUBLE_TYPE) fprintf(stderr, "       [%2d][%7s] \"%s\" = %lf\n", attribute_id, get_type_name(attribute->type), name, *(double*)value);
-      else if (attribute->type == STRING_TYPE) fprintf(stderr, "       [%2d][%7s] \"%s\" = \"%s\"\n", attribute_id, get_type_name(attribute->type), name, (char*)value);
-      else fprintf(stderr, "       [%d] has invalid attribute->type (%x)\n", attribute_id, attribute->type);
+      fprintf(stderr, "       [%2d][%7s] \"%s\" = ", attribute_id, get_type_name(attribute->type, attribute->value_length), name);
+      fprintf_attribute_value(stderr, block, attribute_id);
+      fprintf(stderr, "\n");
+      /*if      (attribute->type == TYPE_INT && attribute->value_length == 4)   fprintf(stderr, "       [%2d][%7s] \"%s\" = %d\n", attribute_id, get_type_name(attribute->type, attribute->bsize), name, *(int32_t*)value);
+      else if (attribute->type == TYPE_INT && attribute->value_length == 8)   fprintf(stderr, "       [%2d][%7s] \"%s\" = %ld\n", attribute_id, get_type_name(attribute->type, attribute->bsize), name, *(long*)value);
+      else if (attribute->type == TYPE_FLOAT && attribute->value_length == 4) fprintf(stderr, "       [%2d][%7s] \"%s\" = %f\n", attribute_id, get_type_name(attribute->type, attribute->bsize), name, *(float*)value);
+      else if (attribute->type == TYPE_FLOAT && attribute->value_length == 8) fprintf(stderr, "       [%2d][%7s] \"%s\" = %lf\n", attribute_id, get_type_name(attribute->type, attribute->bsize), name, *(double*)value);
+      else if (attribute->type == TYPE_CHAR) fprintf(stderr, "       [%2d][%7s] \"%s\" = \"%s\"\n", attribute_id, get_type_name(attribute->type, attribute->bsize), name, (char*)value);
+      else fprintf(stderr, "       [%d] has invalid attribute->type (%x)\n", attribute_id, attribute->type);*/
     }
     fprintf(stderr, "     ]\n");
   }
@@ -818,7 +832,7 @@ void inspect_block(struct Block * block)
     {
       struct Column * column = get_column(block, column_id);
       fprintf(stderr, "       [%2d][%7s][%3d][%3d] = \"%s\"\n", 
-        column_id, get_type_name(column->type), 
+        column_id, get_type_name(column->type, column->bsize), 
         column_offset[column_id], cell_offset[column_id], 
         column_get_name(column));
     }
@@ -843,12 +857,12 @@ void inspect_block(struct Block * block)
         void * cell = get_cell(block, row_id, column_id);
         if (column_id != 0) fprintf(stderr, ", ");
         
-        if (cell == NULL) fprintf(stderr, "NULL");
-        else if (column->type == INT_TYPE)    fprintf(stderr, "%d", *(int32_t*)cell);
-        else if (column->type == LONG_TYPE)   fprintf(stderr, "%ld", *(long*)cell);
-        else if (column->type == FLOAT_TYPE)  fprintf(stderr, "%f", *(float*)cell);
-        else if (column->type == DOUBLE_TYPE) fprintf(stderr, "%lf", *(double*)cell);
-        else if (column_is_string(column))    fprintf(stderr, "\"%s\"", (char*)cell);
+        if      (cell == NULL) fprintf(stderr, "NULL");
+        else if (column->type == TYPE_INT && column->bsize == 4)   fprintf(stderr, "%d", *(int32_t*)cell);
+        else if (column->type == TYPE_INT && column->bsize == 8)   fprintf(stderr, "%ld", *(long*)cell);
+        else if (column->type == TYPE_FLOAT && column->bsize == 4) fprintf(stderr, "%f", *(float*)cell);
+        else if (column->type == TYPE_FLOAT && column->bsize == 8) fprintf(stderr, "%lf", *(double*)cell);
+        else if (column->type == TYPE_CHAR)    fprintf(stderr, "\"%s\"", (char*)cell);
       }
       
       if (row_id >= 25 && row_id < block->num_rows - 5) { fprintf(stderr, " }\n       ....\n"); row_id = block->num_rows-5; continue; }
@@ -859,14 +873,30 @@ void inspect_block(struct Block * block)
   fprintf(stderr, "\n");
 }
 
-char * get_type_name(int32_t type)
+char block_type_names[12][20] = {
+  "unknown",
+  "int8", "int16", "int32", "int64",
+  "uint8", "uint16", "uint32", "uint64",
+  "float", "double", "char"
+};
+
+char * get_type_name(enum TYPE type, int32_t bsize)
 {
-  if (type >= 0 && type < sizeof(block_type_names) / sizeof(block_type_names[0]))
-    return block_type_names[type];
-  else
+  if      (type == 0)                        return block_type_names[0];
+  else if (type == TYPE_INT && bsize == 1)   return block_type_names[1];
+  else if (type == TYPE_INT && bsize == 2)   return block_type_names[2];
+  else if (type == TYPE_INT && bsize == 4)   return block_type_names[3];
+  else if (type == TYPE_INT && bsize == 8)   return block_type_names[4];
+  else if (type == TYPE_UINT && bsize == 1)  return block_type_names[5];
+  else if (type == TYPE_UINT && bsize == 2)  return block_type_names[6];
+  else if (type == TYPE_UINT && bsize == 4)  return block_type_names[7];
+  else if (type == TYPE_UINT && bsize == 8)  return block_type_names[8];
+  else if (type == TYPE_FLOAT && bsize == 4) return block_type_names[9];
+  else if (type == TYPE_FLOAT && bsize == 8) return block_type_names[10];
+  else if (type == TYPE_CHAR)
   {
     static char get_type_name_temp[100] = "";
-    sprintf(get_type_name_temp, "str %3d", type);
+    sprintf(get_type_name_temp, "char%3d", bsize);
     return get_type_name_temp;
   }
 }

@@ -111,11 +111,11 @@ int main(int argc, char ** argv)
                   set_cell(block, block_row_id, block_color_column_ids[i], &temp);
                 }
               
-              if (rule->type == column->type && rule->type == INT_TYPE)
+              if (rule->type == column->type && rule->type == TYPE_INT)
               {
                 
               }
-              else if (column_is_string(rule) && column_is_string(column)) // strings
+              else if (rule->type == TYPE_CHAR && column->type == TYPE_CHAR) // strings
               {
                 int width = (rule->type > column->type) ? column->type : rule->type;
                 int rule_row_id;
@@ -128,7 +128,7 @@ int main(int argc, char ** argv)
                       if (rules_color_column_ids[i] != -1 && block_color_column_ids[i] != -1)
                       {
                         struct Column * color_column = get_column(rules, rules_color_column_ids[i]);
-                        if (column_is_string(color_column))
+                        if (color_column->type == TYPE_CHAR)
                         {
                           float color = get_cell_as_float(rules, rule_row_id, rules_color_column_ids[i]);
                           set_cell(block, block_row_id, block_color_column_ids[i], &color);

@@ -95,7 +95,7 @@ int main(int argc, char ** argv)
     while ((field = mysql_fetch_field(res)))
     {
       switch (field->type) {
-        case MYSQL_TYPE_LONG: block = add_int_column(block, field->name); break;
+        case MYSQL_TYPE_LONG: block = add_int32_column(block, field->name); break;
         case MYSQL_TYPE_FLOAT: block = add_float_column(block, field->name); break;
         case MYSQL_TYPE_DOUBLE: block = add_double_column(block, field->name); break;
         case MYSQL_TYPE_VAR_STRING:
@@ -111,11 +111,11 @@ int main(int argc, char ** argv)
       for (column_id = 0 ; column_id < block->num_columns ; column_id++)
       {
         struct Column * column = get_column(block, column_id);
-        if (column->type == INT_TYPE && row[column_id] != NULL)      { int value = atoi(row[column_id]); set_cell(block, row_id, column_id, &value); }
-        else if (column->type == LONG_TYPE && row[column_id] != NULL) { long value = atoi(row[column_id]); set_cell(block, row_id, column_id, &value); }
-        else if (column->type == FLOAT_TYPE && row[column_id] != NULL) { float value = atof(row[column_id]); set_cell(block, row_id, column_id, &value); }
-        else if (column->type == DOUBLE_TYPE && row[column_id] != NULL) { double value = atof(row[column_id]); set_cell(block, row_id, column_id, &value); }
-        else if (column->type >= 5 && row[column_id] != NULL) set_cell(block, row_id, column_id, row[column_id]);
+        if (column->type == TYPE_INT && column->bsize == 4 && row[column_id] != NULL)      { int value = atoi(row[column_id]); set_cell(block, row_id, column_id, &value); }
+        else if (column->type == TYPE_INT && column->bsize == 8 && row[column_id] != NULL) { long value = atoi(row[column_id]); set_cell(block, row_id, column_id, &value); }
+        else if (column->type == TYPE_FLOAT && column->bsize == 4 && row[column_id] != NULL) { float value = atof(row[column_id]); set_cell(block, row_id, column_id, &value); }
+        else if (column->type == TYPE_FLOAT && column->bsize == 8 && row[column_id] != NULL) { double value = atof(row[column_id]); set_cell(block, row_id, column_id, &value); }
+        else if (column->type == TYPE_CHAR && row[column_id] != NULL) set_cell(block, row_id, column_id, row[column_id]);
       }
       row_id++;
     }

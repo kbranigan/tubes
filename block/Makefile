@@ -23,7 +23,7 @@ kevin: \
 	kevin/toronto_addresses_and_tickets_join \
 	kevin/add_color_to_addresses_tickets_by_wday_and_time \
 	kevin/add_distance_to_nearest_neighbour \
-	kevin/create_edge_to_street \
+	kevin/add_edge_to_street \
 	kevin/host_ticket_data \
 	kevin/test
 
@@ -36,8 +36,8 @@ kevin/add_color_to_addresses_tickets_by_wday_and_time: bin/block.o kevin/add_col
 kevin/add_distance_to_nearest_neighbour: bin/block.o bin/block_kdtree.o kevin/add_distance_to_nearest_neighbour.c
 	g++ bin/block.o kevin/add_distance_to_nearest_neighbour.c bin/block_kdtree.o -o kevin/add_distance_to_nearest_neighbour
 
-kevin/create_edge_to_street: bin/block.o bin/block_kdtree.o kevin/create_edge_to_street.c
-	g++ bin/block.o kevin/create_edge_to_street.c bin/block_kdtree.o -o kevin/create_edge_to_street
+kevin/add_edge_to_street: bin/block.o bin/block_kdtree.o kevin/add_edge_to_street.c
+	g++ bin/block.o kevin/add_edge_to_street.c bin/block_kdtree.o -o kevin/add_edge_to_street
 
 kevin/host_ticket_data: bin/block.o bin/block_kdtree.o ext/mongoose.c kevin/host_ticket_data.c
 	g++ -lpthread -ldl bin/block.o bin/block_kdtree.o ext/mongoose.c kevin/host_ticket_data.c -o kevin/host_ticket_data

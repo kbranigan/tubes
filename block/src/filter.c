@@ -58,7 +58,7 @@ int main(int argc, char ** argv)
       continue;
     }
     struct Column * column = get_column(block, column_id);
-    if (!column_is_string(column) && column->type != INT_TYPE)
+    if (column->type != TYPE_CHAR && (column->type != TYPE_INT || column->bsize != 4))
     {
       fprintf(stderr, "column '%s' is not a string (only string based filtering supported for now).\n", column_name);
       write_block(stdout, block);
@@ -67,20 +67,21 @@ int main(int argc, char ** argv)
     }
     
     struct Block * newblock = new_block();
-    for (i = 0 ; i < block->num_attributes ; i++)
+    newblock = copy_all_attributes(newblock, block);
+    /*for (i = 0 ; i < block->num_attributes ; i++)
     {
       struct Attribute * attr = get_attribute(block, i);
       newblock = _add_attribute(newblock, attr->type, attribute_get_name(attr), attribute_get_value(attr));//&attr->name, &attr->name + attr->name_length);
-    }
+    }*/
     
     int ivalue;
-    if (column->type == INT_TYPE) ivalue = atoi(value);
+    if (column->type == TYPE_INT) ivalue = atoi(value);
     
     for (i = 0 ; i < block->num_rows ; i++)
     {
       char * cell = (char*)get_cell(block, i, column_id);//(get_row(block, i)+column_offset);
       
-      if (column->type == INT_TYPE)
+      if (column->type == TYPE_INT && column->bsize == 4)
       {
         if ((strcmp(operator, "NOT")==0 && (*(int32_t*)cell) != ivalue) || 
             (strcmp(operator, "IS")==0  && (*(int32_t*)cell) == ivalue))
@@ -104,7 +105,7 @@ int main(int argc, char ** argv)
     for (i = 0 ; i < block->num_columns ; i++)
     {
       struct Column * col = get_column(block, i);
-      newblock = _add_column(newblock, col->type, column_get_name(col));
+      newblock = _add_column(newblock, col->type, col->bsize, column_get_name(col));
     }
     
     newblock->num_rows = new_num_rows;
@@ -115,7 +116,7 @@ int main(int argc, char ** argv)
     {
       char * cell = (char*)get_cell(block, i, column_id); //(get_row(block, row_id)+column_offset);
       
-      if (column->type == INT_TYPE)
+      if (column->type == TYPE_INT && column->bsize == 4)
       {
         if ((strcmp(operator, "NOT")==0 && *(int32_t*)cell != ivalue) || 
             (strcmp(operator, "IS")==0  && *(int32_t*)cell == ivalue))

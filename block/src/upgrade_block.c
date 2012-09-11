@@ -2,6 +2,7 @@
 #include "block.h"
 #include <math.h>
 
+/*
 // copied from read_block
 struct Block * read_old_block(FILE * fp)
 {
@@ -62,11 +63,12 @@ struct Block * read_old_block(FILE * fp)
   
   return block;
 }
-
+*/
 
 int main(int argc, char ** argv)
 {
-  if (stdout_is_piped()) // other wise you don't see the seg fault
+  fprintf(stderr, "does nothing.\n");
+  /*if (stdout_is_piped()) // other wise you don't see the seg fault
     setup_segfault_handling(argv);
   
   assert_stdin_is_piped();
@@ -84,6 +86,5 @@ int main(int argc, char ** argv)
     fprintf(stderr, "num_rows = %d\n", block->num_rows);
     write_block(stdout, block);
     free_block(block);
-  }
-  
+  }*/
 }

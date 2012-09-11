@@ -72,12 +72,7 @@ int main(int argc, char ** argv)
   while ((block = read_block(stdin)))
   {
     struct Block * newblock = new_block();
-    for (i = 0 ; i < block->num_attributes ; i++)
-    {
-      struct Attribute * attr = get_attribute(block, i);
-      
-      newblock = _add_attribute(newblock, attr->type, attribute_get_name(attr), attribute_get_value(attr));//&attr->name, &attr->name + attr->name_length);
-    }
+    newblock = copy_all_attributes(newblock, block);
     
     if (remove_columns_copy[0] != 0)
       newblock = add_string_attribute(newblock, "remove attributes", remove_columns_copy);
@@ -92,9 +87,16 @@ int main(int argc, char ** argv)
     {
       struct Column * col = get_column(block, i);
       for (j = 0 ; j < num_remove_columns ; j++)
-        if (strcmp(column_get_name(col), remove_columns[j])==0) break;
-      if (j == num_remove_columns)
       {
+        // fprintf(stderr, "%s(%d(%d)) vs %s(%d) = %d\n", 
+        //                  column_get_name(col), col->name_length, strlen(column_get_name(col)), 
+        //                  remove_columns[j], strlen(remove_columns[j]), 
+        //                   strcmp(column_get_name(col), remove_columns[j]));
+        if (strcmp(column_get_name(col), remove_columns[j])==0) break;
+      }
+      if (j == num_remove_columns) // not a column to be removed
+      {
+        //fprintf(stderr, "%d: %s (%d) - do not remove\n", i, column_get_name(col), strlen(column_get_name(col)));
         for (j = 0 ; j < num_int_columns ; j++)
           if (strcmp(column_get_name(col), int_columns[j])==0) break;
         if (j == num_int_columns)
@@ -102,7 +104,7 @@ int main(int argc, char ** argv)
           num_remove_column_ids++;
           remove_column_ids = realloc(remove_column_ids, sizeof(int)*num_remove_column_ids);
           remove_column_ids[num_remove_column_ids-1] = i;
-          newblock = _add_column(newblock, col->type, column_get_name(col));
+          newblock = _add_column(newblock, col->type, col->bsize, column_get_name(col));
         }
       }
     }
@@ -120,7 +122,7 @@ int main(int argc, char ** argv)
         num_int_column_ids++;
         int_column_ids = realloc(int_column_ids, sizeof(int)*num_int_column_ids);
         int_column_ids[num_int_column_ids-1] = i;
-        newblock = add_int_column(newblock, column_get_name(col));
+        newblock = add_int32_column(newblock, column_get_name(col));
       }
     }
     
@@ -134,7 +136,7 @@ int main(int argc, char ** argv)
         void * src = get_cell(block, i, remove_column_ids[j]);
         struct Column * col = get_column(block, remove_column_ids[j]);
         
-        memcpy(dst, src, get_type_size(col->type));
+        memcpy(dst, src, col->bsize);
       }
       for (j = 0 ; j < num_int_column_ids ; j++)
       {
@@ -142,7 +144,7 @@ int main(int argc, char ** argv)
         //void * src = get_cell(block, i, int_column_ids[j]);
         //struct Column * col = get_column(block, int_column_ids[j]);
         
-        set_cell_from_int(newblock, i, j + num_remove_column_ids, get_cell_as_int(block, i, int_column_ids[j]));
+        set_cell_from_int(newblock, i, j + num_remove_column_ids, get_cell_as_int32(block, i, int_column_ids[j]));
       }
     }
     free(remove_column_ids);
