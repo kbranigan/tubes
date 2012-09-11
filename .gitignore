@@ -8,3 +8,8 @@ images/*
 *.o
 *.csv
 *.gz
+*.png
+*.jpg
+*.gif
+*.js
+*.pdf
