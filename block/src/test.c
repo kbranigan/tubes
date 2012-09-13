@@ -76,7 +76,7 @@ int main(int argc, char ** argv)
       old_num_rows = block->num_rows;
       old_data_bsize = block->data_bsize;
       block = add_row(block);
-      set_cell_from_int(block, i, 0, i*15);
+      set_cell_from_int32(block, i, 0, i*15);
       assert(block->num_rows==old_num_rows+1);
       assert(block->data_bsize==old_data_bsize+block->row_bsize);
       assert(get_cell_as_int32(block, i, 0)==i*15);
@@ -130,7 +130,7 @@ int main(int argc, char ** argv)
     assert(strcmp(column_get_name(get_column(block, get_column_id_by_name(block, "intcol2"))), "intcol2")==0);
     blank_column_values(block, "intcol2");
     for (i = 0 ; i < block->num_rows ; i++)
-      set_cell_from_int(block, i, 2, 15*block->num_rows - i*15);
+      set_cell_from_int32(block, i, 2, 15*block->num_rows - i*15);
     
     ////// general test
     assert(*(int32_t*)attribute_get_value(get_attribute(block, get_attribute_id_by_name(block, "testint")))==15);
@@ -154,7 +154,7 @@ int main(int argc, char ** argv)
     assert(strcmp(column_get_name(get_column(block, get_column_id_by_name(block, "longcol1"))), "longcol1")==0);
     blank_column_values(block, "longcol1");
     for (i = 0 ; i < block->num_rows ; i++)
-      set_cell_from_int(block, i, 3, 11*i);
+      set_cell_from_int32(block, i, 3, 11*i);
   
   //block = add_row(block);
   
