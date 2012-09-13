@@ -13,3 +13,4 @@ images/*
 *.gif
 *.js
 *.pdf
+blocks/bin/*
