@@ -30,10 +30,10 @@ void * create_hashtable_on_column(struct Block * block, char * column_name)
 {
   if (block == NULL) { fprintf(stderr, "create_hash_on_string_column called on NULL block.\n"); return NULL; }
   
-  int row_id, column_id = get_column_id_by_name(block, column_name);
+  int row_id, column_id = get_column_id_by_name_or_exit(block, column_name);
   if (column_id == -1) { fprintf(stderr, "create_hash_on_string_column couldn't find '%s' column.\n", column_name); return NULL; }
   //if (!column_is_string(get_column(block, column_id))) { fprintf(stderr, "create_hash_on_string_column called on column which is not a string.\n"); return NULL; }
-  if (!get_column(block, column_id)->type != TYPE_CHAR) { fprintf(stderr, "create_hash_on_string_column called on column which is not a string.\n"); return NULL; }
+  if (get_column(block, column_id)->type != TYPE_CHAR) { fprintf(stderr, "create_hash_on_string_column called on column which is not a string.\n"); return NULL; }
   
   struct hashtable * ht = create_hashtable(16, hash_from_string_fn, strings_equal_fn);
   
@@ -70,7 +70,8 @@ void * create_hashtable_on_column(struct Block * block, char * column_name)
 
 int32_t search_hashtable_for_string(void * ht, char * search)
 {
-  if (ht == NULL || search == NULL) { fprintf(stderr, "search_hashtable_for_string called with invalid params\n"); return -1; }
+  if (ht == NULL) { fprintf(stderr, "search_hashtable_for_string called with NULL hashtable\n"); exit(0); }
+  if (search == NULL) { fprintf(stderr, "search_hashtable_for_string called with NULL search value\n"); exit(0); }
   int32_t * row_id = (int32_t *)hashtable_search((struct hashtable*)ht, search);
   if (row_id == NULL) return -1;
   else return *row_id;
