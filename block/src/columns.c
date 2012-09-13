@@ -140,11 +140,7 @@ int main(int argc, char ** argv)
       }
       for (j = 0 ; j < num_int_column_ids ; j++)
       {
-        //void * dst = get_cell(newblock, i, j);
-        //void * src = get_cell(block, i, int_column_ids[j]);
-        //struct Column * col = get_column(block, int_column_ids[j]);
-        
-        set_cell_from_int(newblock, i, j + num_remove_column_ids, get_cell_as_int32(block, i, int_column_ids[j]));
+        set_cell_from_int32(newblock, i, j + num_remove_column_ids, get_cell_as_int32(block, i, int_column_ids[j]));
       }
     }
     free(remove_column_ids);
