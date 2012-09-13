@@ -78,22 +78,19 @@ int main(int argc, char ** argv)
       }
       else if (column->type == TYPE_CHAR)
       {
-        int max = 0;
+        int max = 0, count = 0;
         for (j = 0 ; j < block->num_rows ; j++)
         {
           void * row = get_row(block, j);
           int value = strlen((char*)(row+offsets[i]));
-          if (value > max) max = value;
+          if (value > max) { max = value; count = 1; }
+          else if (value == max) count++;
         }
-        fprintf(stderr, "%s: max strlen = %d (field length is %d)\n", column_get_name(column), max, column->type);
-        break;
+        fprintf(stderr, "%s: max strlen = %d (field size is %d), %d rows at that length\n", column_get_name(column), max, column->bsize, count);
       }
-      fprintf(stderr, "hehehe %s %d\n", column_get_name(column), column->type);
-      break;
+      else
+        fprintf(stderr, "doesn't do %s %d\n", column_get_name(column), column->type);
     }
-    
-    //inspect_block(block);
-    
     free_block(block);
   }
 }
