@@ -20,30 +20,34 @@ all:  \
 	bin/bounds
 
 kevin: \
-	kevin/toronto_addresses_and_tickets_join \
+	kevin/add_ticket_totals_to_addresses \
 	kevin/add_color_to_addresses_tickets_by_wday_and_time \
 	kevin/add_distance_to_nearest_neighbour \
 	kevin/add_edge_to_street \
 	kevin/host_ticket_data \
+	kevin/add_address_id_and_is_opp \
 	kevin/test
 
-kevin/toronto_addresses_and_tickets_join: bin/block.o bin/block_hashtable.o kevin/toronto_addresses_and_tickets_join.c bin/hashtable.o
-	gcc -lm bin/block.o kevin/toronto_addresses_and_tickets_join.c bin/hashtable.o bin/block_hashtable.o -o kevin/toronto_addresses_and_tickets_join
+kevin/add_ticket_totals_to_addresses: bin/block.o kevin/add_ticket_totals_to_addresses.c
+	gcc -lm bin/block.o kevin/add_ticket_totals_to_addresses.c -o kevin/add_ticket_totals_to_addresses
 
 kevin/add_color_to_addresses_tickets_by_wday_and_time: bin/block.o kevin/add_color_to_addresses_tickets_by_wday_and_time.c bin/hashtable.o
 	gcc -lm bin/block.o kevin/add_color_to_addresses_tickets_by_wday_and_time.c bin/hashtable.o -o kevin/add_color_to_addresses_tickets_by_wday_and_time
 
 kevin/add_distance_to_nearest_neighbour: bin/block.o bin/block_kdtree.o kevin/add_distance_to_nearest_neighbour.c
-	g++ bin/block.o kevin/add_distance_to_nearest_neighbour.c bin/block_kdtree.o -o kevin/add_distance_to_nearest_neighbour
+	g++ -lm bin/block.o kevin/add_distance_to_nearest_neighbour.c bin/block_kdtree.o -o kevin/add_distance_to_nearest_neighbour
 
 kevin/add_edge_to_street: bin/block.o bin/block_kdtree.o kevin/add_edge_to_street.c
-	g++ bin/block.o kevin/add_edge_to_street.c bin/block_kdtree.o -o kevin/add_edge_to_street
+	g++ -lm bin/block.o kevin/add_edge_to_street.c bin/block_kdtree.o -o kevin/add_edge_to_street
 
 kevin/host_ticket_data: bin/block.o bin/block_kdtree.o ext/mongoose.c kevin/host_ticket_data.c
-	g++ -lpthread -ldl bin/block.o bin/block_kdtree.o ext/mongoose.c kevin/host_ticket_data.c -o kevin/host_ticket_data
+	g++ -lm -lpthread -ldl bin/block.o bin/block_kdtree.o ext/mongoose.c kevin/host_ticket_data.c -o kevin/host_ticket_data
 
 kevin/test: bin/block.o kevin/test.c bin/hashtable.o bin/block_kdtree.o
-	g++ bin/block.o kevin/test.c bin/hashtable.o bin/block_kdtree.o -o kevin/test
+	g++ -lm bin/block.o kevin/test.c bin/hashtable.o bin/block_kdtree.o -o kevin/test
+
+kevin/add_address_id_and_is_opp: bin/block.o bin/block_hashtable.o bin/hashtable.o kevin/add_address_id_and_is_opp.c
+	gcc -lm bin/block.o bin/block_hashtable.o bin/hashtable.o kevin/add_address_id_and_is_opp.c -o kevin/add_address_id_and_is_opp
 
 bin/hashtable.o: ext/hashtable.c
 	gcc ext/hashtable.c -c -o bin/hashtable.o

@@ -60,7 +60,7 @@ struct Block * realloc_block(struct Block * block)
   return (struct Block *)realloc(block, sizeof(struct Block) + block->attributes_bsize + block->columns_bsize + block->data_bsize);
 }
 
-struct Block * set_num_rows(struct Block * block, int32_t num_rows)
+struct Block * set_num_rows(struct Block * block, uint32_t num_rows)
 {
   block->num_rows = num_rows;
   block->data_bsize = block->row_bsize * block->num_rows;
@@ -76,7 +76,7 @@ struct Block * read_block(FILE * fp)
   if (fread(&header, sizeof(header), 1, fp) != 1) return NULL;
   if (isfinite(header)) { fprintf(stderr, "header (%f) is finite (it's suppose to be infinite, either no data or invalid data was read)\n", header); return NULL; }
   
-  int32_t is_block;
+  uint32_t is_block;
   if (fread(&is_block, sizeof(is_block), 1, fp) != 1) { fprintf(stderr, "fread block is_block failed.\n"); return NULL; }
   if (is_block != 1) { fprintf(stderr, "is_block != 1\n"); return NULL; }
   
@@ -100,7 +100,7 @@ void write_block(FILE * fp, struct Block * block)
   float inf = INFINITY;
   if (fwrite(&inf, sizeof(inf), 1, fp) != 1) { fprintf(stderr, "fwrite block header failed.\n"); return; }
   
-  int32_t is_block = 1;
+  uint32_t is_block = 1;
   if (fwrite(&is_block, sizeof(is_block), 1, fp) != 1) { fprintf(stderr, "fwrite block is_block failed.\n"); return; }
   
   if (fwrite(block, sizeof(struct Block) + block->attributes_bsize + block->columns_bsize + block->data_bsize, 1, fp) != 1) { fprintf(stderr, "fwrite block failed.\n"); return; }
@@ -133,9 +133,9 @@ struct Block * add_command(struct Block * block, int argc, char ** argv)
   return block;
 }
 
-int32_t memory_pad(int32_t i)
+uint32_t memory_pad(uint32_t i, uint32_t bsize)
 {
-  return ceil((i+1) / 4.0) * 4.0;
+  return ceil(i / (float)bsize) * bsize;
 }
 
 /*int32_t get_type_size(int32_t type)
@@ -163,7 +163,7 @@ struct Attribute * get_next_attribute(struct Block * block, struct Attribute * a
   return (block == NULL || attribute == NULL) ? NULL : (struct Attribute *)((char*)attribute + sizeof(struct Attribute) + attribute->name_length + attribute->value_length);
 }
 
-struct Attribute * get_attribute(struct Block * block, int32_t attribute_id)
+struct Attribute * get_attribute(struct Block * block, uint32_t attribute_id)
 {
   if (block == NULL || attribute_id < 0 || attribute_id > block->num_attributes)
   {
@@ -195,7 +195,7 @@ inline struct Column * get_next_column(const struct Block * block, const struct 
   return (struct Column *)((char*)column + sizeof(struct Column) + column->name_length);
 }
 
-struct Column * get_column(struct Block * block, int32_t column_id)
+struct Column * get_column(struct Block * block, uint32_t column_id)
 {
   if (block == NULL || column_id < 0 || column_id > block->num_columns)
   {
@@ -216,17 +216,17 @@ struct Column * get_column(struct Block * block, int32_t column_id)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void * get_row(struct Block * block, int32_t row_id)
+void * get_row(struct Block * block, uint32_t row_id)
 {
   return (void*)((char*)&block[1] + block->attributes_bsize + block->columns_bsize + block->row_bsize * row_id);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int32_t get_row_bsize_from_columns(struct Block * block)
+uint32_t get_row_bsize_from_columns(struct Block * block)
 {
-  int32_t single_row_bsize = 0;
-  int32_t column_id;
+  uint32_t single_row_bsize = 0;
+  uint32_t column_id;
   for (column_id = 0 ; column_id < block->num_columns ; column_id++)
   {
     struct Column * column = get_column(block, column_id);
@@ -239,7 +239,7 @@ int32_t get_row_bsize_from_columns(struct Block * block)
 int32_t get_column_id_by_name(struct Block * block, char * column_name)
 {
   if (block == NULL || column_name == NULL) return -1;
-  int32_t column_id;
+  uint32_t column_id;
   for (column_id = 0 ; column_id < block->num_columns ; column_id++)
   {
     struct Column * column = get_column(block, column_id);
@@ -294,12 +294,14 @@ void attribute_set_value(struct Attribute * attribute, void * value)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct Block * _add_attribute(struct Block * block, enum TYPE type, uint32_t bsize, char * name, void * value)
+struct Block * _add_attribute(struct Block * block, enum TYPE type, uint32_t value_length, char * name, void * value)
 {
   if (block == NULL) { fprintf(stderr, "add_attribute called on a NULL block\n"); return NULL; }
   
-  int32_t name_length = memory_pad(strlen(name)+1);
-  int32_t value_length = type==TYPE_CHAR ? memory_pad(strlen((char*)value)+1) : bsize;
+  if (value_length != memory_pad(value_length, 4)) { fprintf(stderr, "warning: value_length for _add_attribute wasn't memory_pad'ed\n"); }
+  
+  int32_t name_length = memory_pad(strlen(name)+1, 4);
+  //value_length = memory_pad(value_length+((type==TYPE_CHAR)?1:0), 4);
   
   int32_t old_attributes_bsize = block->attributes_bsize;
   int32_t single_attribute_bsize = sizeof(struct Attribute) + name_length + value_length;
@@ -347,10 +349,10 @@ struct Block * _add_attribute(struct Block * block, enum TYPE type, uint32_t bsi
 }
 
 struct Block * add_int32_attribute(struct Block * block, char * name, int32_t value) { return _add_attribute(block, TYPE_INT, sizeof(int32_t), name, &value); }
-struct Block * add_int64_attribute(struct Block * block, char * name, int64_t value)    { return _add_attribute(block, TYPE_INT, sizeof(int64_t), name, &value); }
+struct Block * add_int64_attribute(struct Block * block, char * name, int64_t value) { return _add_attribute(block, TYPE_INT, sizeof(int64_t), name, &value); }
 struct Block * add_float_attribute(struct Block * block, char * name, float value)   { return _add_attribute(block, TYPE_FLOAT, sizeof(float), name, &value); }
 struct Block * add_double_attribute(struct Block * block, char * name, double value) { return _add_attribute(block, TYPE_FLOAT, sizeof(double), name, &value); }
-struct Block * add_string_attribute(struct Block * block, char * name, char * value) { return _add_attribute(block, TYPE_CHAR, strlen(value), name, value); }
+struct Block * add_string_attribute(struct Block * block, char * name, char * value) { return _add_attribute(block, TYPE_CHAR, memory_pad(strlen(value)+1, 4), name, value); }
 
 struct Block * copy_all_attributes(struct Block * block, struct Block * src)
 {
@@ -360,9 +362,10 @@ struct Block * copy_all_attributes(struct Block * block, struct Block * src)
     struct Attribute * attr = get_attribute(src, i);
     block = _add_attribute(block, attr->type, attr->value_length, attribute_get_name(attr), attribute_get_value(attr));
   }
+  return block;
 }
 
-void fprintf_attribute_value(FILE * fp, struct Block * block, int32_t attribute_id)
+void fprintf_attribute_value(FILE * fp, struct Block * block, uint32_t attribute_id)
 {
   struct Attribute * attr = get_attribute(block, attribute_id);
   switch (attr->type) {
@@ -392,12 +395,14 @@ struct Block * _add_column(struct Block * block, enum TYPE type, uint32_t bsize,
 {
   if (block == NULL) { fprintf(stderr, "add_field called on a NULL block\n"); return NULL; }
   
-  int32_t name_length = memory_pad(strlen(name)+1);
+  int32_t name_length = memory_pad(strlen(name)+1, 4);
   int32_t old_columns_bsize = block->columns_bsize;
   int32_t old_data_bsize = block->data_bsize;
   int32_t old_row_bsize = block->row_bsize;
   
-  if (type == TYPE_CHAR) bsize = memory_pad(bsize); // when adding a string, it sends over strlen size
+  if (bsize != memory_pad(bsize, 4)) fprintf(stderr, "warning: _add_column called with bsize which isn't memory_pad'ed\n");
+  
+  //if (type == TYPE_CHAR) bsize = memory_pad(bsize+1, 4);
   block->row_bsize += bsize;
   
   int32_t single_column_bsize = sizeof(struct Column) + name_length;
@@ -461,13 +466,13 @@ struct Block * add_int32_column(struct Block * block, char * name)  { return _ad
 struct Block * add_int64_column(struct Block * block, char * name)  { return _add_column(block, TYPE_INT, sizeof(int64_t), name); }
 struct Block * add_float_column(struct Block * block, char * name)  { return _add_column(block, TYPE_FLOAT, sizeof(float), name); }
 struct Block * add_double_column(struct Block * block, char * name) { return _add_column(block, TYPE_FLOAT, sizeof(double), name); }
-struct Block * add_string_column_with_length(struct Block * block, char * name, int32_t length) { return _add_column(block, TYPE_CHAR, length, name); }
+struct Block * add_string_column_with_length(struct Block * block, char * name, uint32_t length) { return _add_column(block, TYPE_CHAR, memory_pad(length+1,4), name); }
 
 struct Block * add_int32_column_and_blank(struct Block * block, char * name)  { block = add_int32_column(block, name); blank_column_values(block, name); return block; }
 struct Block * add_int64_column_and_blank(struct Block * block, char * name)  { block = add_int64_column(block, name); blank_column_values(block, name); return block; }
 struct Block * add_float_column_and_blank(struct Block * block, char * name)  { block = add_float_column(block, name); blank_column_values(block, name); return block; }
 struct Block * add_double_column_and_blank(struct Block * block, char * name) { block = add_double_column(block, name); blank_column_values(block, name); return block; }
-struct Block * add_string_column_with_length_and_blank(struct Block * block, char * name, int32_t length) { block = add_string_column_with_length(block, name, length); blank_column_values(block, name); return block; }
+struct Block * add_string_column_with_length_and_blank(struct Block * block, char * name, uint32_t length) { block = add_string_column_with_length(block, name, length); blank_column_values(block, name); return block; }
 
 struct Block * add_xy_columns(struct Block * block)
 {
@@ -502,7 +507,7 @@ void blank_column_values(struct Block * block, char * column_name)
 {
   if (block == NULL) { fprintf(stderr, "blank_column_values called on NULL block\n"); return; }
   if (column_name == NULL) { fprintf(stderr, "blank_column_values called with NULL column_name\n"); return; }
-  int32_t column_id = get_column_id_by_name(block, column_name);
+  uint32_t column_id = get_column_id_by_name(block, column_name);
   if (column_id == -1) { fprintf(stderr, "blank_column_values called on column '%s', column not found.\n", column_name); return; }
   struct Column * column = get_column(block, column_id);
   
@@ -513,21 +518,37 @@ void blank_column_values(struct Block * block, char * column_name)
   }
 }
 
-/*struct Block * column_string_set_length(struct Block * block, int32_t column_id, int32_t length)
+/*struct Block * column_string_set_length(struct Block * block, uint32_t column_id, int32_t length)
 {
   fprintf(stderr, "column_string_set_length() not implemented\n");
   exit(0);
 }*/
 
+struct Block * copy_all_columns(struct Block * block, struct Block * src)
+{
+  int i;
+  for (i = 0 ; i < src->num_columns ; i++)
+  {
+    struct Column * column = get_column(src, i);
+    block = _add_column(block, column->type, column->bsize, column_get_name(column));
+  }
+  if (block->row_bsize != src->row_bsize)
+  {
+    fprintf(stderr, "copy_all_columns(%d, %d)\n", block->row_bsize, src->row_bsize);
+    //exit(1);
+  }
+  return block;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void * get_cell(struct Block * block, int32_t row_id, int32_t column_id)
+void * get_cell(struct Block * block, uint32_t row_id, uint32_t column_id)
 {
   int32_t * cell_offsets = get_cell_offsets(block);
   return (char*)get_row(block, row_id) + cell_offsets[column_id];
 }
 
-int32_t get_cell_as_int32(struct Block * block, int32_t row_id, int32_t column_id)
+int32_t get_cell_as_int32(struct Block * block, uint32_t row_id, uint32_t column_id)
 {
   void * cell = get_cell(block, row_id, column_id);
   struct Column * column = get_column(block, column_id);
@@ -544,7 +565,7 @@ int32_t get_cell_as_int32(struct Block * block, int32_t row_id, int32_t column_i
   return temp;
 }
 
-int64_t get_cell_as_int64(struct Block * block, int32_t row_id, int32_t column_id)
+int64_t get_cell_as_int64(struct Block * block, uint32_t row_id, uint32_t column_id)
 {
   void * cell = get_cell(block, row_id, column_id);
   struct Column * column = get_column(block, column_id);
@@ -561,7 +582,7 @@ int64_t get_cell_as_int64(struct Block * block, int32_t row_id, int32_t column_i
   return temp;
 }
 
-float get_cell_as_float(struct Block * block, int32_t row_id, int32_t column_id)
+float get_cell_as_float(struct Block * block, uint32_t row_id, uint32_t column_id)
 {
   void * cell = get_cell(block, row_id, column_id);
   struct Column * column = get_column(block, column_id);
@@ -578,7 +599,7 @@ float get_cell_as_float(struct Block * block, int32_t row_id, int32_t column_id)
   return temp;
 }
 
-double get_cell_as_double(struct Block * block, int32_t row_id, int32_t column_id)
+double get_cell_as_double(struct Block * block, uint32_t row_id, uint32_t column_id)
 {
   void * cell = get_cell(block, row_id, column_id);
   struct Column * column = get_column(block, column_id);
@@ -596,7 +617,7 @@ double get_cell_as_double(struct Block * block, int32_t row_id, int32_t column_i
 }
 
 char * get_cell_as_char_temp = NULL;
-char * get_cell_as_char(struct Block * block, int32_t row_id, int32_t column_id)
+char * get_cell_as_char(struct Block * block, uint32_t row_id, uint32_t column_id)
 {
   void * cell = get_cell(block, row_id, column_id);
   struct Column * column = get_column(block, column_id);
@@ -611,7 +632,7 @@ char * get_cell_as_char(struct Block * block, int32_t row_id, int32_t column_id)
   else { fprintf(stderr, "bad %s\n", __func__); return 0; }
 }
 
-void set_cell(struct Block * block, int row_id, int column_id, void * value)
+void set_cell(struct Block * block, uint32_t row_id, uint32_t column_id, void * value)
 {
   if (block == NULL) { fprintf(stderr, "set_cell called with null block\n"); exit(0); }
   if (row_id >= block->num_rows) { fprintf(stderr, "set_cell called with row_id >= block->num_rows\n"); exit(0); }
@@ -625,10 +646,10 @@ void set_cell(struct Block * block, int row_id, int column_id, void * value)
     memcpy(cell, value, column->bsize);//get_type_size(column->type));
 }
 
-void set_cell_from_int(struct Block * block, int32_t row_id, int32_t column_id, int32_t data)
+void set_cell_from_int32(struct Block * block, uint32_t row_id, uint32_t column_id, int32_t data)
 {
   if (block == NULL) { fprintf(stderr, "set_cell_from_int called with null block\n"); exit(0); }
-  if (row_id >= block->num_rows) { fprintf(stderr, "set_cell_from_int called with row_id >= block->num_rows\n"); exit(0); }
+  if (row_id >= block->num_rows) { fprintf(stderr, "set_cell_from_int called with row_id(%d) >= block->num_rows(%d)\n", row_id, block->num_rows); exit(0); }
   if (column_id >= block->num_columns) { fprintf(stderr, "set_cell_from_int called with column_id(%d) >= block->num_columns(%d)\n", column_id, block->num_columns); exit(0); }
   
   struct Column * column = get_column(block, column_id);
@@ -641,7 +662,7 @@ void set_cell_from_int(struct Block * block, int32_t row_id, int32_t column_id, 
   else fprintf(stderr, "bad %s\n", __func__);
 }
 
-void set_cell_from_double(struct Block * block, int32_t row_id, int32_t column_id, double data)
+void set_cell_from_double(struct Block * block, uint32_t row_id, uint32_t column_id, double data)
 {
   if (block == NULL) { fprintf(stderr, "set_cell_from_double called with null block\n"); exit(0); }
   if (row_id >= block->num_rows) { fprintf(stderr, "set_cell_from_double called with row_id >= block->num_rows\n"); exit(0); }
@@ -657,7 +678,7 @@ void set_cell_from_double(struct Block * block, int32_t row_id, int32_t column_i
   else fprintf(stderr, "bad %s\n", __func__);
 }
 
-void set_cell_from_string(struct Block * block, int32_t row_id, int32_t column_id, char * data)
+void set_cell_from_string(struct Block * block, uint32_t row_id, uint32_t column_id, char * data)
 {
   if (block == NULL) { fprintf(stderr, "set_cell_from_string called with null block\n"); exit(0); }
   if (row_id >= block->num_rows) { fprintf(stderr, "set_cell_from_string called with row_id >= block->num_rows\n"); exit(0); }
@@ -673,7 +694,7 @@ void set_cell_from_string(struct Block * block, int32_t row_id, int32_t column_i
   else fprintf(stderr, "bad %s\n", __func__);
 }
 
-void fprintf_cell(FILE * fp, struct Block * block, int32_t row_id, int32_t column_id)
+void fprintf_cell(FILE * fp, struct Block * block, uint32_t row_id, uint32_t column_id)
 {
   struct Column * column = get_column(block, column_id);
   switch (column->type) {
@@ -695,7 +716,7 @@ struct Block * cached_rgba_block = NULL;
 int32_t cached_xyz_column_ids[3] = {0,0,0};
 int32_t cached_rgba_column_ids[4] = {0,0,0,0};
 
-void set_xy(struct Block * block, int32_t row_id, float x, float y)
+void set_xy(struct Block * block, uint32_t row_id, float x, float y)
 {
   if (row_id > block->num_rows) { fprintf(stderr, "set_xy invalid row_id\n"); exit(0); }
   if (cached_xyz_block != block)
@@ -709,13 +730,13 @@ void set_xy(struct Block * block, int32_t row_id, float x, float y)
   if (cached_xyz_column_ids[1] != -1) set_cell(block, row_id, cached_xyz_column_ids[1], &y);
 }
 
-void set_xyz(struct Block * block, int32_t row_id, float x, float y, float z)
+void set_xyz(struct Block * block, uint32_t row_id, float x, float y, float z)
 {
   set_xy(block, row_id, x, y);
   if (cached_xyz_column_ids[2] != -1) set_cell(block, row_id, cached_xyz_column_ids[2], &z);
 }
 
-void set_rgb(struct Block * block, int32_t row_id, float r, float g, float b)
+void set_rgb(struct Block * block, uint32_t row_id, float r, float g, float b)
 {
   if (row_id > block->num_rows) { fprintf(stderr, "set_rgb invalid row_id\n"); exit(0); }
   if (cached_rgba_block != block)
@@ -731,7 +752,7 @@ void set_rgb(struct Block * block, int32_t row_id, float r, float g, float b)
   if (cached_rgba_column_ids[2] != -1) set_cell(block, row_id, cached_rgba_column_ids[2], &b);
 }
 
-void set_rgba(struct Block * block, int32_t row_id, float r, float g, float b, float a)
+void set_rgba(struct Block * block, uint32_t row_id, float r, float g, float b, float a)
 {
   set_rgb(block, row_id, r, g, b);
   if (cached_rgba_column_ids[3] != -1) set_cell(block, row_id, cached_rgba_column_ids[3], &a);
@@ -801,12 +822,6 @@ void inspect_block(struct Block * block)
       fprintf(stderr, "       [%2d][%7s] \"%s\" = ", attribute_id, get_type_name(attribute->type, attribute->value_length), name);
       fprintf_attribute_value(stderr, block, attribute_id);
       fprintf(stderr, "\n");
-      /*if      (attribute->type == TYPE_INT && attribute->value_length == 4)   fprintf(stderr, "       [%2d][%7s] \"%s\" = %d\n", attribute_id, get_type_name(attribute->type, attribute->bsize), name, *(int32_t*)value);
-      else if (attribute->type == TYPE_INT && attribute->value_length == 8)   fprintf(stderr, "       [%2d][%7s] \"%s\" = %ld\n", attribute_id, get_type_name(attribute->type, attribute->bsize), name, *(long*)value);
-      else if (attribute->type == TYPE_FLOAT && attribute->value_length == 4) fprintf(stderr, "       [%2d][%7s] \"%s\" = %f\n", attribute_id, get_type_name(attribute->type, attribute->bsize), name, *(float*)value);
-      else if (attribute->type == TYPE_FLOAT && attribute->value_length == 8) fprintf(stderr, "       [%2d][%7s] \"%s\" = %lf\n", attribute_id, get_type_name(attribute->type, attribute->bsize), name, *(double*)value);
-      else if (attribute->type == TYPE_CHAR) fprintf(stderr, "       [%2d][%7s] \"%s\" = \"%s\"\n", attribute_id, get_type_name(attribute->type, attribute->bsize), name, (char*)value);
-      else fprintf(stderr, "       [%d] has invalid attribute->type (%x)\n", attribute_id, attribute->type);*/
     }
     fprintf(stderr, "     ]\n");
   }
@@ -880,7 +895,7 @@ char block_type_names[12][20] = {
   "float", "double", "char"
 };
 
-char * get_type_name(enum TYPE type, int32_t bsize)
+char * get_type_name(enum TYPE type, uint32_t bsize)
 {
   if      (type == 0)                        return block_type_names[0];
   else if (type == TYPE_INT && bsize == 1)   return block_type_names[1];
