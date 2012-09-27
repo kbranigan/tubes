@@ -1,5 +1,5 @@
 
-all:  \
+all: kevin \
 	bin/read_csv \
 	bin/write_csv \
 	bin/shapefile \
@@ -17,6 +17,7 @@ all:  \
 	bin/upgrade_block \
 	bin/png \
 	bin/test \
+	bin/unique \
 	bin/bounds
 
 kevin: \
@@ -72,6 +73,9 @@ bin/inspect: bin/block.o src/inspect.c
 
 bin/bounds: bin/block.o src/bounds.c
 	gcc -lm bin/block.o src/bounds.c -o bin/bounds
+
+bin/unique: bin/block.o src/unique.c
+	gcc -lm bin/block.o src/unique.c -o bin/unique
 
 bin/strcat: bin/block.o src/strcat.c
 	gcc -lm bin/block.o src/strcat.c -o bin/strcat
