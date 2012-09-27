@@ -205,6 +205,8 @@ void inspect_block(struct Block * block);
 
 char * get_type_name(enum TYPE type, uint32_t bsize);
 
+struct Block * sort_block_using_int32_column(struct Block * block, int32_t column_id, char order);
+
 #ifdef __cplusplus
 }
 #endif

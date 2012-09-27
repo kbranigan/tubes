@@ -699,13 +699,21 @@ void fprintf_cell(FILE * fp, struct Block * block, uint32_t row_id, uint32_t col
   struct Column * column = get_column(block, column_id);
   switch (column->type) {
     case TYPE_INT:
-      if      (column->bsize == 4) { fprintf(fp, "%d", *(int32_t*)get_cell(block, row_id, column_id)); break; }
-      else if (column->bsize == 8) { fprintf(fp, "%ld", *(long*)get_cell(block, row_id, column_id)); break; }
-      else { fprintf(stderr, "bad %s %s:(%d)\n", __func__, __FILE__, __LINE__); break; }
+      if      (column->bsize == 4) fprintf(fp, "%d", *(int32_t*)get_cell(block, row_id, column_id));
+      else if (column->bsize == 8) fprintf(fp, "%ld", *(long*)get_cell(block, row_id, column_id));
+      else                         fprintf(stderr, "bad %s %s:(%d)\n", __func__, __FILE__, __LINE__);
+      break;
     case TYPE_FLOAT:
-      if      (column->bsize == 4) { fprintf(fp, "%f", *(float*)get_cell(block, row_id, column_id)); break; }
-      else if (column->bsize == 8) { fprintf(fp, "%lf", *(double*)get_cell(block, row_id, column_id)); break; }
-      else { fprintf(stderr, "bad %s %s:(%d)\n", __func__, __FILE__, __LINE__); break; }
+      if      (column->bsize == 4) fprintf(fp, "%f", *(float*)get_cell(block, row_id, column_id));
+      else if (column->bsize == 8) fprintf(fp, "%lf", *(double*)get_cell(block, row_id, column_id));
+      else                         fprintf(stderr, "bad %s %s:(%d)\n", __func__, __FILE__, __LINE__);
+      break;
+    case TYPE_CHAR:
+      fprintf(fp, "%s", (char*)get_cell(block, row_id, column_id));
+      break;
+    default:
+      fprintf(stderr, "%s can't fprint_cell column '%s' of type %d\n", __func__, column_get_name(column), column->type);
+      break;
   }
 }
 
@@ -793,6 +801,56 @@ struct Block * add_row_with_data(struct Block * block, int num_columns, ...)
   va_end(v1);
   
   return block;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+struct Block * sort_block_using_int32_column(struct Block * block, int32_t column_id, char order)
+{
+  if (block == NULL) { fprintf(stderr, "add_row_with_data called on a NULL block\n"); return; }
+  if (block->num_rows <= 1) return;
+  
+  int32_t * indexes = malloc(sizeof(int32_t)*block->num_rows);
+  
+  struct Block * ret = new_block();
+  ret = copy_all_attributes(ret, block);
+  ret = copy_all_columns(ret, block);
+  ret = set_num_rows(ret, block->num_rows);
+  
+  int i,j;
+  for (i = 0 ; i < block->num_rows ; i++)
+    indexes[i] = i;
+  
+  int loop_count = 0;
+  
+  int sorted = 0;
+  while (sorted == 0)
+  {
+    sorted = 1;
+    for (i = 0 ; i < block->num_rows - 1 ; i++)
+    {
+      if ((order && get_cell_as_int32(block, indexes[i], column_id) < get_cell_as_int32(block, indexes[i+1], column_id)) || 
+          (!order && get_cell_as_int32(block, indexes[i], column_id) > get_cell_as_int32(block, indexes[i+1], column_id)))
+      {
+        int32_t temp = indexes[i];
+        indexes[i] = indexes[i+1];
+        indexes[i+1] = temp;
+        sorted = 0;
+        i--;
+      }
+    }
+    loop_count++;
+  }
+  
+  for (i = 0 ; i < block->num_rows ; i++)
+    memcpy(get_row(ret, i), get_row(block, indexes[i]), block->row_bsize);
+  
+  fprintf(stderr, "really slow sort algorithm, took %d loops for %d rows\n", loop_count, block->row_bsize);
+  
+  free(indexes);
+  free_block(block);
+  
+  return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
