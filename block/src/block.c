@@ -236,7 +236,7 @@ uint32_t get_row_bsize_from_columns(struct Block * block)
   return single_row_bsize;
 }
 
-int32_t get_column_id_by_name(struct Block * block, char * column_name)
+int32_t get_column_id_by_name(struct Block * block, const char * column_name)
 {
   if (block == NULL || column_name == NULL) return -1;
   uint32_t column_id;
@@ -248,7 +248,7 @@ int32_t get_column_id_by_name(struct Block * block, char * column_name)
   return -1;
 }
 
-int32_t get_column_id_by_name_or_exit(struct Block * block, char * column_name)
+int32_t get_column_id_by_name_or_exit(struct Block * block, const char * column_name)
 {
   int32_t id = get_column_id_by_name(block, column_name);
   if (id == -1)
@@ -259,12 +259,12 @@ int32_t get_column_id_by_name_or_exit(struct Block * block, char * column_name)
   return id;
 }
 
-struct Column * get_column_by_name(struct Block * block, char * column_name)
+struct Column * get_column_by_name(struct Block * block, const char * column_name)
 {
   return get_column(block, get_column_id_by_name(block, column_name));
 }
 
-int32_t get_attribute_id_by_name(struct Block * block, char * attribute_name)
+int32_t get_attribute_id_by_name(struct Block * block, const char * attribute_name)
 {
   if (block == NULL || attribute_name == NULL) return -1;
   int32_t attribute_id;
@@ -276,16 +276,64 @@ int32_t get_attribute_id_by_name(struct Block * block, char * attribute_name)
   return -1;
 }
 
-struct Attribute * get_attribute_by_name(struct Block * block, char * attribute_name)
+struct Attribute * get_attribute_by_name(struct Block * block, const char * attribute_name)
 {
-  return get_attribute(block, get_attribute_id_by_name(block, attribute_name));
+  int attribute_id = get_attribute_id_by_name(block, attribute_name);
+  if (attribute_id == -1) return NULL;
+  return get_attribute(block, attribute_id);
+}
+
+int32_t get_attribute_value_as_int32(struct Block * block, const char * attribute_name)
+{
+  const char * value = get_attribute_value_as_string(block, attribute_name);
+  if (value != NULL) return atoi(value);
+  else
+  {
+    fprintf(stderr, "'%s' called on '%s' field, doesn't exist - returning 0\n", __func__, attribute_name);
+    return 0;
+  }
+}
+
+double get_attribute_value_as_double(struct Block * block, const char * attribute_name)
+{
+  int attribute_id = get_attribute_id_by_name(block, attribute_name);
+  if (attribute_id == -1) 
+  {
+    fprintf(stderr, "'%s' called on '%s' field, doesn't exist - returning 0\n", __func__, attribute_name);
+    return 0;
+  }
+  struct Attribute * attribute = get_attribute(block, attribute_id);
+  
+  if (attribute->type != TYPE_FLOAT)
+  {
+    fprintf(stderr, "'%s' called on '%s' field , doesn't exist - returning 0\n", __func__, attribute_name);
+    return 0;
+  }
+  else
+  {
+    if      (attribute->value_length == 4) return (double)(*(double*)attribute_get_value(attribute));
+    else if (attribute->value_length == 8) return (double)(*(float*)attribute_get_value(attribute));
+  }
+  return 0;
+}
+
+const char * get_attribute_value_as_string(struct Block * block, const char * attribute_name)
+{
+  struct Attribute * attribute = get_attribute_by_name(block, attribute_name);
+  if (attribute == NULL) return NULL;
+  
+  if (attribute->type == TYPE_CHAR)
+    return attribute_get_value(attribute);
+  else
+    fprintf(stderr, "'%s' doesn't support attribute '%s' of type '%s'\n", __func__, attribute_name, get_type_name(attribute->type, attribute->value_length));
+  return NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 char * attribute_get_name(struct Attribute * attribute)  { return (char*)attribute + sizeof(struct Attribute); }
 void * attribute_get_value(struct Attribute * attribute) { return (char*)attribute + sizeof(struct Attribute) + attribute->name_length; }
-void attribute_set_name(struct Attribute * attribute, char * name)   { strncpy((char*)attribute + sizeof(struct Attribute), name, attribute->name_length); }
+void attribute_set_name(struct Attribute * attribute, const char * name)   { strncpy((char*)attribute + sizeof(struct Attribute), name, attribute->name_length); }
 void attribute_set_value(struct Attribute * attribute, void * value)
 {
   if (attribute->type == TYPE_CHAR) strncpy((char*)attribute + sizeof(struct Attribute) + attribute->name_length, (char*)value, attribute->value_length);
@@ -294,7 +342,7 @@ void attribute_set_value(struct Attribute * attribute, void * value)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct Block * _add_attribute(struct Block * block, enum TYPE type, uint32_t value_length, char * name, void * value)
+struct Block * _add_attribute(struct Block * block, enum TYPE type, uint32_t value_length, const char * name, void * value)
 {
   if (block == NULL) { fprintf(stderr, "add_attribute called on a NULL block\n"); return NULL; }
   
@@ -348,11 +396,11 @@ struct Block * _add_attribute(struct Block * block, enum TYPE type, uint32_t val
   return block;
 }
 
-struct Block * add_int32_attribute(struct Block * block, char * name, int32_t value) { return _add_attribute(block, TYPE_INT, sizeof(int32_t), name, &value); }
-struct Block * add_int64_attribute(struct Block * block, char * name, int64_t value) { return _add_attribute(block, TYPE_INT, sizeof(int64_t), name, &value); }
-struct Block * add_float_attribute(struct Block * block, char * name, float value)   { return _add_attribute(block, TYPE_FLOAT, sizeof(float), name, &value); }
-struct Block * add_double_attribute(struct Block * block, char * name, double value) { return _add_attribute(block, TYPE_FLOAT, sizeof(double), name, &value); }
-struct Block * add_string_attribute(struct Block * block, char * name, char * value) { return _add_attribute(block, TYPE_CHAR, memory_pad(strlen(value)+1, 4), name, value); }
+struct Block * add_int32_attribute(struct Block * block, const char * name, int32_t value) { return _add_attribute(block, TYPE_INT, sizeof(int32_t), name, &value); }
+struct Block * add_int64_attribute(struct Block * block, const char * name, int64_t value) { return _add_attribute(block, TYPE_INT, sizeof(int64_t), name, &value); }
+struct Block * add_float_attribute(struct Block * block, const char * name, float value)   { return _add_attribute(block, TYPE_FLOAT, sizeof(float), name, &value); }
+struct Block * add_double_attribute(struct Block * block, const char * name, double value) { return _add_attribute(block, TYPE_FLOAT, sizeof(double), name, &value); }
+struct Block * add_string_attribute(struct Block * block, const char * name, const char * value) { return _add_attribute(block, TYPE_CHAR, memory_pad(strlen(value)+1, 4), name, (void*)value); }
 
 struct Block * copy_all_attributes(struct Block * block, struct Block * src)
 {
@@ -387,11 +435,11 @@ void fprintf_attribute_value(FILE * fp, struct Block * block, uint32_t attribute
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 char * column_get_name(struct Column * column)  { return (char*)column + sizeof(struct Column); }
-void column_set_name(struct Column * column, char * name) { strncpy(column_get_name(column), name, column->name_length); }
+void column_set_name(struct Column * column, const char * name) { strncpy(column_get_name(column), name, column->name_length); }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct Block * _add_column(struct Block * block, enum TYPE type, uint32_t bsize, char * name)
+struct Block * _add_column(struct Block * block, enum TYPE type, uint32_t bsize, const char * name)
 {
   if (block == NULL) { fprintf(stderr, "add_field called on a NULL block\n"); return NULL; }
   
@@ -462,17 +510,17 @@ struct Block * _add_column(struct Block * block, enum TYPE type, uint32_t bsize,
   return block;
 }
 
-struct Block * add_int32_column(struct Block * block, char * name)  { return _add_column(block, TYPE_INT, sizeof(int32_t), name); }
-struct Block * add_int64_column(struct Block * block, char * name)  { return _add_column(block, TYPE_INT, sizeof(int64_t), name); }
-struct Block * add_float_column(struct Block * block, char * name)  { return _add_column(block, TYPE_FLOAT, sizeof(float), name); }
-struct Block * add_double_column(struct Block * block, char * name) { return _add_column(block, TYPE_FLOAT, sizeof(double), name); }
-struct Block * add_string_column_with_length(struct Block * block, char * name, uint32_t length) { return _add_column(block, TYPE_CHAR, memory_pad(length+1,4), name); }
+struct Block * add_int32_column(struct Block * block, const char * name)  { return _add_column(block, TYPE_INT, sizeof(int32_t), name); }
+struct Block * add_int64_column(struct Block * block, const char * name)  { return _add_column(block, TYPE_INT, sizeof(int64_t), name); }
+struct Block * add_float_column(struct Block * block, const char * name)  { return _add_column(block, TYPE_FLOAT, sizeof(float), name); }
+struct Block * add_double_column(struct Block * block, const char * name) { return _add_column(block, TYPE_FLOAT, sizeof(double), name); }
+struct Block * add_string_column_with_length(struct Block * block, const char * name, uint32_t length) { return _add_column(block, TYPE_CHAR, memory_pad(length+1,4), name); }
 
-struct Block * add_int32_column_and_blank(struct Block * block, char * name)  { block = add_int32_column(block, name); blank_column_values(block, name); return block; }
-struct Block * add_int64_column_and_blank(struct Block * block, char * name)  { block = add_int64_column(block, name); blank_column_values(block, name); return block; }
-struct Block * add_float_column_and_blank(struct Block * block, char * name)  { block = add_float_column(block, name); blank_column_values(block, name); return block; }
-struct Block * add_double_column_and_blank(struct Block * block, char * name) { block = add_double_column(block, name); blank_column_values(block, name); return block; }
-struct Block * add_string_column_with_length_and_blank(struct Block * block, char * name, uint32_t length) { block = add_string_column_with_length(block, name, length); blank_column_values(block, name); return block; }
+struct Block * add_int32_column_and_blank(struct Block * block, const char * name)  { block = add_int32_column(block, name); blank_column_values(block, name); return block; }
+struct Block * add_int64_column_and_blank(struct Block * block, const char * name)  { block = add_int64_column(block, name); blank_column_values(block, name); return block; }
+struct Block * add_float_column_and_blank(struct Block * block, const char * name)  { block = add_float_column(block, name); blank_column_values(block, name); return block; }
+struct Block * add_double_column_and_blank(struct Block * block, const char * name) { block = add_double_column(block, name); blank_column_values(block, name); return block; }
+struct Block * add_string_column_with_length_and_blank(struct Block * block, const char * name, uint32_t length) { block = add_string_column_with_length(block, name, length); blank_column_values(block, name); return block; }
 
 struct Block * add_xy_columns(struct Block * block)
 {
@@ -503,7 +551,7 @@ struct Block * add_rgba_columns(struct Block * block)
   return block;
 }
 
-void blank_column_values(struct Block * block, char * column_name)
+void blank_column_values(struct Block * block, const char * column_name)
 {
   if (block == NULL) { fprintf(stderr, "blank_column_values called on NULL block\n"); return; }
   if (column_name == NULL) { fprintf(stderr, "blank_column_values called with NULL column_name\n"); return; }
@@ -845,7 +893,7 @@ struct Block * sort_block_using_int32_column(struct Block * block, int32_t colum
   for (i = 0 ; i < block->num_rows ; i++)
     memcpy(get_row(ret, i), get_row(block, indexes[i]), block->row_bsize);
   
-  fprintf(stderr, "really slow sort algorithm, took %d loops for %d rows\n", loop_count, block->row_bsize);
+  fprintf(stderr, "really slow sort algorithm, took %d loops for %d rows\n", loop_count, block->num_rows);
   
   free(indexes);
   free_block(block);
@@ -946,14 +994,14 @@ void inspect_block(struct Block * block)
   fprintf(stderr, "\n");
 }
 
-char block_type_names[12][20] = {
+const char block_type_names[12][20] = {
   "unknown",
   "int8", "int16", "int32", "int64",
   "uint8", "uint16", "uint32", "uint64",
   "float", "double", "char"
 };
 
-char * get_type_name(enum TYPE type, uint32_t bsize)
+const char * get_type_name(enum TYPE type, uint32_t bsize)
 {
   if      (type == 0)                        return block_type_names[0];
   else if (type == TYPE_INT && bsize == 1)   return block_type_names[1];
@@ -974,3 +1022,5 @@ char * get_type_name(enum TYPE type, uint32_t bsize)
   }
 }
 
+#include "functions/inout/unique.c"
+#include "functions/inout/normalize.c"

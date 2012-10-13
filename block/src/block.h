@@ -96,7 +96,7 @@ struct Attribute {
 
 char * attribute_get_name(struct Attribute * attribute);
 void * attribute_get_value(struct Attribute * attribute);
-void attribute_set_name(struct Attribute * attribute, char * name);
+void attribute_set_name(struct Attribute * attribute, const char * name);
 void attribute_set_value(struct Attribute * attribute, void * value);
 
 struct Column {
@@ -107,7 +107,7 @@ struct Column {
 };
 
 char * column_get_name(struct Column * column);
-void column_set_name(struct Column * column, char * name);
+void column_set_name(struct Column * column, const char * name);
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
@@ -120,15 +120,19 @@ void free_block(struct Block * block);
 struct Block * realloc_block(struct Block * block);
 
 struct Attribute * get_attribute(struct Block * block, uint32_t attribute_id);
-struct Block * _add_attribute(struct Block * block, enum TYPE type, uint32_t bsize, char * name, void * value);
-struct Block * add_int32_attribute(struct Block * block, char * name, int32_t value);
-struct Block * add_int64_attribute(struct Block * block, char * name, int64_t value);
-struct Block * add_float_attribute(struct Block * block, char * name, float value);
-struct Block * add_double_attribute(struct Block * block, char * name, double value);
-struct Block * add_string_attribute(struct Block * block, char * name, char * value);
+struct Block * _add_attribute(struct Block * block, enum TYPE type, uint32_t bsize, const char * name, void * value);
+struct Block * add_int32_attribute(struct Block * block, const char * name, int32_t value);
+struct Block * add_int64_attribute(struct Block * block, const char * name, int64_t value);
+struct Block * add_float_attribute(struct Block * block, const char * name, float value);
+struct Block * add_double_attribute(struct Block * block, const char * name, double value);
+struct Block * add_string_attribute(struct Block * block, const char * name, const char * value);
 int attribute_is_string(struct Attribute * attribute);
-int32_t get_attribute_id_by_name(struct Block * block, char * attribute_name);
-struct Attribute * get_attribute_by_name(struct Block * block, char * attribute_name);
+
+int32_t get_attribute_id_by_name(struct Block * block, const char * attribute_name);
+struct Attribute * get_attribute_by_name(struct Block * block, const char * attribute_name);
+int32_t get_attribute_value_as_int32(struct Block * block, const char * attribute_name);
+double get_attribute_value_as_double(struct Block * block, const char * attribute_name);
+const char * get_attribute_value_as_string(struct Block * block, const char * attribute_name);
 
 int32_t * get_attribute_offsets(struct Block * block);
 struct Attribute * get_first_attribute(struct Block * block);
@@ -142,27 +146,27 @@ struct Block * add_xy_columns(struct Block * block);
 struct Block * add_xyz_columns(struct Block * block);
 struct Block * add_rgb_columns(struct Block * block);
 struct Block * add_rgba_columns(struct Block * block);
-void blank_column_values(struct Block * block, char * column_name);
+void blank_column_values(struct Block * block, const char * column_name);
 
 struct Column * get_column(struct Block * block, uint32_t column_id);
-struct Block * _add_column(struct Block * block, enum TYPE type, uint32_t bsize, char * name);
+struct Block * _add_column(struct Block * block, enum TYPE type, uint32_t bsize, const char * name);
 
-struct Block * add_int32_column(struct Block * block, char * name);
-struct Block * add_int64_column(struct Block * block, char * name);
-struct Block * add_float_column(struct Block * block, char * name);
-struct Block * add_double_column(struct Block * block, char * name);
-struct Block * add_string_column_with_length(struct Block * block, char * name, uint32_t length);
+struct Block * add_int32_column(struct Block * block, const char * name);
+struct Block * add_int64_column(struct Block * block, const char * name);
+struct Block * add_float_column(struct Block * block, const char * name);
+struct Block * add_double_column(struct Block * block, const char * name);
+struct Block * add_string_column_with_length(struct Block * block, const char * name, uint32_t length);
 
-struct Block * add_int32_column_and_blank(struct Block * block, char * name);
-struct Block * add_int64_column_and_blank(struct Block * block, char * name);
-struct Block * add_float_column_and_blank(struct Block * block, char * name);
-struct Block * add_double_column_and_blank(struct Block * block, char * name);
-struct Block * add_string_column_with_length_and_blank(struct Block * block, char * name, uint32_t length);
+struct Block * add_int32_column_and_blank(struct Block * block, const char * name);
+struct Block * add_int64_column_and_blank(struct Block * block, const char * name);
+struct Block * add_float_column_and_blank(struct Block * block, const char * name);
+struct Block * add_double_column_and_blank(struct Block * block, const char * name);
+struct Block * add_string_column_with_length_and_blank(struct Block * block, const char * name, uint32_t length);
 
 //int column_is_string(struct Column * column);
-int32_t get_column_id_by_name(struct Block * block, char * column_name);
-int32_t get_column_id_by_name_or_exit(struct Block * block, char * column_name);
-struct Column * get_column_by_name(struct Block * block, char * column_name);
+int32_t get_column_id_by_name(struct Block * block, const char * column_name);
+int32_t get_column_id_by_name_or_exit(struct Block * block, const char * column_name);
+struct Column * get_column_by_name(struct Block * block, const char * column_name);
 
 struct Block * column_string_set_length(struct Block * block, uint32_t column_id, int32_t length);
 
@@ -203,9 +207,11 @@ struct Block * add_command(struct Block * block, int argc, char ** argv);
 
 void inspect_block(struct Block * block);
 
-char * get_type_name(enum TYPE type, uint32_t bsize);
+const char * get_type_name(enum TYPE type, uint32_t bsize);
 
 struct Block * sort_block_using_int32_column(struct Block * block, int32_t column_id, char order);
+
+#include "functions/all.h"
 
 #ifdef __cplusplus
 }
