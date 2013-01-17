@@ -2,6 +2,7 @@
 all: kevin \
 	bin/read_csv \
 	bin/write_csv \
+	bin/write_mysql \
 	bin/shapefile \
 	bin/block_test \
 	bin/inspect \
@@ -11,6 +12,7 @@ all: kevin \
 	bin/add_color \
 	bin/read_dem \
 	bin/strcat \
+	bin/read_kml \
 	bin/read_nextbus \
 	bin/read_mysql \
 	bin/read_mysql_table \
@@ -18,6 +20,7 @@ all: kevin \
 	bin/png \
 	bin/test \
 	bin/unique \
+	bin/tesselate \
 	bin/bounds
 
 kevin: \
@@ -87,6 +90,9 @@ bin/strcat: bin/block.o src/strcat.c
 bin/add_color: bin/block.o src/add_color.c
 	gcc -lm bin/block.o src/add_color.c -o bin/add_color
 
+bin/tesselate: bin/block.o src/tesselate.c
+	gcc -lm bin/block.o src/tesselate.c -framework OpenGL -o bin/tesselate
+
 bin/nextbus: bin/block.o src/nextbus.c
 	gcc -lm bin/block.o src/nextbus.c -o bin/nextbus -lcurl `xml2-config --cflags --libs`
 
@@ -105,8 +111,14 @@ bin/read_nextbus: bin/block.o src/read_nextbus.c
 bin/read_csv: bin/block.o src/read_csv.c src/bsv.c
 	gcc -lm bin/block.o src/read_csv.c -o bin/read_csv
 
+bin/read_kml: bin/block.o src/read_kml.c
+	gcc -I/usr/include/libxml2 -lxml2 bin/block.o src/read_kml.c -o bin/read_kml
+
 bin/write_csv: bin/block.o src/write_csv.c
 	gcc -lm bin/block.o src/write_csv.c -o bin/write_csv
+
+bin/write_mysql: bin/block.o src/write_mysql.c
+	gcc -lm bin/block.o src/write_mysql.c -o bin/write_mysql
 
 bin/filter: bin/block.o src/filter.c
 	gcc -lm bin/block.o src/filter.c -o bin/filter
