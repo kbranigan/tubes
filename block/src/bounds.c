@@ -63,7 +63,7 @@ int main(int argc, char ** argv)
         }
         fprintf(stderr, "%s: %f to %f\n", column_get_name(column), min, max);
       }
-      else if (column->type == TYPE_INT && column->bsize == 8)
+      else if (column->type == TYPE_FLOAT && column->bsize == 8)
       {
         double min = *(double*)(get_row(block, 0)+offsets[i]);
         double max = min;
