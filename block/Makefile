@@ -9,6 +9,7 @@ all: kevin \
 	bin/nextbus \
 	bin/columns \
 	bin/filter \
+	bin/append \
 	bin/add_color \
 	bin/read_dem \
 	bin/strcat \
@@ -123,6 +124,9 @@ bin/write_csv: bin/block.o src/write_csv.c
 
 bin/write_mysql: bin/block.o src/write_mysql.c
 	gcc -lm bin/block.o src/write_mysql.c -o bin/write_mysql
+
+bin/append: bin/block.o src/append.c
+	gcc -lm bin/block.o src/append.c -o bin/append
 
 bin/filter: bin/block.o src/filter.c
 	gcc -lm bin/block.o src/filter.c -o bin/filter
