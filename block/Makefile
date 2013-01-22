@@ -13,6 +13,7 @@ all: kevin \
 	bin/read_dem \
 	bin/strcat \
 	bin/read_kml \
+	bin/curl \
 	bin/read_nextbus \
 	bin/read_mysql \
 	bin/read_mysql_table \
@@ -107,6 +108,9 @@ bin/read_dem: bin/block.o src/read_dem.c
 
 bin/read_nextbus: bin/block.o src/read_nextbus.c
 	gcc -lm bin/block.o src/read_nextbus.c -o bin/read_nextbus -lcurl `xml2-config --cflags --libs`
+
+bin/curl: bin/block.o src/curl.c
+	gcc -lm bin/block.o src/curl.c -o bin/curl -lcurl
 
 bin/read_csv: bin/block.o src/read_csv.c src/bsv.c
 	gcc -lm bin/block.o src/read_csv.c -o bin/read_csv
