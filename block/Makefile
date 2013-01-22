@@ -14,6 +14,7 @@ all: kevin \
 	bin/read_dem \
 	bin/strcat \
 	bin/read_kml \
+	bin/read_svg \
 	bin/curl \
 	bin/read_nextbus \
 	bin/read_mysql \
@@ -62,7 +63,10 @@ kevin/add_address_id_and_is_opp: bin/block.o bin/block_hashtable.o bin/hashtable
 bin/hashtable.o: ext/hashtable.c
 	gcc ext/hashtable.c -c -o bin/hashtable.o
 
-bin/block.o: src/block.c
+bin/functions.o: src/functions/functions.c $(wildcard src/functions/in/*.c) $(wildcard src/functions/inout/*.c)  $(wildcard src/functions/out/*.c)
+	gcc src/functions/functions.c -c -o bin/functions.o
+
+bin/block.o: src/block.c src/block.h unique.c
 	gcc src/block.c -c -o bin/block.o
 
 bin/block_hashtable.o: bin/block.o src/block_hashtable.c
@@ -71,7 +75,7 @@ bin/block_hashtable.o: bin/block.o src/block_hashtable.c
 bin/block_kdtree.o: bin/block.o src/block_kdtree.c
 	g++ src/block_kdtree.c -c -o bin/block_kdtree.o
 
-bin/shapefile: bin/block.o src/shapefile.c
+bin/shapefile: bin/block.o src/shapefile.c ext/dbfopen.c ext/shpopen.c
 	gcc -lm bin/block.o src/shapefile.c ext/dbfopen.c ext/shpopen.c -o bin/shapefile
 
 bin/block_test: bin/block.o src/block_test.c
@@ -109,6 +113,9 @@ bin/read_dem: bin/block.o src/read_dem.c
 
 bin/read_nextbus: bin/block.o src/read_nextbus.c
 	gcc -lm bin/block.o src/read_nextbus.c -o bin/read_nextbus -lcurl `xml2-config --cflags --libs`
+
+bin/read_svg: bin/block.o src/read_svg.c src/functions/inout/offset.c src/functions/inout/multiply.c
+	gcc -I/usr/include/libxml2 -lxml2 -lm bin/block.o src/read_svg.c src/functions/inout/offset.c src/functions/inout/multiply.c -o bin/read_svg -lcurl `xml2-config --cflags --libs`
 
 bin/curl: bin/block.o src/curl.c
 	gcc -lm bin/block.o src/curl.c -o bin/curl -lcurl
