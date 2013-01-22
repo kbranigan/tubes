@@ -20,8 +20,8 @@ field name length [int32]
 field name char(length) - add length to count for a NULL terminator
 */
 
-#ifndef HOOKAH_BLOCK_H
-#define HOOKAH_BLOCK_H
+#ifndef TUBES_BLOCK_H
+#define TUBES_BLOCK_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -194,12 +194,20 @@ void set_cell_from_int32(struct Block * block, uint32_t row_id, uint32_t column_
 void set_cell_from_double(struct Block * block, uint32_t row_id, uint32_t column_id, double data);
 void set_cell_from_string(struct Block * block, uint32_t row_id, uint32_t column_id, char * data);
 
-void set_xy(struct Block * block, uint32_t row_id, float x, float y);
-void set_xyz(struct Block * block, uint32_t row_id, float x, float y, float z);
+int32_t get_next_shape_start(struct Block * block, int32_t shape_start_id);
+int32_t get_next_part_start(struct Block * block, int32_t part_start_id);
+
+double get_x(struct Block * block, uint32_t row_id);
+double get_y(struct Block * block, uint32_t row_id);
+double get_z(struct Block * block, uint32_t row_id);
+
+void set_xy(struct Block * block, uint32_t row_id, double x, double y);
+void set_xyz(struct Block * block, uint32_t row_id, double x, double y, double z);
 void set_rgb(struct Block * block, uint32_t row_id, float r, float g, float b);
 void set_rgba(struct Block * block, uint32_t row_id, float r, float g, float b, float a);
 
 struct Block * copy_all_columns(struct Block * block, struct Block * src);
+struct Block * append_block(struct Block * block, struct Block * src);
 
 void fprintf_cell(FILE * fp, struct Block * block, uint32_t row_id, uint32_t column_id);
 
@@ -211,7 +219,7 @@ const char * get_type_name(enum TYPE type, uint32_t bsize);
 
 struct Block * sort_block_using_int32_column(struct Block * block, int32_t column_id, char order);
 
-#include "functions/all.h"
+#include "functions/functions.h"
 
 #ifdef __cplusplus
 }
