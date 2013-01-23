@@ -95,14 +95,26 @@ int main(int argc, char ** argv)
     while ((field = mysql_fetch_field(res)))
     {
       switch (field->type) {
-        case MYSQL_TYPE_LONG: block = add_int32_column(block, field->name); break;
-        case MYSQL_TYPE_FLOAT: block = add_float_column(block, field->name); break;
-        case MYSQL_TYPE_DOUBLE: block = add_double_column(block, field->name); break;
+        case MYSQL_TYPE_LONG:     block = add_int32_column(block, field->name); break;
+        case MYSQL_TYPE_LONGLONG: block = add_int64_column(block, field->name); break;
+        case MYSQL_TYPE_FLOAT:    block = add_float_column(block, field->name); break;
+        case MYSQL_TYPE_DOUBLE:   block = add_double_column(block, field->name); break;
         case MYSQL_TYPE_VAR_STRING:
         case MYSQL_TYPE_DATETIME:
           block = add_string_column_with_length(block, field->name, field->max_length); break;
         default: fprintf(stderr, "donno how to handle %d mysql type\n", field->type); break;
       }
+        /*  from /usr/local/include/mysql/mysql_com.h
+        fprintf(stderr, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+          MYSQL_TYPE_DECIMAL,  MYSQL_TYPE_TINY,
+          MYSQL_TYPE_SHORT,    MYSQL_TYPE_LONG,
+          MYSQL_TYPE_FLOAT,    MYSQL_TYPE_DOUBLE,
+          MYSQL_TYPE_NULL,     MYSQL_TYPE_TIMESTAMP,
+          MYSQL_TYPE_LONGLONG, MYSQL_TYPE_INT24,
+          MYSQL_TYPE_DATE,     MYSQL_TYPE_TIME,
+          MYSQL_TYPE_DATETIME, MYSQL_TYPE_YEAR,
+          MYSQL_TYPE_NEWDATE,  MYSQL_TYPE_VARCHAR,
+          MYSQL_TYPE_BIT);*/
     }
     
     block = set_num_rows(block, mysql_num_rows(res));
