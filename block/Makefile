@@ -2,6 +2,7 @@
 all: kevin \
 	bin/read_csv \
 	bin/write_csv \
+	bin/write_kml \
 	bin/write_mysql \
 	bin/shapefile \
 	bin/block_test \
@@ -128,6 +129,9 @@ bin/read_kml: bin/block.o src/read_kml.c
 
 bin/write_csv: bin/block.o src/write_csv.c
 	gcc -lm bin/block.o src/write_csv.c -o bin/write_csv
+
+bin/write_kml: bin/block.o src/write_kml.c
+	gcc -lm bin/block.o src/write_kml.c -o bin/write_kml
 
 bin/write_mysql: bin/block.o src/write_mysql.c
 	gcc -lm bin/block.o src/write_mysql.c -o bin/write_mysql
