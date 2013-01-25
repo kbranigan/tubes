@@ -25,6 +25,7 @@ all: kevin \
 	bin/test \
 	bin/unique \
 	bin/tesselate \
+	bin/coordinate_convert \
 	bin/bounds
 
 kevin: \
@@ -111,6 +112,9 @@ bin/columns: bin/block.o src/columns.c
 
 bin/read_dem: bin/block.o src/read_dem.c
 	gcc -lm bin/block.o src/read_dem.c -o bin/read_dem
+
+bin/coordinate_convert: bin/block.o src/coordinate_helpers.h src/coordinate_helpers.c src/coordinate_convert.c
+	gcc -lm bin/block.o src/coordinate_helpers.c src/coordinate_convert.c -o bin/coordinate_convert
 
 bin/read_nextbus: bin/block.o src/read_nextbus.c
 	gcc -lm bin/block.o src/read_nextbus.c -o bin/read_nextbus -lcurl `xml2-config --cflags --libs`
