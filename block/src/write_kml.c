@@ -44,6 +44,15 @@ int main(int argc, char ** argv)
 	
 	fprintf(fp, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 	fprintf(fp, "<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n");
+	fprintf(fp, "<Placemark>\n");
+	fprintf(fp, "<Style>\n");
+	fprintf(fp, "<PolyStyle>\n");
+	fprintf(fp, "<color>88ffffff</color>\n");
+	fprintf(fp, "<colorMode>normal</colorMode>\n");
+	fprintf(fp, "<outline>1</outline>\n");
+	fprintf(fp, "</PolyStyle>\n");
+	fprintf(fp, "</Style>\n");
+	fprintf(fp, "<MultiGeometry>\n");
 	
 	struct Block * block = NULL;
 	while ((block = read_block(stdin)))
@@ -55,9 +64,9 @@ int main(int argc, char ** argv)
 		while ((shape_end_id = get_next_shape_start(block, shape_start_id)))
 		{
 			int shape_row_id = get_cell_as_int32(block, shape_start_id, shape_row_id_column_id);
-			fprintf(fp, "<Placemark>\n");
 			fprintf(fp, "<Polygon>\n");
-			
+			//fprintf(fp, "<extrude>1</extrude>\n");
+			//fprintf(fp, "<altitudeMode>relativeToGround</altitudeMode>\n");
 			//fprintf(stderr, "shape = %d to %d (#%d)\n", shape_start_id, shape_end_id, shape_row_id);
 			
 			int part_start_id = shape_start_id, part_end_id;
@@ -76,7 +85,7 @@ int main(int argc, char ** argv)
 				int i;
 				for (i = part_start_id ; i < part_end_id ; i++)
 				{
-					fprintf(fp, "%.2f,%.2f,100\n", get_x(block, i), get_y(block, i));
+					fprintf(fp, "%.6f,%.6f\n", get_x(block, i), get_y(block, i));
 				}
 				
 				fprintf(fp, "</coordinates>\n");
@@ -89,14 +98,16 @@ int main(int argc, char ** argv)
 				//fprintf(stderr, "	part = %d to %d (#%d)\n", part_start_id, part_end_id, shape_part_id);
 				if (part_end_id == shape_end_id) break;
 				part_start_id = part_end_id;
+				break;
 			}
 			
-			fprintf(fp, "</Placemark>\n");
+			fprintf(fp, "</Polygon>\n");
 			if (shape_end_id == block->num_rows) break;
 			shape_start_id = shape_end_id;
-			
 		}
 	}
+	fprintf(fp, "</MultiGeometry>\n");
+	fprintf(fp, "</Placemark>\n");
 	fprintf(fp, "</kml>\n");
 	
 }
