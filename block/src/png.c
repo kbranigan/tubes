@@ -267,6 +267,7 @@ int main(int argc, char ** argv)
   while ((block = read_block(stdin)))
   {
     int32_t radius_column_id = get_column_id_by_name(block, "radius");
+    int32_t angle_column_id = get_column_id_by_name(block, "angle");
     
     char coord_names[3][20] = { "x", "y", "z" };
     char color_names[4][20] = { "red", "green", "blue", "alpha" };
@@ -365,6 +366,7 @@ int main(int argc, char ** argv)
           if (prev_shapefile_row_id != -1) glEnd();
           if (ptc == -1 || part_type == 1) glBegin(GL_POINTS);
           else if (part_type == 5) glBegin(GL_LINE_STRIP);
+          else if (part_type == 4) glBegin(GL_TRIANGLES);
           else { fprintf(stderr, "part_type == %d ?\n", part_type); exit(0); }
         }
         prev_shapefile_row_id = shapefile_row_id;
@@ -381,6 +383,18 @@ int main(int argc, char ** argv)
         for (barf = 0 ; barf < 3.14159265*2.0 ; barf+=0.314159265/2.0)
           glVertex3d(coord[0]+cos(barf)*radius, coord[1]+sin(barf)*radius, coord[2]);
         glVertex3d(coord[0]+cos(0)*radius, coord[1]+sin(0)*radius, coord[2]);
+        glEnd();
+      }
+      if (angle_column_id != -1)
+      {
+        double angle = get_cell_as_double(block, row_id, angle_column_id);
+        glColor4dv(color);
+        glBegin(GL_LINES);
+        //float barf = 0;
+        //for (barf = 0 ; barf < 3.14159265*2.0 ; barf+=0.314159265/2.0)
+        //  glVertex3d(coord[0]+cos(barf)*radius, coord[1]+sin(barf)*radius, coord[2]);
+        glVertex3dv(coord);
+        glVertex3d(coord[0]+cos(angle)*0.0005, coord[1]+sin(angle)*0.0005, coord[2]);
         glEnd();
       }
     }
