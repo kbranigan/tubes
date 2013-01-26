@@ -33,10 +33,10 @@ void update_cached_block_column_ids(struct Block * block)
   cached_block_column_ids.xyz[1] = get_column_id_by_name(cached_block_ptr, "y");
   cached_block_column_ids.xyz[2] = get_column_id_by_name(cached_block_ptr, "z");
 
-  cached_block_column_ids.rgba[0] = get_column_id_by_name(cached_block_ptr, "r");
-  cached_block_column_ids.rgba[1] = get_column_id_by_name(cached_block_ptr, "g");
-  cached_block_column_ids.rgba[2] = get_column_id_by_name(cached_block_ptr, "b");
-  cached_block_column_ids.rgba[3] = get_column_id_by_name(cached_block_ptr, "a");
+  cached_block_column_ids.rgba[0] = get_column_id_by_name(cached_block_ptr, "red");
+  cached_block_column_ids.rgba[1] = get_column_id_by_name(cached_block_ptr, "green");
+  cached_block_column_ids.rgba[2] = get_column_id_by_name(cached_block_ptr, "blue");
+  cached_block_column_ids.rgba[3] = get_column_id_by_name(cached_block_ptr, "alpha");
 
   cached_block_column_ids.shape_row_id = get_column_id_by_name(cached_block_ptr, "shape_row_id");
   cached_block_column_ids.shape_part_id = get_column_id_by_name(cached_block_ptr, "shape_part_id");
