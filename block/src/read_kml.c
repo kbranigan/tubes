@@ -13,7 +13,7 @@ struct Block * add_placemark(struct Block * block, xmlTextReaderPtr reader) {
 	int x_column_id = get_column_id_by_name(block, "x");
 	int y_column_id = get_column_id_by_name(block, "y");
 	
-	int ret;
+	int ret = 1;
 	
 	if (reader != NULL) {
 		while (ret == 1) {
@@ -118,6 +118,7 @@ int main(int argc, char ** argv) {
 	int ret;
 	
 	block = new_block();
+	block = add_command(block, argc, argv);
 	block = add_int32_column(block, "shape_row_id");
 	block = add_int32_column(block, "shape_part_type");
 	block = add_float_column(block, "x");
