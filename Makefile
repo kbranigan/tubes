@@ -1,7 +1,8 @@
 
 vpath %.c src/functions/in:src/functions/inout:src/functions/out
 
-all: kevin \
+all: mkbin \
+	kevin \
 	bin/read_csv \
 	bin/write_csv \
 	bin/write_kml \
@@ -44,6 +45,9 @@ kevin: \
 	kevin/add_address_id_and_is_opp \
 	kevin/filter_no_at_and_no_op_ticket \
 	kevin/test
+
+mkbin: bin
+	@mkdir -p bin
 
 kevin/add_ticket_totals_to_addresses: bin/block.o kevin/add_ticket_totals_to_addresses.c
 	gcc -lm bin/block.o kevin/add_ticket_totals_to_addresses.c -o kevin/add_ticket_totals_to_addresses
