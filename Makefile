@@ -46,7 +46,7 @@ kevin: \
 	kevin/filter_no_at_and_no_op_ticket \
 	kevin/test
 
-mkbin: bin
+mkbin:
 	@mkdir -p bin
 
 kevin/add_ticket_totals_to_addresses: bin/block.o kevin/add_ticket_totals_to_addresses.c
