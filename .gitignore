@@ -1,5 +1,6 @@
 bin/*
 data/*
+data_v1/*
 *.b
 *.sql
 cache_images/*

@@ -1,163 +1,146 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <inttypes.h>
 
-#include <mysql.h>
+#include "mysql.h"
 
-#define SCHEME_CREATE_MAIN
-#define SCHEME_ASSERT_STDOUT_IS_PIPED
-#define SCHEME_FUNCTION read_mysql
-#include "scheme.h"
+#include "block.h"
 
-int read_mysql(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
+int main(int argc, char ** argv)
 {
-  char * sql = (argc > 1) ? argv[1] : "SELECT lon AS x, lat AS y, id AS unique_set_id FROM civicsets.points where created_at > '2011-03-16 15:00:00' and source = 'gps_reporter' ORDER BY unique_set_id";
+  if (stdout_is_piped()) // other wise you don't see the seg fault
+    setup_segfault_handling(argv);
   
-  //exec("tail -n1 read_mysql.sql.log");
+  //assert_stdin_is_piped();
+  assert_stdout_is_piped();
+  //assert_stdin_or_out_is_piped();
   
-  char sql_log_filename[100];
-  sprintf(sql_log_filename, "%s.sql.log", argv[0]);
-  FILE * sql_log = fopen(sql_log_filename, "a");
-  if (sql_log != NULL)
+  static char database[100] = "";
+  static char query[5000] = "";
+  int limit = 0;
+  
+  static int debug = 0;
+  
+  int c;
+  while (1)
   {
-    fprintf(sql_log, "%s\n", sql);
-    fclose(sql_log);
+    static struct option long_options[] = {
+      {"database", required_argument, 0, 'd'},
+      {"query", required_argument, 0, 'q'},
+      {"debug", no_argument, &debug, 1},
+      {0, 0, 0, 0}
+    };
+    
+    int option_index = 0;
+    c = getopt_long(argc, argv, "q:d:", long_options, &option_index);
+    if (c == -1) break;
+    
+    switch (c)
+    {
+      case 0: break;
+      case 'd': strncpy(database, optarg, sizeof(database)); break;
+      case 'q': strncpy(query, optarg, sizeof(query)); break;
+      default: abort();
+    }
   }
-  else
-    fprintf(stderr, "failed to open sql log file '%s'\n", sql_log_filename);
   
-  MYSQL mysql;
-  
-  if ((mysql_init(&mysql) == NULL)) { printf("mysql_init error\n"); return 0; }
-  if (!mysql_real_connect(&mysql, "localhost", "root", "", "", 0, NULL, 0))
+  if (query[0] == 0)
   {
-    fprintf(stderr, "mysql_real_connect error (%s) (password for root should be blank)\n", mysql_error(&mysql));
+    fprintf(stderr, "ERROR: query required\n");
     return 0;
   }
   
-  if (mysql_query(&mysql, sql) == 0)
+  MYSQL mysql;
+  MYSQL_RES * res;
+  MYSQL_ROW row;
+  MYSQL_FIELD * field;
+  
+  if ((mysql_init(&mysql) == NULL)) { fprintf(stderr, "ERROR: mysql_init() error\n"); return 0; }
+  if (!mysql_real_connect(&mysql, "localhost", "root", "", database, 0, NULL, 0))
   {
-	  MYSQL_RES * res = mysql_store_result(&mysql);
-    MYSQL_ROW row;
-    MYSQL_FIELD *field;
-    
-    int x_field_id = -1;
-    int y_field_id = -1;
-    int z_field_id = -1;
-    int unique_set_field_id = -1;
-    
-    int r_field_id = -1;
-    int g_field_id = -1;
-    int b_field_id = -1;
-    int a_field_id = -1;
-    
-    int i=0;
-    for (i = 0 ; i < mysql_num_fields(res) ; i++)
-    {
-      field = mysql_fetch_field_direct(res, i);
-      if (strcmp(field->name, "x") == 0) x_field_id = i;
-      else if (strcmp(field->name, "y") == 0) y_field_id = i;
-      else if (strcmp(field->name, "z") == 0) z_field_id = i;
-      else if (strcmp(field->name, "r") == 0) r_field_id = i;
-      else if (strcmp(field->name, "g") == 0) g_field_id = i;
-      else if (strcmp(field->name, "b") == 0) b_field_id = i;
-      else if (strcmp(field->name, "a") == 0) a_field_id = i;
-      else if (strcmp(field->name, "unique_set_id") == 0) unique_set_field_id = i;
-    }
-    if (unique_set_field_id == -1)
-    {
-      for (i = 0 ; i < mysql_num_fields(res) ; i++)
-      {
-        field = mysql_fetch_field_direct(res, i);
-        if (strcmp(field->name, "id") == 0) unique_set_field_id = i;
-      }
-    }
-    
-    if (x_field_id == -1 || y_field_id == -1)
-    {
-      fprintf(stderr, "at least one field named 'x' and one field named 'y' is required\n");
-      return 0;
-    }
-    if (unique_set_field_id == -1)
-    {
-      fprintf(stderr, "at least one integer field named 'unique_set_id' is required\n");
-      return 0;
-    }
-    
-    struct Shape * shape = NULL;
-    int prev_unique_set_id = -1;
-    
+    fprintf(stderr, "ERROR: mysql_real_connect error (%s)\n", mysql_error(&mysql));
+  }
+  
+  struct Block * block = new_block();
+  
+  block = add_string_attribute(block, "source", "mysql");
+  if (database[0] != 0) block = add_string_attribute(block, "database", database);
+  block = add_string_attribute(block, "query", query);
+  
+  /*sprintf(query, "DESCRIBE `%s`.`%s`", database, table);
+  if (mysql_query(&mysql, query)==0)
+  {
+    res = mysql_store_result(&mysql);
+    int num_rows = mysql_num_rows(res);
     while ((row = mysql_fetch_row(res)))
     {
-      if (row[unique_set_field_id] == NULL) continue;
-      if (atol(row[unique_set_field_id]) != prev_unique_set_id)
-      {
-        if (shape != NULL)
-        {
-          if (shape->num_vertexs == 1) shape->gl_type = GL_POINTS;
-          write_shape(pipe_out, shape);
-          free_shape(shape);
-          shape = NULL;
-        }
-        shape = new_shape();
-        shape->gl_type = GL_LINE_STRIP;
-        
-        shape->unique_set_id = atol(row[unique_set_field_id]);
-        if (z_field_id != -1) set_num_dimensions(shape, 0, 3); //shape->vertex_arrays[0].num_dimensions++;
-        
-        //get_or_add_array(shape, GL_VERTEX_ARRAY); // this is auto, but you, helps doc the code
-        
-        if (r_field_id != -1 &&
-            g_field_id != -1 &&
-            b_field_id != -1)
-        {
-          get_or_add_array(shape, GL_COLOR_ARRAY);
-          if (a_field_id != -1) set_num_dimensions(shape, 1, 4);
-        }
-        
-        for (i = 0 ; i < mysql_num_fields(res) ; i++)
-        {
-          field = mysql_fetch_field_direct(res, i);
-          if (strcmp(field->name, "x") != 0 && strcmp(field->name, "y") != 0 && strcmp(field->name, "z") != 0 && 
-              strcmp(field->name, "r") != 0 && strcmp(field->name, "g") != 0 && strcmp(field->name, "b") != 0 && strcmp(field->name, "a") != 0 && 
-              strcmp(field->name, "id") != 0 && strcmp(field->name, "unique_set_id") != 0)
-            set_attribute(shape, field->name, row[i]);
-        }
-      }
-      
-      float v[3] = { row[x_field_id]==NULL ? 0 : atof(row[x_field_id]), row[y_field_id]==NULL ? 0 : atof(row[y_field_id]), 0.0 };
-      
-      if (z_field_id != -1 && row[z_field_id])
-        v[2] = atof(row[z_field_id]);
-      
-      if (r_field_id != -1 &&
-        g_field_id != -1 &&
-        b_field_id != -1)
-      {
-        float v2[4] = { atof(row[r_field_id]), atof(row[g_field_id]), atof(row[b_field_id]), 0 };
-        if (a_field_id != -1) v2[3] = atof(row[a_field_id]);
-        append_vertex2(shape, v, v2);
-      }
-      else
-        append_vertex(shape, v);
-      
-      prev_unique_set_id = atol(row[unique_set_field_id]);
-    }
-    if (shape != NULL)
-    {
-      if (shape->num_vertexs == 1) shape->gl_type = GL_POINTS;
-      write_shape(pipe_out, shape);
-      free_shape(shape);
-      shape = NULL;
+      if (strncmp(row[1], "int", 3)==0)       add_int_column(&block, row[0]);
+      else if (strncmp(row[1], "float", 5)==0) add_float_column(&block, row[0]);
+      else if (strncmp(row[1], "double", 6)==0) add_double_column(&block, row[0]);
+      else if (strncmp(row[1], "varchar", 7)==0) add_string_column_with_length(&block, row[0], atoi(&row[1][8]));
+      else { fprintf(stderr, "ERROR: not handling mysql type '%s' (aborting)\n", row[1]); return; }
     }
     mysql_free_result(res);
   }
   else
   {
-    fprintf(stderr, "Error: %s\n", mysql_error(&mysql));
+    fprintf(stderr, "ERROR: mysql_query() error %s\n", mysql_error(&mysql));
+  }*/
+  
+  if (mysql_query(&mysql, query)==0)
+  {
+    int row_id = 0;
+    int column_id = 0;
+    res = mysql_store_result(&mysql);
+    while ((field = mysql_fetch_field(res)))
+    {
+      switch (field->type) {
+        case MYSQL_TYPE_LONG:     block = add_int32_column(block, field->name); break;
+        case MYSQL_TYPE_LONGLONG: block = add_int64_column(block, field->name); break;
+        case MYSQL_TYPE_FLOAT:    block = add_float_column(block, field->name); break;
+        case MYSQL_TYPE_DOUBLE:   block = add_double_column(block, field->name); break;
+        case MYSQL_TYPE_VAR_STRING:
+        case MYSQL_TYPE_DATETIME:
+          block = add_string_column_with_length(block, field->name, field->max_length); break;
+        default: fprintf(stderr, "donno how to handle %d mysql type\n", field->type); break;
+      }
+        /*  from /usr/local/include/mysql/mysql_com.h
+        fprintf(stderr, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+          MYSQL_TYPE_DECIMAL,  MYSQL_TYPE_TINY,
+          MYSQL_TYPE_SHORT,    MYSQL_TYPE_LONG,
+          MYSQL_TYPE_FLOAT,    MYSQL_TYPE_DOUBLE,
+          MYSQL_TYPE_NULL,     MYSQL_TYPE_TIMESTAMP,
+          MYSQL_TYPE_LONGLONG, MYSQL_TYPE_INT24,
+          MYSQL_TYPE_DATE,     MYSQL_TYPE_TIME,
+          MYSQL_TYPE_DATETIME, MYSQL_TYPE_YEAR,
+          MYSQL_TYPE_NEWDATE,  MYSQL_TYPE_VARCHAR,
+          MYSQL_TYPE_BIT);*/
+    }
+    
+    block = set_num_rows(block, mysql_num_rows(res));
+    while ((row = mysql_fetch_row(res)))
+    {
+      for (column_id = 0 ; column_id < block->num_columns ; column_id++)
+      {
+        struct Column * column = get_column(block, column_id);
+        if (column->type == TYPE_INT && column->bsize == 4 && row[column_id] != NULL)      { int value = atoi(row[column_id]); set_cell(block, row_id, column_id, &value); }
+        else if (column->type == TYPE_INT && column->bsize == 8 && row[column_id] != NULL) { long value = atoi(row[column_id]); set_cell(block, row_id, column_id, &value); }
+        else if (column->type == TYPE_FLOAT && column->bsize == 4 && row[column_id] != NULL) { float value = atof(row[column_id]); set_cell(block, row_id, column_id, &value); }
+        else if (column->type == TYPE_FLOAT && column->bsize == 8 && row[column_id] != NULL) { double value = atof(row[column_id]); set_cell(block, row_id, column_id, &value); }
+        else if (column->type == TYPE_CHAR && row[column_id] != NULL) set_cell(block, row_id, column_id, row[column_id]);
+      }
+      row_id++;
+    }
+    mysql_free_result(res);
   }
+  else
+  {
+    fprintf(stderr, "ERROR: mysql_query() error %s\n", mysql_error(&mysql));
+  }
+  
+  write_block(stdout, block);
+  fprintf(stderr, "%s: Finished.  %d rows, %d columns read from mysql, enjoy!\n", argv[0], block->num_rows, block->num_columns);
+  free_block(block);
+  
   mysql_close(&mysql);
 }

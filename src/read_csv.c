@@ -1,74 +1,43 @@
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <math.h>
+#include "block.h"
+#include "bsv.c"
 
-#define SCHEME_CREATE_MAIN
-#define SCHEME_ASSERT_STDOUT_IS_PIPED
-#define SCHEME_FUNCTION read_csv
-#include "scheme.h"
-
-int read_csv(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
+int main(int argc, char ** argv)
 {
-  char * filename = NULL;
+  static char filename[1000] = "";
+  static int output_header = 1;
+  
   int c;
-  while ((c = getopt(argc, argv, "f:")) != -1)
-  switch (c)
+  while (1)
   {
-    case 'f':
-      filename = malloc(strlen(optarg)+1);
-      strcpy(filename, optarg);
-      break;
-  }
-  
-  FILE * fp = filename == NULL ? pipe_in : fopen(filename, "r");
-  
-  if (fp == NULL)
-  {
-    fprintf(pipe_err, "ERROR: Usage: %s -f [filename.csv]\n", argv[0]);
-    return -1;
-  }
-  
-  char line[1000];
-  struct Shape * shape = NULL;
-  
-  int prev_unique_set_id = -1;
-  while (fgets(line, sizeof(line), fp))
-  {
-    char * x = strtok (line, " ,");
-    if (x == NULL) continue;
-    char * y = strtok (NULL, " ,");
-    if (y == NULL) continue;
-    char * unique_set_id = strtok (NULL, " ,\n");
-    if (unique_set_id == NULL) continue;
-
-    if (shape == NULL || prev_unique_set_id != atoi(unique_set_id))
-    {
-      if (shape != NULL)
-      {
-        write_shape(pipe_out, shape);
-        free_shape(shape);
-      } 
-      shape = new_shape();
-      shape->gl_type = GL_POINTS;
-      shape->unique_set_id = atoi(unique_set_id);
-    }
-    else
-    {
-      shape->gl_type = GL_LINE_STRIP;
-    }
+    static struct option long_options[] = {
+      {"filename", required_argument, 0, 'f'},
+      {"header", no_argument, &output_header, 1},
+      {"no-header", no_argument, &output_header, 0},
+      {0, 0, 0, 0}
+    };
     
-    float v[3] = { atof(x), atof(y), 0.0 };
+    int option_index = 0;
+    c = getopt_long(argc, argv, "f:", long_options, &option_index);
+    if (c == -1) break;
     
-    append_vertex(shape, v);
-    prev_unique_set_id = shape->unique_set_id;
+    switch (c)
+    {
+      case 0: break;
+      case 'f': strncpy(filename, optarg, sizeof(filename)); break;
+      default: abort();
+    }
   }
-  if (shape != NULL)
-  {
-    write_shape(pipe_out, shape);
-    free_shape(shape);
-  } 
-  fprintf(stderr, "done\n");
+  
+  if (filename[0] == 0 && argc == 2 && argv[1] != NULL)
+    strncpy(filename, argv[1], sizeof(filename));
+  
+  if (filename[0] == 0) { fprintf(stderr, "ERROR %s: filename not provided\n", argv[0]); return EXIT_FAILURE; }
+  
+  struct Block * block = bsv(filename, EXTRACT_DATA);
+  //block = bsv(filename, EXTRACT_DATA, block);
+  write_block(stdout, block);
+  free_block(block);
+  
+  return EXIT_SUCCESS;
 }

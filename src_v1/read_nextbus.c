@@ -8,7 +8,10 @@
 #include <libxml/xpath.h>
 #include <libxml/xmlreader.h>
 
-#include "block.h"
+#define SCHEME_CREATE_MAIN
+#define SCHEME_ASSERT_STDOUT_IS_PIPED
+#define SCHEME_FUNCTION read_nextbus
+#include "scheme.h"
 
 struct MemoryStruct {
   char *memory;
@@ -34,7 +37,7 @@ static size_t WriteMemoryCallback(void *ptr, size_t size, size_t nmemb, void *da
   return realsize;
 }
 
-int main(int argc, char ** argv)
+int read_nextbus(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
   char * routeTag = NULL;
   char agency[10] = "ttc";
@@ -70,33 +73,16 @@ int main(int argc, char ** argv)
     chunk.memory = NULL;
     chunk.size = 0;
     sprintf(url, "http://webservices.nextbus.com/service/publicXMLFeed?command=vehicleLocations%s%s&a=%s&t=%llu", (routeTag!=NULL ? "&r=" : ""), (routeTag!=NULL ? routeTag : ""), agency, last_vehicles_update);
-    fprintf(stderr, "requesting: %s\n", url);
+    fprintf(pipe_err, "requesting: %s ", url);
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/1.0");
     res = curl_easy_perform(curl);
     
-    struct Block * block = new_block();
-    block = add_string_attribute(block, "agency", agency);
-    if (routeTag) block = add_string_attribute(block, "routeTag", routeTag);
-    block = add_int64_attribute(block, "request_index", request_index);
-    block = add_int64_attribute(block, "num_requests", num_requests);
-    block = add_int64_attribute(block, "last_vehicles_update", last_vehicles_update);
-    
-    block = add_int32_column(block, "id");
-    block = add_int32_column(block, "routeTag");
-    block = add_string_column_with_length(block, "dirTag", 25);
-    block = add_float_column(block, "x");
-    block = add_float_column(block, "y");
-    block = add_int32_column(block, "secsSinceReport");
-    block = add_string_column_with_length(block, "predictable", 5);
-    block = add_int32_column(block, "heading");
-    block = add_float_column(block, "speedKmHr");
-    
     if (chunk.size == 0)
     {
-      fprintf(stderr, "- received 0 byte response.\n");
+      fprintf(pipe_err, "- received 0 byte response.\n");
     }
     else
     {
@@ -111,35 +97,41 @@ int main(int argc, char ** argv)
           
           if (strcmp((const char *)name, "vehicle")==0)
           {
-            block = add_row(block);
+            struct Shape * shape = new_shape();
             
-            int num_attributes = xmlTextReaderAttributeCount(reader);
+            void * temp = xmlTextReaderGetAttribute(reader, (xmlChar *)"id");
+            shape->unique_set_id = atoi(temp); free(temp);
             
-            int attribute_id;
-            for (attribute_id = 0 ; attribute_id < num_attributes ; attribute_id++)
-            {
-              xmlChar *name, *value;
-              xmlTextReaderMoveToAttributeNo(reader, attribute_id);
-              name = xmlTextReaderName(reader);
-              xmlTextReaderMoveToElement(reader);
-              value = xmlTextReaderGetAttributeNo(reader, attribute_id);
-              
-              int block_column_id = get_column_id_by_name(block, name);
-              
-              if (strcmp(name, "lat")==0) block_column_id = get_column_id_by_name(block, "y");
-              else if (strcmp(name, "lon")==0) block_column_id = get_column_id_by_name(block, "x");
-              
-              if (block_column_id != -1)
-              {
-                struct Column * column = get_column(block, block_column_id);
-                set_cell_from_string(block, block->num_rows-1, block_column_id, value);
-              }
-              else
-              {
-                fprintf(stderr, "field %s not found\n", name);
-              }
-            }
+            float v[3];
             
+            temp = xmlTextReaderGetAttribute(reader, (xmlChar *)"lon");
+            v[0] = atof(temp); free(temp);
+            
+            temp = xmlTextReaderGetAttribute(reader, (xmlChar *)"lat");
+            v[1] = atof(temp); free(temp);
+            
+            temp = xmlTextReaderGetAttribute(reader, (xmlChar *)"routeTag");
+            set_attribute(shape, "routeTag", temp); free(temp);
+            
+            temp = xmlTextReaderGetAttribute(reader, (xmlChar *)"dirTag");
+            set_attribute(shape, "dirTag", temp); free(temp);
+            
+            temp = xmlTextReaderGetAttribute(reader, (xmlChar *)"secsSinceReport");
+            set_attribute(shape, "secsSinceReport", temp); free(temp);
+            
+            //temp = xmlTextReaderGetAttribute(reader, (xmlChar *)"speedKmHr");
+            //set_attribute(shape, "speedKmHr", temp); free(temp);
+            
+            temp = xmlTextReaderGetAttribute(reader, (xmlChar *)"heading");
+            set_attribute(shape, "heading", temp); free(temp);
+            
+            //temp = xmlTextReaderGetAttribute(reader, (xmlChar *)"predictable");
+            //set_attribute(shape, "predictable", temp); free(temp);
+            
+            append_vertex(shape, v);
+            write_shape(pipe_out, shape);
+            free_shape(shape);
+            fflush(pipe_out);
             count++;
           }
           else if (strcmp((const char *)name, "lastTime")==0)
@@ -151,15 +143,12 @@ int main(int argc, char ** argv)
           ret = xmlTextReaderRead(reader);
         }
         xmlFreeTextReader(reader);
-        if (ret != 0) fprintf(stderr, "xmlReader failed to parse\n");
+        if (ret != 0) fprintf(pipe_err, "xmlReader failed to parse\n");
       }
       free(chunk.memory);
       
-      fprintf(stderr, "- %d vehicles received\n", count);
+      fprintf(pipe_err, "- %d vehicles received\n", count);
     }
-    write_block(stdout, block);
-    free_block(block);
-    fflush(stdout);
     
     if (interval != 0 && (num_requests == 0 || request_index < num_requests - 1)) usleep(interval*1000);
   }

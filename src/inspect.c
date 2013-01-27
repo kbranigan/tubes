@@ -1,154 +1,92 @@
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#include "block.h"
 
-#define SCHEME_CREATE_MAIN
-#define SCHEME_ASSERT_STDIN_IS_PIPED
-#define SCHEME_FUNCTION inspect
-#include "scheme.h"
-
-int inspect(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
+int main(int argc, char ** argv)
 {
-  int num_to_display = 4;
-  char selected_attribute[100] = "";
+  if (stdout_is_piped()) // other wise you don't see the seg fault
+    setup_segfault_handling(argv);
+  
+  assert_stdin_is_piped();
+  //assert_stdout_is_piped();
+  //assert_stdin_or_out_is_piped();
+  
+  static char column_name[1000] = "";
+  static int sort_that_column = 0;
+  static int debug = 0;
+  static int reverse = 0;
+  
   int c;
-  while ((c = getopt(argc, argv, "n:a:")) != -1)
-  switch (c)
+  while (1)
   {
-    case 'n':
-      num_to_display = clamp_int(atoi(optarg), 3, 100);
-      break;
-    case 'a':
-      strncpy(selected_attribute, optarg, sizeof(selected_attribute));
-      break;
-    default:
-      abort();
+    static struct option long_options[] = {
+      {"column", required_argument, 0, 'c'},
+      {"sort", no_argument, 0, 's'},
+      {"reverse", no_argument, 0, 'r'},
+      {"debug", no_argument, &debug, 1},
+      {0, 0, 0, 0}
+    };
+    
+    int option_index = 0;
+    c = getopt_long(argc, argv, "c:sr", long_options, &option_index);
+    if (c == -1) break;
+    
+    switch (c)
+    {
+      case 0: break;
+      case 'c': strncpy(column_name, optarg, sizeof(column_name)); break;
+      case 's': sort_that_column = 1; break;
+      case 'r': reverse = 1; break;
+      default: abort();
+    }
   }
   
-  int num_shapes_without_selected_attribute = 0;
-  int num_values = 0;
-  char ** values = NULL;
-  int * value_counts = NULL;
-  
-  int num_shapes = 0;
-  int num_shapes_with_no_attributes = 0;
-  int num_shapes_with_no_vertexs = 0;
-  int num_vertexs = 0;
-  int num_each_gl_type[7] = {0,0,0,0,0,0,0};
-  
-  struct Shape * shape = NULL;
-  while ((shape = read_shape(pipe_in)))
+  struct Block * block = NULL;
+  while ((block = read_block(stdin)))
   {
-    if (shape->gl_type < 7) num_each_gl_type[shape->gl_type]++;
-    if (shape->num_vertexs == 0) num_shapes_with_no_vertexs++;
-    
-    num_vertexs += shape->num_vertexs;
-    num_shapes++;
-    
-    long i;
-    
-    if (selected_attribute[0] != 0) // -a [selected_attribute] provided
+    if (column_name[0] != 0)
     {
-      int has_attribute = 0;
-      for (i = 0 ; i < shape->num_attributes ; i++)
-      {
-        struct Attribute * attribute = &shape->attributes[i];
-        
-        // only process the selected attribute
-        if (strcmp(shape->attributes[i].name, &selected_attribute[0]) != 0) continue;
-        
-        has_attribute = 1;
-        
-        // has this value been found previously?
-        int j, found = 0;
-        for (j = 0 ; j < num_values ; j++)
-          if (strcmp(shape->attributes[i].value, values[j])==0)
-            { found = 1; value_counts[j]++; break; }
-        if (found) continue;
-        
-        // value hasn't been found, add it to the list
-        values = realloc(values, sizeof(char*)*(num_values+1));
-        value_counts = realloc(value_counts, sizeof(int)*(num_values+1));
-        values[num_values] = malloc(shape->attributes[i].value_length+1);
-        value_counts[num_values] = 1;
-        strncpy(values[num_values], shape->attributes[i].value, shape->attributes[i].value_length);
-        num_values++;
-      }
-      if (has_attribute == 0) num_shapes_without_selected_attribute++;
-    }
-    else if (num_shapes <= 2)
-    {
-      long count_zero = 0;
+      int column_id = get_column_id_by_name_or_exit(block, column_name);
       
-      fprintf(stderr, "shape:\n");
-      fprintf(stderr, "  version: %d\n", shape->version);
-      fprintf(stderr, "  unique_set_id: %d\n", shape->unique_set_id);
-      fprintf(stderr, "  gl_type: %s\n", get_gl_type_name(shape->gl_type));
-      fprintf(stderr, "  num_attributes: %d\n", shape->num_attributes);
-      if (shape->num_attributes) fprintf(stderr, "  attributes:\n");
-      for (i = 0 ; i < shape->num_attributes ; i++)
+      struct Column * column = get_column(block, column_id);
+      
+      struct Block * counts = new_block();
+      counts = add_int32_column(counts, "count");
+      int count_column_id = 0;
+      counts = _add_column(counts, column->type, column->bsize, column_get_name(column));
+      int value_column_id = 1;
+      
+      int i;
+      for (i = 0 ; i < block->num_rows ; i++)
       {
-        struct Attribute * attribute = &shape->attributes[i];
-        fprintf(stderr, "    %s(%d): '%s'\n", attribute->name, attribute->value_length, attribute->value);
-      }
-      fprintf(stderr, "  num_vertexs: %d\n", shape->num_vertexs);
-      fprintf(stderr, "  num_vertex_arrays: %d\n", shape->num_vertex_arrays);
-      if (shape->num_vertex_arrays) fprintf(stderr, "  vertex_arrays:\n");
-      for (i = 0 ; i < shape->num_vertex_arrays ; i++)
-      {
-        fprintf(stderr, "    array_type: %s\n", get_array_type_name(shape->vertex_arrays[i].array_type));
-        fprintf(stderr, "    num_dimensions: %d\n", shape->vertex_arrays[i].num_dimensions);
-        fprintf(stderr, "    vertexs:\n");
-        if (shape->num_vertexs > 0 && shape->vertex_arrays[i].num_dimensions > 0)
+        void * cell = get_cell(block, i, column_id);
+        
+        int j;
+        for (j = 0 ; j < counts->num_rows ; j++)
         {
-          long j,k;
-          for (k = 0 ; k < shape->num_vertexs ; k++)
+          if (memcmp(cell, get_cell(counts, j, value_column_id), column->bsize)==0) 
           {
-            if (k < num_to_display) fprintf(stderr, "      ");
-            int is_zero = 1;
-            for (j = 0 ; j < shape->vertex_arrays[i].num_dimensions ; j++)
-            {
-              if (shape->vertex_arrays[i].vertexs[k*shape->vertex_arrays[i].num_dimensions + j] != 0.0) is_zero = 0;
-              if (k < num_to_display) fprintf(stderr, "%f ", shape->vertex_arrays[i].vertexs[k*shape->vertex_arrays[i].num_dimensions + j]);
-            }
-            if (is_zero) count_zero ++;
-            if (k < num_to_display) fprintf(stderr, "\n");
-            else if (k == num_to_display) fprintf(stderr, "      ...\n");
+            set_cell_from_int32(counts, j, count_column_id, get_cell_as_int32(counts, j, count_column_id) + 1);
+            break;
           }
         }
-        if (i == num_to_display) fprintf(stderr, "    [...]\n");
+        
+        if (j == counts->num_rows) // not found
+        {
+          counts = add_row(counts);
+          set_cell_from_int32(counts, j, count_column_id, 1); // initialize count at 1 occurrence
+          memcpy(get_cell(counts, j, value_column_id), cell, column->bsize);
+        }
       }
-      if (count_zero > 0) fprintf(stderr, "  count_zero: %ld\n", count_zero);
+      
+      if (sort_that_column == 1 && column->type == TYPE_INT)
+        counts = sort_block_using_int32_column(counts, count_column_id, reverse);
+      
+      inspect_block(counts);
+      free_block(counts);
     }
-  }
-  
-  fprintf(pipe_err, "{\n");
-  
-  if (selected_attribute[0] != 0) // -a [attribute_name] provided
-  {
-    fprintf(pipe_err, "  \"num_unique_values\": %d,\n", num_values);
-    fprintf(pipe_err, "  \"selected_attribute\": \"%s\",\n", selected_attribute);
+    else
+      inspect_block(block);
     
-    if (num_shapes_without_selected_attribute > 0)
-      fprintf(pipe_err, "  \"num_shapes_without_selected_attribute\": %d,\n", num_shapes_without_selected_attribute);
-    
-    if (num_values > 0) fprintf(pipe_err, "  \"first_%d_unique_values\": [\n", (num_to_display < num_values) ? num_to_display : num_values);
-    int i;
-    for (i = 0 ; i < num_values ; i++)
-    {
-      if (i < num_to_display) fprintf(pipe_err, "    \"%s (%d)\"%s\n", values[i], value_counts[i], (i==num_values-1)?"":",");
-      free(values[i]);
-    }
-    if (num_values > 0) fprintf(pipe_err, "  ]\n");
-    free(values);
-    free(value_counts);
+    free_block(block);
   }
-  
-  if (num_shapes_with_no_vertexs > 0) printf("  \"num_shapes_with_no_vertexs\": %d,\n", num_shapes_with_no_vertexs);
-  fprintf(pipe_err, "  \"num_shapes\": %d,\n", num_shapes);
-  fprintf(pipe_err, "  \"num_vertexs\": %d,\n", num_vertexs);
-  fprintf(pipe_err, "  \"num_each_gl_type\": [%d,%d,%d,%d,%d,%d,%d]\n", num_each_gl_type[0], num_each_gl_type[1], num_each_gl_type[2], num_each_gl_type[3], num_each_gl_type[4], num_each_gl_type[5], num_each_gl_type[6]);
-  fprintf(pipe_err, "}\n");
 }

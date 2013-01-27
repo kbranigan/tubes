@@ -1,48 +1,48 @@
 
-#include <stdio.h>
-#include <stdlib.h>
-//#include <unistd.h>
-//#include <getopt.h>   // for getopt_long
+#include "block.h"
 
-#define SCHEME_CREATE_MAIN
-#define SCHEME_ASSERT_STDINOUT_ARE_PIPED
-#define SCHEME_FUNCTION pass_through
-#include "scheme.h"
-
-int pass_through(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
+int main(int argc, char ** argv)
 {
-  //char filename[300] = "";
-  //int num_attributes = -1;
-  //int c;
-  //while (1)
-  //{
-  //  static struct option long_options[] = {
-  //    //{"row_id", required_argument, 0, 'r'},
-  //    //{"part_id", required_argument, 0, 'p'},
-  //    {"filename", required_argument, 0, 'f'},
-  //    {"debug", no_argument, &debug, 1},
-  //    {0, 0, 0, 0}
-  //  };
-  //  
-  //  int option_index = 0;
-  //  c = getopt_long(argc, argv, "f:", long_options, &option_index);
-  //  if (c == -1) break;
-  //  
-  //  switch (c)
-  //  {
-  //    case 0: break;
-  //    //case 'r': row_id = atoi(optarg); break;
-  //    //case 'p': part_id = atoi(optarg); break;
-  //    case 'f': strncpy(filename, optarg, sizeof(filename)); break;
-  //    default: abort();
-  //  }
-  //}
+  /*
+  if (stdout_is_piped()) // other wise you don't see the seg fault
+    setup_segfault_handling(argv);
   
-  struct Shape * shape = NULL;
-  while ((shape = read_shape(pipe_in)))
+  //assert_stdin_is_piped();
+  assert_stdout_is_piped();
+  //assert_stdin_or_out_is_piped();
+  
+  static char filename[1000] = "";
+  static int output_header = 1;
+  static int debug = 0;
+  
+  int c;
+  while (1)
   {
-    // manipulate data here if you like
-    write_shape(pipe_out, shape);
-    free_shape(shape);
+    static struct option long_options[] = {
+      {"filename", required_argument, 0, 'f'},
+      {"header", no_argument, &output_header, 1},
+      {"no-header", no_argument, &output_header, 0},
+      {"debug", no_argument, &debug, 1},
+      {0, 0, 0, 0}
+    };
+    
+    int option_index = 0;
+    c = getopt_long(argc, argv, "d:f:", long_options, &option_index);
+    if (c == -1) break;
+    
+    switch (c)
+    {
+      case 0: break;
+      case 'f': strncpy(filename, optarg, sizeof(filename)); break;
+      default: abort();
+    }
+  }
+  */
+  
+  struct Block * block = NULL;
+  while ((block = read_block(stdin)))
+  {
+    write_block(stdout, block);
+    free_block(block);
   }
 }

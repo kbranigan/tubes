@@ -6,7 +6,11 @@
 #include <unistd.h>
 #include <assert.h>
 
-#include "block.h"
+#define SCHEME_CREATE_MAIN
+#define SCHEME_ASSERT_STDOUT_IS_PIPED
+#define SCHEME_FUNCTION read_dem
+
+#include "scheme.h"
 
 FILE * pFile = NULL;
 long lSize;
@@ -32,7 +36,7 @@ void get_chars(int count)
   buffer[count] = '\0';
 }
 
-int main(int argc, char ** argv)
+int read_dem(int argc, char ** argv, FILE * pipe_in, FILE * pipe_out, FILE * pipe_err)
 {
   char style_file[300] = "elevation_colors.csv";//src/read_dem_elevation_style_defaults.txt";
   char filename[300] = "";
@@ -194,12 +198,11 @@ int main(int argc, char ** argv)
     
   }
   
-  struct Block * block = new_block();
-  
-  block = add_xy_columns(block);
-  block = add_rgba_columns(block);
-  
-  block = set_num_rows(block, 1201*1201);
+  struct Shape * shape = new_shape();
+  shape->gl_type = GL_POINTS;
+  shape->vertex_arrays[0].num_dimensions = 2;
+  get_or_add_array(shape, GL_COLOR_ARRAY);
+  set_num_vertexs(shape, 1201*1201);
   
   for (col_id = 0 ; col_id < 1201 ; col_id++)
   {
@@ -207,6 +210,8 @@ int main(int argc, char ** argv)
     for (row_id = 0 ; row_id < 1201 ; row_id++)
     {
       float v[3] = { lng[col_id], lat[col_id]+(row_id*y_res/3600.00), elevation_data[col_id][row_id] };
+      
+      //fprintf(stderr, "num_colors = %d\n", num_colors);
       
       struct Color * color1 = NULL;
       struct Color * color2 = NULL;
@@ -249,24 +254,24 @@ int main(int argc, char ** argv)
               c[j] *= 1 + ((elevation_data[col_id][row_id] - elevation_data[col_id-1][row_id]) + (elevation_data[col_id+1][row_id] - elevation_data[col_id][row_id])) * 0.03;
         }
         
-        set_xy(block, col_id*1201 + row_id, v[0], v[1]);
-        set_rgba(block, col_id*1201 + row_id, c[0], c[1], c[2], 1);//c[3]);
+        set_vertex(shape, 0, col_id*1201 + row_id, v);
+        set_vertex(shape, 1, col_id*1201 + row_id, c);
+        //append_vertex2(shape, v, c);
       }
       else
       {
         float c[4] = { 1, 0, 0, 1 };
-        set_xy(block, col_id*1201 + row_id, v[0], v[1]);
-        set_rgba(block, col_id*1201 + row_id, c[0], c[1], c[2], c[3]);
+        set_vertex(shape, 0, col_id*1201 + row_id, v);
+        set_vertex(shape, 1, col_id*1201 + row_id, c);
+        //append_vertex2(shape, v, c);
       }
       
       //if (row_id > 0    && elevation_data[row_id-1] < elevation_data[col_id][row_id]) { c[0] *= 0.8; c[2] *= 0.8; }
       //if (row_id < 1200 && elevation_data[row_id+1] > elevation_data[col_id][row_id]) { c[0] /= 0.8; c[2] /= 0.8; }
     }
   }
-  write_block(stdout, block);
-  free_block(block);
-  //write_shape(pipe_out, shape);
-  //free_shape(shape);
+  write_shape(pipe_out, shape);
+  free_shape(shape);
   
   //get_chars(type_b_header_size);
   //printf("%s\n", buffer);
