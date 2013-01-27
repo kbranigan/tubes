@@ -28,12 +28,12 @@ all: mkbin \
 	bin/png \
 	bin/test \
 	bin/unique \
-	bin/add_wday \
 	bin/tesselate \
 	bin/coordinate_convert \
 	bin/bounds
 
 kevin: \
+	kevin/add_wday \
 	kevin/add_ticket_totals_to_addresses \
 	kevin/add_color_to_addresses_tickets_by_wday_and_time \
 	kevin/add_distance_to_nearest_neighbour \
@@ -121,8 +121,8 @@ bin/strcat: bin/block.o src/strcat.c
 bin/add_color: bin/block.o src/add_color.c
 	gcc -lm bin/block.o src/add_color.c -o bin/add_color
 
-bin/add_wday: bin/block.o src/add_wday.c
-	gcc -lm bin/block.o src/add_wday.c -o bin/add_wday
+kevin/add_wday: bin/block.o kevin/add_wday.c
+	gcc -lm bin/block.o kevin/add_wday.c -o kevin/add_wday
 
 bin/tesselate: bin/block.o src/tesselate.c
 	gcc -lm bin/block.o src/tesselate.c -framework OpenGL -o bin/tesselate
