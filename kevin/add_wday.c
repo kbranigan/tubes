@@ -1,5 +1,5 @@
 
-#include "block.h"
+#include "../src/block.h"
 #include <time.h>
 #include <math.h>
 

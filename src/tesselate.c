@@ -146,7 +146,8 @@ int main(int argc, char ** argv)
 		future_block = new_block();
 		future_block = copy_all_attributes(future_block, block);
 		future_block = copy_all_columns(future_block, block);
-		future_block = add_int32_attribute(future_block, "gl_type", (int32_t)GL_TRIANGLES);
+		//future_block = add_int32_attribute(future_block, "gl_type", (int32_t)GL_TRIANGLES);
+		future_block = add_string_attribute(future_block, "shape_type", "triangles");
 		future_block = add_command(future_block, argc, argv);
 		
 		super_temp_block = new_block();

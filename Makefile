@@ -27,6 +27,8 @@ all: mkbin \
 	bin/upgrade_block \
 	bin/png \
 	bin/test \
+	bin/pass_through \
+	bin/join_geographic \
 	bin/unique \
 	bin/tesselate \
 	bin/coordinate_convert \
@@ -82,6 +84,9 @@ kevin/test: bin/block.o kevin/test.c bin/hashtable.o bin/block_kdtree.o
 kevin/add_address_id_and_is_opp: bin/block.o bin/block_hashtable.o bin/hashtable.o kevin/add_address_id_and_is_opp.c
 	gcc -lm bin/block.o bin/block_hashtable.o bin/hashtable.o kevin/add_address_id_and_is_opp.c -o kevin/add_address_id_and_is_opp
 
+kevin/add_wday: bin/block.o kevin/add_wday.c
+	gcc -lm bin/block.o kevin/add_wday.c -o kevin/add_wday
+
 bin/hashtable.o: ext/hashtable.c
 	gcc ext/hashtable.c -c -o bin/hashtable.o
 
@@ -106,6 +111,9 @@ bin/write_shapefile: bin/block.o src/write_shapefile.c ext/dbfopen.c ext/shpopen
 bin/block_test: bin/block.o src/block_test.c
 	gcc -lm bin/block.o src/block_test.c -o bin/block_test
 
+bin/join_geographic: bin/block.o src/join_geographic.c
+	gcc -lm bin/block.o src/join_geographic.c -o bin/join_geographic
+
 bin/inspect: bin/block.o src/inspect.c
 	gcc -lm bin/block.o src/inspect.c -o bin/inspect
 
@@ -121,9 +129,6 @@ bin/strcat: bin/block.o src/strcat.c
 bin/add_color: bin/block.o src/add_color.c
 	gcc -lm bin/block.o src/add_color.c -o bin/add_color
 
-kevin/add_wday: bin/block.o kevin/add_wday.c
-	gcc -lm bin/block.o kevin/add_wday.c -o kevin/add_wday
-
 bin/tesselate: bin/block.o src/tesselate.c
 	gcc -lm bin/block.o src/tesselate.c -framework OpenGL -o bin/tesselate
 
@@ -138,6 +143,9 @@ bin/columns: bin/block.o src/columns.c
 
 bin/read_dem: bin/block.o src/read_dem.c
 	gcc -lm bin/block.o src/read_dem.c -o bin/read_dem
+
+bin/pass_through: bin/block.o src/pass_through.c
+	gcc -lm bin/block.o src/pass_through.c -o bin/pass_through
 
 bin/coordinate_convert: bin/block.o src/coordinate_helpers.h src/coordinate_helpers.c src/coordinate_convert.c
 	gcc -lm bin/block.o src/coordinate_helpers.c src/coordinate_convert.c -o bin/coordinate_convert

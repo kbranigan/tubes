@@ -38,6 +38,8 @@ extern "C" {
 #include <inttypes.h> // for int32_t
 #include <signal.h>   // for segfault handling
 
+#include "vectmath.h"
+
 extern int stdin_is_piped_t(float timeout);
 extern void assert_stdin_is_piped_t(float timeout);
 extern void assert_stdin_is_piped();
