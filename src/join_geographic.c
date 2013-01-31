@@ -1,5 +1,6 @@
 
 #include "block.h"
+#include "vectmath.h"
 
 /*
 
@@ -88,7 +89,7 @@ int main(int argc, char ** argv)
 	}
 	
 	const char * shape_type = get_attribute_value_as_string(polygons, "shape_type");
-	if (shape_type == NULL || strcmp(shape_type, "triangles") != 0) { fprintf(stderr, "Notice: %s expects '%s' to be 'triangles' (FAILURE)\n", argv[0], filename); }
+	if (shape_type == NULL || strcmp(shape_type, "triangles") != 0) { fprintf(stderr, "Notice: %s expects '%s' to be 'triangles' (WILL END IN FAILURE)\n", argv[0], filename); }
 	
 	struct Block * block = NULL;
 	while ((block = read_block(stdin)))
@@ -97,6 +98,7 @@ int main(int argc, char ** argv)
 		if (shape_type == NULL || strcmp(shape_type, "points") != 0) { fprintf(stderr, "Notice: %s expects piped blocks to be 'points', assuming points\n", argv[0]); }
 		
 		block = add_int32_column_and_blank(block, "number_of_polygon_hits");
+		int number_of_polygon_hits_column_id = block->num_columns - 1;
 		
 		int i;
 		for (i = 0 ; i < block->num_rows ; i++)
@@ -116,18 +118,32 @@ int main(int argc, char ** argv)
 				{
 					//int shape_part_id = get_cell_as_int32(block, shape_start_id, shape_row_id_column_id);
 					
-					fprintf(stderr, " part %d to %d of shape %d to %d\n", part_start_id, part_end_id, shape_start_id, shape_end_id);
+					// this assumes the polygons are triangles.  if this isn't the case, this just won't work AT ALL
+					int j;
+					for (j = part_start_id ; j < part_end_id ; j += 3)
+					{
+						vec2d a = { get_x(polygons, j), get_y(polygons, j) };
+						vec2d b = { get_x(polygons, j+1), get_y(polygons, j+1) };
+						vec2d c = { get_x(polygons, j+2), get_y(polygons, j+2) };
+						
+						vec2d p = { x, y };
+						
+						if (point_in_triangle(a, b, c, p))
+						{
+							int32_t * number_of_polygon_hits = get_cell(block, i, number_of_polygon_hits_column_id);
+							(*number_of_polygon_hits)++;
+						}
+					}
 					
+					//fprintf(stderr, " part %d to %d of shape %d to %d\n", part_start_id, part_end_id, shape_start_id, shape_end_id);
 					if (part_end_id == shape_end_id) break; // last part of shape
 					part_start_id = part_end_id;
-					break;
 				}
 				
-				if (shape_end_id == block->num_rows) break; // last shape
+				if (shape_end_id == polygons->num_rows) break; // last shape
 				shape_start_id = shape_end_id;
-				break;
 			}
-			break;
+			fprintf(stderr, ".");
 		}
 		
 		write_block(stdout, block);
