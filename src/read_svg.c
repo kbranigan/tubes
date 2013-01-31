@@ -251,6 +251,12 @@ int main(int argc, char ** argv)
 					}
 					xmlTextReaderMoveToElement(reader);
 				}
+				else if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT && strcmp(name, "clipPath")==0)
+				{
+					while (!((xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT && strcmp(name, "clipPath")==0)))
+						ret = xmlTextReaderRead(reader);
+					//pop_matrix(&stack, xmlTextReaderDepth(reader) + 1);
+				}
 				else if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT && strcmp(name, "g")==0)
 				{
 					//pop_matrix(&stack, xmlTextReaderDepth(reader) + 1);
