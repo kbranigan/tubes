@@ -866,21 +866,33 @@ double get_x(struct Block * block, uint32_t row_id)
 {
   if (row_id > block->num_rows) { fprintf(stderr, "get_x invalid row_id\n"); exit(0); }
   if (cached_block_ptr != block) update_cached_block_column_ids(block);
-  if (cached_block_column_ids.xyz[0] != -1) return get_cell_as_double(block, row_id, cached_block_column_ids.xyz[0]);
+	if (cached_block_column_ids.xyz[0] != -1) {
+		return get_cell_as_double(block, row_id, cached_block_column_ids.xyz[0]);
+	} else {
+		return 0;
+	}
 }
 
 double get_y(struct Block * block, uint32_t row_id)
 {
   if (row_id > block->num_rows) { fprintf(stderr, "get_y invalid row_id\n"); exit(0); }
   if (cached_block_ptr != block) update_cached_block_column_ids(block);
-  if (cached_block_column_ids.xyz[1] != -1) return get_cell_as_double(block, row_id, cached_block_column_ids.xyz[1]);
+	if (cached_block_column_ids.xyz[1] != -1) {
+		return get_cell_as_double(block, row_id, cached_block_column_ids.xyz[1]);
+	} else {
+		return 0;
+	}
 }
 
 double get_z(struct Block * block, uint32_t row_id)
 {
   if (row_id > block->num_rows) { fprintf(stderr, "get_z invalid row_id\n"); exit(0); }
   if (cached_block_ptr != block) update_cached_block_column_ids(block);
-  if (cached_block_column_ids.xyz[2] != -1) return get_cell_as_double(block, row_id, cached_block_column_ids.xyz[2]);
+	if (cached_block_column_ids.xyz[2] != -1) {
+		return get_cell_as_double(block, row_id, cached_block_column_ids.xyz[2]);
+	} else {
+		return 0;
+	}
 }
 
 void set_xy(struct Block * block, uint32_t row_id, double x, double y)
