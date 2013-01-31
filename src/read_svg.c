@@ -251,12 +251,12 @@ int main(int argc, char ** argv)
 					}
 					xmlTextReaderMoveToElement(reader);
 				}
-				else if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT && strcmp(name, "clipPath")==0)
+				/*else if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT && strcmp(name, "clipPath")==0)
 				{
 					while (!((xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT && strcmp(name, "clipPath")==0)))
 						ret = xmlTextReaderRead(reader);
 					//pop_matrix(&stack, xmlTextReaderDepth(reader) + 1);
-				}
+				}*/
 				else if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT && strcmp(name, "g")==0)
 				{
 					//pop_matrix(&stack, xmlTextReaderDepth(reader) + 1);
@@ -299,8 +299,7 @@ int main(int argc, char ** argv)
 								//blue = rand() / (float)RAND_MAX;	// kbfu
 								// 713.5 239.5
 								
-								if (ptr[0] == 'M')
-								{
+								if (ptr[0] == 'M') { // moveto
 									double coord[2] = { 0, 0 };
 									coord[0] = atof(&ptr[1]); ptr = strtok(NULL, " ");
 									coord[1] = atof(&ptr[0]);
@@ -314,9 +313,7 @@ int main(int argc, char ** argv)
 									set_cell_from_int32(block, block->num_rows-1, shape_row_id_column_id, shape_row_id);
 									set_cell_from_int32(block, block->num_rows-1, shape_part_id_column_id, shape_part_id);
 									set_cell_from_int32(block, block->num_rows-1, shape_part_type_column_id, 5);
-								}
-								else if (ptr[0] == 'L')
-								{
+								} else if (ptr[0] == 'L') { // lineto
 									double coord[2] = { 0, 0 };
 									coord[0] = atof(&ptr[1]); ptr = strtok(NULL, " ");
 									coord[1] = atof(&ptr[0]);
@@ -328,9 +325,21 @@ int main(int argc, char ** argv)
 									set_cell_from_int32(block, block->num_rows-1, shape_row_id_column_id, shape_row_id);
 									set_cell_from_int32(block, block->num_rows-1, shape_part_id_column_id, shape_part_id);
 									set_cell_from_int32(block, block->num_rows-1, shape_part_type_column_id, 5);
-								}
-								else if (ptr[0] == 'Z')
-								{
+								} else if (ptr[0] == 'H') { // horizontalpath
+									fprintf(stderr, "haha no\n"); exit(1);
+								} else if (ptr[0] == 'V') { // verticalpath
+									fprintf(stderr, "haha no\n"); exit(1);
+								} else if (ptr[0] == 'C') { // curvepath
+									fprintf(stderr, "haha no\n"); exit(1);
+								} else if (ptr[0] == 'S') { // shorthand/smooth curveto
+									fprintf(stderr, "haha no\n"); exit(1);
+								} else if (ptr[0] == 'Q') { // quadratic Bézier curveto
+									fprintf(stderr, "haha no\n"); exit(1);
+								} else if (ptr[0] == 'T') { // Shorthand/smooth quadratic Bézier curveto
+									fprintf(stderr, "haha no\n"); exit(1);
+								} else if (ptr[0] == 'A') { // elliptical arc
+									fprintf(stderr, "haha no\n"); exit(1);
+								} else if (ptr[0] == 'Z') { // closepath
 									//fprintf(stderr, "Z\n");
 									if (get_x(block, shape_start) != get_x(block, block->num_rows-1) || get_y(block, shape_start) != get_y(block, block->num_rows-1))
 									{
@@ -344,9 +353,7 @@ int main(int argc, char ** argv)
 										set_cell_from_int32(block, block->num_rows-1, shape_part_type_column_id, 5);
 									}
 									shape_part_id++;
-								}
-								else
-								{
+								} else {
 									fprintf(stderr, "bad news parsing path %s\n", ptr);
 								}
 								ptr = strtok(NULL, " ");
