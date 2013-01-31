@@ -341,9 +341,83 @@ int main(int argc, char ** argv)
         }
       }
     }
-    /*fprintf(stderr, "rowc = %d\n", rowc);
-    fprintf(stderr, "ptc = %d\n", ptc);
-    fprintf(stderr, "radius_column_id = %d\n", radius_column_id);*/
+    
+		int which = GL_POINTS; // nice default
+		
+		int shape_row_id_column_id  = get_column_id_by_name(block, "shape_row_id");
+		int shape_part_id_column_id   = get_column_id_by_name(block, "shape_part_id");
+		int shape_part_type_column_id = get_column_id_by_name(block, "shape_part_type");
+		
+		int red_column_id   = get_column_id_by_name(block, "red");
+		int green_column_id = get_column_id_by_name(block, "green");
+		int blue_column_id  = get_column_id_by_name(block, "blue");
+		int alpha_column_id = get_column_id_by_name(block, "alpha");
+		
+		int colour_mode = 0;
+		if (red_column_id != -1 && green_column_id != -1 && blue_column_id != -1) {
+			if (alpha_column_id != -1) {
+				colour_mode = 4;
+			} else {
+				colour_mode = 3;
+			}
+		} else {
+			colour_mode = 0;
+		}
+		
+		const char * shape_type = get_attribute_value_as_string(block, "shape_type");
+		if (shape_type != NULL && strcmp(shape_type, "triangles")==0) {
+			which = GL_TRIANGLES;
+		}
+		
+		glColor4f(0, 0, 0, 1); // nice default for you
+		
+		// foreach shape
+		int shape_start_id = 0, shape_end_id;
+		while ((shape_end_id = get_next_shape_start(block, shape_start_id))) {
+			//int shape_row_id = get_cell_as_int32(block, shape_start_id, shape_row_id_column_id);
+			
+			// foreach part of shape
+			int part_start_id = shape_start_id, part_end_id;
+			while ((part_end_id = get_next_part_start(block, part_start_id))) {
+				//int shape_part_id = get_cell_as_int32(block, shape_start_id, shape_row_id_column_id);
+				
+				if (shape_part_type_column_id != 0) {
+					int shape_part_type = get_cell_as_int32(block, part_start_id, shape_part_type_column_id);
+					if (shape_part_type == 4) {
+						glBegin(GL_TRIANGLES);
+					} else if (shape_part_type == 5) {
+						glBegin(GL_LINE_STRIP);
+					} else {
+						glBegin(GL_POINTS);
+					}
+				} else {
+					glBegin(GL_POINTS);
+				}
+			
+				int i;
+				for (i = part_start_id ; i < part_end_id ; i++) {
+					if (colour_mode == 3) {
+						glColor3f(get_cell_as_double(block, i, red_column_id), get_cell_as_double(block, i, green_column_id), get_cell_as_double(block, i, blue_column_id));
+					} else if (colour_mode == 4) {
+						glColor4f(get_cell_as_double(block, i, red_column_id), get_cell_as_double(block, i, green_column_id), get_cell_as_double(block, i, blue_column_id), get_cell_as_double(block, i, alpha_column_id));
+					}
+					glVertex3f(get_x(block, i), get_y(block, i), get_z(block, i));
+				}
+				
+				glEnd();
+				if (part_end_id == shape_end_id) {
+					break; // last part of shape
+				}
+				part_start_id = part_end_id;
+			}
+			
+			if (shape_end_id == block->num_rows) {
+				break; // last shape
+			}
+			shape_start_id = shape_end_id;
+		}
+		
+		/*
     int prev_shapefile_row_id = -1;
     for (row_id = 0 ; row_id < block->num_rows ; row_id++)
     {
@@ -399,6 +473,7 @@ int main(int argc, char ** argv)
       }
     }
     glEnd();
+		*/
   }
   
   bitmap_t png;
