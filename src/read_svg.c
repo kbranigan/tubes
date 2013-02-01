@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <libxml/xpath.h>
 #include <libxml/xmlreader.h>
 
 #include "block.h"
@@ -26,29 +25,90 @@ struct Node {
 
 void add_child(struct Node * node, struct Node * child) {
 	node->num_children++;
-	node->children = realloc(node->children, sizeof(struct Node*)*node->num_children);
+	node->children = (struct Node **)realloc(node->children, sizeof(struct Node*)*node->num_children);
 	node->children[node->num_children-1] = child;
 	node->children[node->num_children-1]->parent = node;
 }
 
-struct Node * new_node(struct Node * parent, xmlTextReaderPtr reader) {
-	if (xmlTextReaderRead(reader) == 0) return parent;
+struct Node * new_node(xmlTextReaderPtr reader) {
 	
-	const xmlChar * name = xmlTextReaderConstName(reader);
-	const xmlChar * value = xmlTextReaderConstValue(reader);
-	if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT && strcmp(name, "g")==0)
-	{
-		while (xmlTextReaderMoveToNextAttribute(reader))
-		{
+	int nodeType = xmlTextReaderNodeType(reader);
+	int depth = xmlTextReaderDepth(reader);
+	
+	if (nodeType == XML_READER_TYPE_ELEMENT || nodeType == XML_READER_TYPE_DOCUMENT_TYPE) {
+		
+		//int i;
+		//for (i = 0 ; i < depth ; i++) fprintf(stderr, "  ");
+		//fprintf(stderr, "%d: %d %s\n", depth, nodeType, xmlTextReaderConstName(reader));
+		
+		struct Node * node = (struct Node *)malloc(sizeof(struct Node));
+		
+		memset(node, 0, sizeof(struct Node));
+		
+		const xmlChar * tagName = xmlTextReaderConstName(reader);
+		if (tagName != NULL) {
+			strncpy(node->tagName, tagName, 20);
+		}
+		//fprintf(stderr, "%d: %s\n", depth, tagName);
+		
+		while (xmlTextReaderMoveToNextAttribute(reader)) {
 			char * attr_name = xmlTextReaderName(reader);
 			char * attr_value = xmlTextReaderValue(reader);
-			if (strcmp(attr_name, "transform")==0)
-			{
-				//push_matrix(&stack, attr_value, xmlTextReaderDepth(reader));
+			
+			if (attr_name != NULL && attr_value != NULL) {
+				node->num_attr++;
+				node->attrNames = (char**)realloc(node->attrNames, sizeof(char*)*node->num_attr);
+				node->attrValues = (char**)realloc(node->attrValues, sizeof(char*)*node->num_attr);
+				node->attrNames[node->num_attr-1] = (char*)malloc(strlen(attr_name)+1);
+				strcpy(node->attrNames[node->num_attr-1], attr_name);
+				node->attrValues[node->num_attr-1] = (char*)malloc(strlen(attr_value)+1);
+				strcpy(node->attrValues[node->num_attr-1], attr_value);
 			}
 		}
 		xmlTextReaderMoveToElement(reader);
+		
+		if (xmlTextReaderIsEmptyElement(reader)) {
+			return node;
+		}
+		
+		int ret = xmlTextReaderRead(reader);
+		if (ret == 0) {
+			return NULL;
+		}
+		
+		while (xmlTextReaderNodeType(reader) != XML_READER_TYPE_END_ELEMENT || 
+						xmlTextReaderDepth(reader) > depth || 
+						strcmp(xmlTextReaderConstName(reader), tagName) != 0) {
+			ret = xmlTextReaderRead(reader);
+			if (ret != 0) {
+				struct Node * child = new_node(reader);
+				if (child != NULL) {
+					add_child(node, child);
+				}
+			} else {
+				return NULL;
+			}
+		}
+		
+		return node;
 	}
+	return NULL;
+}
+
+void free_node(struct Node * node) {
+	int i;
+	for (i = 0 ; i < node->num_attr ; i++) {
+		free(node->attrNames[i]);
+		free(node->attrValues[i]);
+	}
+	free(node->attrNames);
+	free(node->attrValues);
+	
+	for (i = 0 ; i < node->num_children ; i++) {
+		free_node(node->children[i]);
+	}
+	free(node->children);
+	free(node);
 }
 
 /*struct Matrix {
@@ -271,6 +331,19 @@ int main(int argc, char ** argv)
 		if (reader != NULL)
 		{
 			int ret = xmlTextReaderRead(reader);
+			while (strcmp(xmlTextReaderConstName(reader), "svg")!=0 && ret != 0) {
+				ret = xmlTextReaderRead(reader);
+			}
+			
+			struct Node * node = new_node(reader);
+			free_node(node);
+			
+			write_block(stdout, block);
+			free_block(block);
+			xmlCleanupParser();
+			return;
+			
+			ret = xmlTextReaderRead(reader);
 			while (ret == 1)
 			{
 				const xmlChar * name = xmlTextReaderConstName(reader);
