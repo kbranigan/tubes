@@ -14,6 +14,43 @@ struct MemoryStruct {
 	size_t size;
 };
 
+struct Node {
+	char tagName[20];
+	struct Node * parent;
+	struct Node ** children;
+	int num_children;
+	char ** attrNames;
+	char ** attrValues;
+	int num_attr;
+};
+
+void add_child(struct Node * node, struct Node * child) {
+	node->num_children++;
+	node->children = realloc(node->children, sizeof(struct Node*)*node->num_children);
+	node->children[node->num_children-1] = child;
+	node->children[node->num_children-1]->parent = node;
+}
+
+struct Node * new_node(struct Node * parent, xmlTextReaderPtr reader) {
+	if (xmlTextReaderRead(reader) == 0) return parent;
+	
+	const xmlChar * name = xmlTextReaderConstName(reader);
+	const xmlChar * value = xmlTextReaderConstValue(reader);
+	if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT && strcmp(name, "g")==0)
+	{
+		while (xmlTextReaderMoveToNextAttribute(reader))
+		{
+			char * attr_name = xmlTextReaderName(reader);
+			char * attr_value = xmlTextReaderValue(reader);
+			if (strcmp(attr_name, "transform")==0)
+			{
+				//push_matrix(&stack, attr_value, xmlTextReaderDepth(reader));
+			}
+		}
+		xmlTextReaderMoveToElement(reader);
+	}
+}
+
 /*struct Matrix {
 	double d[3][3];
 	int xmldepth;
@@ -261,7 +298,7 @@ int main(int argc, char ** argv)
 				{
 					//pop_matrix(&stack, xmlTextReaderDepth(reader) + 1);
 				}
-				else if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT && xmlTextReaderDepth(reader) == 7 && strcmp(name, "path")==0)
+				else if (shape_row_id < 5 && xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT && xmlTextReaderDepth(reader) == 7 && strcmp(name, "path")==0)
 				{
 					double red = 0, green = 0, blue = 0;
 					
@@ -299,63 +336,52 @@ int main(int argc, char ** argv)
 								//blue = rand() / (float)RAND_MAX;	// kbfu
 								// 713.5 239.5
 								
-								if (ptr[0] == 'M') { // moveto
-									double coord[2] = { 0, 0 };
-									coord[0] = atof(&ptr[1]); ptr = strtok(NULL, " ");
-									coord[1] = atof(&ptr[0]);
-									//apply_matrixs(coord, &stack);
-									//fprintf(stderr, "M %f %f\n", x, y);
-									//if (!(x == 208.58405 && y == 162.51877) && !(x == 192.21372 && y == 115.60435)) break; // kbfu
-									shape_start = block->num_rows;
-									block = add_row(block);
-									set_xy(block, block->num_rows-1, coord[0], coord[1]);
-									set_rgb(block, block->num_rows-1, red, green, blue);
-									set_cell_from_int32(block, block->num_rows-1, shape_row_id_column_id, shape_row_id);
-									set_cell_from_int32(block, block->num_rows-1, shape_part_id_column_id, shape_part_id);
-									set_cell_from_int32(block, block->num_rows-1, shape_part_type_column_id, 5);
-								} else if (ptr[0] == 'L') { // lineto
-									double coord[2] = { 0, 0 };
-									coord[0] = atof(&ptr[1]); ptr = strtok(NULL, " ");
-									coord[1] = atof(&ptr[0]);
-									//apply_matrixs(coord, &stack);
-									//fprintf(stderr, "L %f %f\n", x, y);
-									block = add_row(block);
-									set_xy(block, block->num_rows-1, coord[0], coord[1]);
-									set_rgb(block, block->num_rows-1, red, green, blue);
-									set_cell_from_int32(block, block->num_rows-1, shape_row_id_column_id, shape_row_id);
-									set_cell_from_int32(block, block->num_rows-1, shape_part_id_column_id, shape_part_id);
-									set_cell_from_int32(block, block->num_rows-1, shape_part_type_column_id, 5);
-								} else if (ptr[0] == 'H') { // horizontalpath
-									fprintf(stderr, "haha no\n"); exit(1);
-								} else if (ptr[0] == 'V') { // verticalpath
-									fprintf(stderr, "haha no\n"); exit(1);
-								} else if (ptr[0] == 'C') { // curvepath
-									fprintf(stderr, "haha no\n"); exit(1);
-								} else if (ptr[0] == 'S') { // shorthand/smooth curveto
-									fprintf(stderr, "haha no\n"); exit(1);
-								} else if (ptr[0] == 'Q') { // quadratic Bézier curveto
-									fprintf(stderr, "haha no\n"); exit(1);
-								} else if (ptr[0] == 'T') { // Shorthand/smooth quadratic Bézier curveto
-									fprintf(stderr, "haha no\n"); exit(1);
-								} else if (ptr[0] == 'A') { // elliptical arc
-									fprintf(stderr, "haha no\n"); exit(1);
-								} else if (ptr[0] == 'Z') { // closepath
-									//fprintf(stderr, "Z\n");
-									if (get_x(block, shape_start) != get_x(block, block->num_rows-1) || get_y(block, shape_start) != get_y(block, block->num_rows-1))
-									{
-										double coord[2] = { get_x(block, shape_start), get_y(block, shape_start) };
-										//apply_matrixs(coord, &stack);
-										block = add_row(block);
-										set_xy(block, block->num_rows-1, coord[0], coord[1]);
-										set_rgb(block, block->num_rows-1, red, green, blue);
-										set_cell_from_int32(block, block->num_rows-1, shape_row_id_column_id, shape_row_id);
-										set_cell_from_int32(block, block->num_rows-1, shape_part_id_column_id, shape_part_id);
-										set_cell_from_int32(block, block->num_rows-1, shape_part_type_column_id, 5);
-									}
-									shape_part_id++;
-								} else {
-									fprintf(stderr, "bad news parsing path %s\n", ptr);
+								double coord[2] = { 0, 0 };
+								int add_point = 0;
+								
+								switch (ptr[0]) {
+									case 'M': case 'm':
+										shape_start = block->num_rows;
+									case 'L': case 'l':
+										coord[0] = atof(&ptr[1]);
+										ptr = strtok(NULL, " ");
+										coord[1] = atof(&ptr[0]);
+										add_point = 1;
+										break;
+									case 'Z': case 'z':
+										coord[0] = get_x(block, shape_start);
+										coord[1] = get_y(block, shape_start);
+										add_point = 1;
+										//shape_part_id++; // this happens later
+										break;
+									case 'H': case 'h':
+									case 'V': case 'b':
+									case 'C': case 'c':
+									case 'S': case 's':
+									case 'Q': case 'q':
+									case 'T': case 't':
+									case 'A': case 'a':
+										fprintf(stderr, "read_svg encountered unsupported path step\n");
+										exit(0);
+										break;
+									default:
+										fprintf(stderr, "read_svg failure\n");
+										exit(0);
 								}
+								
+								if (add_point) {
+									block = add_row(block);
+									set_xy(block, block->num_rows-1, coord[0], coord[1]);
+									set_rgb(block, block->num_rows-1, red, green, blue);
+									set_cell_from_int32(block, block->num_rows-1, shape_row_id_column_id, shape_row_id);
+									set_cell_from_int32(block, block->num_rows-1, shape_part_id_column_id, shape_part_id);
+									set_cell_from_int32(block, block->num_rows-1, shape_part_type_column_id, 5);
+								}
+								
+								if (ptr[0] == 'Z' || ptr[0] == 'z') {
+									shape_part_id++;
+								}
+								
 								ptr = strtok(NULL, " ");
 							}
 						}
