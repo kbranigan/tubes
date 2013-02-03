@@ -77,8 +77,7 @@ struct Node * new_node(xmlTextReaderPtr reader) {
 		}
 		
 		while (xmlTextReaderNodeType(reader) != XML_READER_TYPE_END_ELEMENT || 
-						xmlTextReaderDepth(reader) > depth || 
-						strcmp(xmlTextReaderConstName(reader), tagName) != 0) {
+					 xmlTextReaderDepth(reader) > depth || strcmp(xmlTextReaderConstName(reader), tagName) != 0) {
 			ret = xmlTextReaderRead(reader);
 			if (ret != 0) {
 				struct Node * child = new_node(reader);
@@ -93,6 +92,115 @@ struct Node * new_node(xmlTextReaderPtr reader) {
 		return node;
 	}
 	return NULL;
+}
+
+void append_path_to_block(char * path_string, struct Block * block) {
+	int shape_row_id_column_id = get_column_id_by_name(block, "shape_row_id");
+	if (shape_row_id_column_id == -1) return;
+	
+	int shape_part_id_column_id = get_column_id_by_name(block, "shape_part_id");
+	if (shape_part_id_column_id == -1) return;
+	
+	int shape_part_type_column_id = get_column_id_by_name(block, "shape_part_type");
+	if (shape_part_type_column_id == -1) return;
+	
+	int shape_row_id = 1;
+	if (block->num_rows > 0) {
+		shape_row_id = get_cell_as_int32(block, block->num_rows-1, shape_row_id_column_id);
+	}
+	
+	int shape_start = block->num_rows;
+	
+	int shape_part_id = 1;
+	char * ptr = strtok(path_string, " ");
+	while (ptr != NULL)
+	{
+		//srand(time(NULL));
+		//red = rand() / (float)RAND_MAX;	 // kbfu
+		//green = rand() / (float)RAND_MAX; // kbfu
+		//blue = rand() / (float)RAND_MAX;	// kbfu
+		// 713.5 239.5
+		
+		double coord[4] = { 0, 0, 0, 0 };
+		int add_point = 0;
+		
+		switch (ptr[0]) {
+			case 'M': case 'm':
+				shape_start = block->num_rows;
+			case 'L': case 'l':
+				coord[0] = atof(&ptr[1]);
+				ptr = strtok(NULL, " ");
+				coord[1] = atof(&ptr[0]);
+				add_point = 1;
+				break;
+			case 'Z': case 'z':
+				coord[0] = get_x(block, shape_start);
+				coord[1] = get_y(block, shape_start);
+				add_point = 1;
+				//shape_part_id++; // this happens later
+				break;
+			case 'Q': case 'q':
+				coord[0] = atof(&ptr[1]);
+				ptr = strtok(NULL, " ");
+				coord[1] = atof(&ptr[0]);
+				ptr = strtok(NULL, " ");
+				coord[2] = atof(&ptr[0]);
+				ptr = strtok(NULL, " ");
+				coord[3] = atof(&ptr[0]);
+				break;
+			case 'H': case 'h':
+			case 'V': case 'b':
+			case 'C': case 'c':
+			case 'S': case 's':
+			case 'T': case 't':
+			case 'A': case 'a':
+			{
+				char fuck[5]; fuck[0] = ptr[0]; fuck[1] = 0;
+				fprintf(stderr, "read_svg encountered unsupported path step '%s'\n", fuck);
+				exit(0);
+				break;
+			}
+			default:
+			{
+				char fuck[5]; fuck[0] = ptr[0]; fuck[1] = 0;
+				fprintf(stderr, "read_svg failure at '%s'\n", fuck);
+				exit(0);
+			}
+		}
+		
+		if (0 && add_point) {
+			block = add_row(block);
+			set_xy(block, block->num_rows-1, coord[0], coord[1]);
+			//set_rgb(block, block->num_rows-1, red, green, blue);
+			set_cell_from_int32(block, block->num_rows-1, shape_row_id_column_id, shape_row_id);
+			set_cell_from_int32(block, block->num_rows-1, shape_part_id_column_id, shape_part_id);
+			set_cell_from_int32(block, block->num_rows-1, shape_part_type_column_id, 5);
+		}
+		
+		if (ptr[0] == 'Z' || ptr[0] == 'z') {
+			shape_part_id++;
+		}
+		
+		ptr = strtok(NULL, " ");
+	}
+}
+
+void append_node_to_block(int depth, struct Node * node, struct Block * block) {
+	if (strcmp(node->tagName, "clipPath")==0) {
+		return;
+	} else {
+		int i;
+		if (depth == 6 && strcmp(node->tagName, "path")==0) {
+			for (i = 0 ; i < node->num_attr ; i++) {
+				if (strcmp(node->attrNames[i], "d")==0) {
+					append_path_to_block(node->attrValues[i], block);
+				}
+			}
+		}
+		for (i = 0 ; i < node->num_children ; i++) {
+			append_node_to_block(depth+1, node->children[i], block);
+		}
+	}
 }
 
 void free_node(struct Node * node) {
@@ -336,6 +444,15 @@ int main(int argc, char ** argv)
 			}
 			
 			struct Node * node = new_node(reader);
+			
+			append_node_to_block(0, node, block);
+			
+			//int i;
+			//for (i = 0 ; i < node->children[0]->num_attr ; i++)
+			//{
+			//	fprintf(stderr, "%d: %s %s\n", i, node->children[0]->attrNames[i], node->children[0]->attrValues[i]);
+			//}
+			
 			free_node(node);
 			
 			write_block(stdout, block);
