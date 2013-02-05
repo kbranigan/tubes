@@ -197,6 +197,7 @@ void set_cell_from_string(struct Block * block, uint32_t row_id, uint32_t column
 
 int32_t get_next_shape_start(struct Block * block, int32_t shape_start_id);
 int32_t get_next_part_start(struct Block * block, int32_t part_start_id);
+int32_t get_new_shape_row_id(struct Block * block);
 
 double get_x(struct Block * block, uint32_t row_id);
 double get_y(struct Block * block, uint32_t row_id);

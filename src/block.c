@@ -860,6 +860,21 @@ int32_t get_next_part_start(struct Block * block, int32_t part_start_id)
   return block->num_rows;
 }
 
+int32_t get_new_shape_row_id(struct Block * block) {
+	int shape_row_id = 1;
+	if (block == NULL) { fprintf(stderr, "%s called on NULL block\n", __func__); return 0; }
+	
+	if (block->num_rows == 0) return shape_row_id;
+	
+	int shape_row_id_column_id = get_column_id_by_name(block, "shape_row_id");
+	if (shape_row_id_column_id == -1) {
+		fprintf(stderr, "%s called on block without shape_row_id field.\n", __func__);
+		return 0;
+	} else {
+		return get_cell_as_int32(block, block->num_rows-1, shape_row_id_column_id) + 1;
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 double get_x(struct Block * block, uint32_t row_id)
