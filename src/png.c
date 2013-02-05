@@ -383,10 +383,12 @@ int main(int argc, char ** argv)
 				
 				if (shape_part_type_column_id != 0) {
 					int shape_part_type = get_cell_as_int32(block, part_start_id, shape_part_type_column_id);
-					if (shape_part_type == 4) {
+					if (shape_part_type == GL_TRIANGLES) {
 						glBegin(GL_TRIANGLES);
-					} else if (shape_part_type == 5) {
+					} else if (shape_part_type == 5) { // this is from shapefile type :|, GL_LINE_STRIP == 3
 						glBegin(GL_LINE_STRIP);
+					} else if (shape_part_type == GL_QUADS) {
+						glBegin(GL_QUADS);
 					} else {
 						glBegin(GL_POINTS);
 					}
