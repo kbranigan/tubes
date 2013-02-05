@@ -15,6 +15,7 @@ struct MemoryStruct {
 
 struct Node {
 	char tagName[20];
+	char * text;
 	struct Node * parent;
 	struct Node ** children;
 	int num_children;
@@ -40,8 +41,9 @@ void add_child(struct Node * node, struct Node * child) {
 	node->children[node->num_children-1]->parent = node;
 }
 
-void reverse_tranform(struct Node * node, double * x, double * y) {
-	//fprintf(stderr, "reverse_tranform (%f, %f)\n", *x, *y);
+void reverse_transform(struct Node * node, double * x, double * y) {
+	
+	//fprintf(stderr, "reverse_transform (%f, %f)\n", *x, *y);
 	while (node != NULL) {
 		
 		char * transform = get_node_attr_value(node, "transform");
@@ -51,19 +53,24 @@ void reverse_tranform(struct Node * node, double * x, double * y) {
 			strncpy(temp, transform, strlen(transform));
 			
 			if (strncmp(temp, "matrix(", 7)==0) { // matrix(1.3333333 0 0 1.3333333 701.58727 132.15322)
-				char * ptr = strtok(&temp[7], " ");
+				char * ptr = &temp[7];
 				double matrix[6] = {0,0,0,0,0,0};
-				matrix[0] = atof(ptr); ptr = strtok(NULL, " "); if (ptr == NULL) { fprintf(stderr, "%s: failure parsing tranform '%s' on node '%s'\n", __func__, transform, node->tagName); return; }
-				matrix[1] = atof(ptr); ptr = strtok(NULL, " "); if (ptr == NULL) { fprintf(stderr, "%s: failure parsing tranform '%s' on node '%s'\n", __func__, transform, node->tagName); return; }
-				matrix[2] = atof(ptr); ptr = strtok(NULL, " "); if (ptr == NULL) { fprintf(stderr, "%s: failure parsing tranform '%s' on node '%s'\n", __func__, transform, node->tagName); return; }
-				matrix[3] = atof(ptr); ptr = strtok(NULL, " "); if (ptr == NULL) { fprintf(stderr, "%s: failure parsing tranform '%s' on node '%s'\n", __func__, transform, node->tagName); return; }
-				matrix[4] = atof(ptr); ptr = strtok(NULL, " "); if (ptr == NULL) { fprintf(stderr, "%s: failure parsing tranform '%s' on node '%s'\n", __func__, transform, node->tagName); return; }
+				matrix[0] = atof(ptr); ptr = strstr(ptr, " ")+1; if (ptr == NULL) { fprintf(stderr, "%s: failure parsing tranform '%s' on node '%s'\n", __func__, transform, node->tagName); return; }
+				matrix[1] = atof(ptr); ptr = strstr(ptr, " ")+1; if (ptr == NULL) { fprintf(stderr, "%s: failure parsing tranform '%s' on node '%s'\n", __func__, transform, node->tagName); return; }
+				matrix[2] = atof(ptr); ptr = strstr(ptr, " ")+1; if (ptr == NULL) { fprintf(stderr, "%s: failure parsing tranform '%s' on node '%s'\n", __func__, transform, node->tagName); return; }
+				matrix[3] = atof(ptr); ptr = strstr(ptr, " ")+1; if (ptr == NULL) { fprintf(stderr, "%s: failure parsing tranform '%s' on node '%s'\n", __func__, transform, node->tagName); return; }
+				matrix[4] = atof(ptr); ptr = strstr(ptr, " ")+1; if (ptr == NULL) { fprintf(stderr, "%s: failure parsing tranform '%s' on node '%s'\n", __func__, transform, node->tagName); return; }
 				matrix[5] = atof(ptr);
+				(*x) *= matrix[0];
+				(*y) *= matrix[3];
+				(*x) += matrix[4];
+				(*y) += matrix[5];
+				
 				//fprintf(stderr, "matrix %f %f %f %f %f %f\n", matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
 			} else if (strncmp(temp, "scale(", 6)==0) {
-				char * ptr = strtok(&temp[6], ",");
+				char * ptr = &temp[6];
 				double scale[2] = {0,0};
-				scale[0] = atof(ptr); ptr = strtok(NULL, ","); if (ptr == NULL) { fprintf(stderr, "%s: failure parsing tranform '%s' on node '%s'\n", __func__, transform, node->tagName); return; }
+				scale[0] = atof(ptr); ptr = strstr(ptr, ",")+1; if (ptr == NULL) { fprintf(stderr, "%s: failure parsing tranform '%s' on node '%s'\n", __func__, transform, node->tagName); return; }
 				scale[1] = atof(ptr);
 				(*x) *= scale[0];
 				(*y) *= scale[1];
@@ -80,7 +87,6 @@ struct Node * new_node(xmlTextReaderPtr reader) {
 	
 	int nodeType = xmlTextReaderNodeType(reader);
 	int depth = xmlTextReaderDepth(reader);
-	
 	if (nodeType == XML_READER_TYPE_ELEMENT || nodeType == XML_READER_TYPE_DOCUMENT_TYPE) {
 		
 		//int i;
@@ -88,7 +94,6 @@ struct Node * new_node(xmlTextReaderPtr reader) {
 		//fprintf(stderr, "%d: %d %s\n", depth, nodeType, xmlTextReaderConstName(reader));
 		
 		struct Node * node = (struct Node *)malloc(sizeof(struct Node));
-		
 		memset(node, 0, sizeof(struct Node));
 		
 		const xmlChar * tagName = xmlTextReaderConstName(reader);
@@ -124,15 +129,27 @@ struct Node * new_node(xmlTextReaderPtr reader) {
 		
 		while (xmlTextReaderNodeType(reader) != XML_READER_TYPE_END_ELEMENT || 
 					 xmlTextReaderDepth(reader) > depth || strcmp(xmlTextReaderConstName(reader), tagName) != 0) {
-			ret = xmlTextReaderRead(reader);
 			if (ret != 0) {
 				struct Node * child = new_node(reader);
+				if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_TEXT && child == NULL) {
+					const char * text = xmlTextReaderConstValue(reader);
+					
+					child = (struct Node *)malloc(sizeof(struct Node));
+					memset(child, 0, sizeof(struct Node));
+					sprintf(child->tagName, "#text");
+					
+					int length = strlen(text);
+					//fprintf(stderr, "%s: %d\n", text, length);
+					child->text = (char*)malloc(length+1);
+					strncpy(child->text, text, length);
+				}
 				if (child != NULL) {
 					add_child(node, child);
 				}
 			} else {
 				return NULL;
 			}
+			ret = xmlTextReaderRead(reader);
 		}
 		
 		return node;
@@ -154,8 +171,8 @@ struct Block * append_rect_to_block(struct Node * node, struct Block * block) {
 	double right = left + atof(get_node_attr_value(node, "width"));
 	double top = bottom + atof(get_node_attr_value(node, "height"));
 	
-	//reverse_tranform(node, &left, &bottom); // traverses up the xml to apply scales and tranforms, rotates don't work
-	//reverse_tranform(node, &right, &top); // traverses up the xml to apply scales and tranforms, rotates don't work
+	reverse_transform(node, &left, &bottom); // traverses up the xml to apply scales and tranforms, rotates don't work
+	reverse_transform(node, &right, &top); // traverses up the xml to apply scales and tranforms, rotates don't work
 	
 	char * fill_char = get_node_attr_value(node, "fill");
 	char * fill_opacity_char = get_node_attr_value(node, "fill-opacity");
@@ -177,15 +194,17 @@ struct Block * append_rect_to_block(struct Node * node, struct Block * block) {
 	int shape_row_id_column_id = get_column_id_by_name(block, "shape_row_id");
 	int shape_part_id_column_id = get_column_id_by_name(block, "shape_part_id");
 	int shape_part_type_column_id = get_column_id_by_name(block, "shape_part_type");
+	int tagName_column_id = get_column_id_by_name(block, "tagName");
 	
 	int i;
 	for (i = 0 ; i < 4 ; i++)
 	{
-		block = add_row(block);
+		block = add_row_and_blank(block);
 		set_rgba(block, block->num_rows-1, red, green, blue, alpha);
 		set_cell_from_int32(block, block->num_rows-1, shape_row_id_column_id, shape_row_id);
 		set_cell_from_int32(block, block->num_rows-1, shape_part_id_column_id, 1);
 		set_cell_from_int32(block, block->num_rows-1, shape_part_type_column_id, 7); // GL_QUADS
+		set_cell_from_string(block, block->num_rows-1, tagName_column_id, node->tagName);
 	}
 	set_xy(block, block->num_rows-4, left, bottom);
 	set_xy(block, block->num_rows-3, right, bottom);
@@ -205,6 +224,9 @@ struct Block * append_path_to_block(struct Node * node, char * path_string, stru
 	
 	int shape_part_type_column_id = get_column_id_by_name(block, "shape_part_type");
 	if (shape_part_type_column_id == -1) return block;
+	
+	int tagName_column_id = get_column_id_by_name(block, "tagName");
+	if (tagName_column_id == -1) return block;
 	
 	int shape_row_id = 1;
 	if (block->num_rows > 0) {
@@ -249,11 +271,13 @@ struct Block * append_path_to_block(struct Node * node, char * path_string, stru
 				ptr = strtok(NULL, " "); if (ptr == NULL) { fprintf(stderr, "%s failure at line %d\n", __FILE__, __LINE__); exit(0); }
 				coord[1] = atof(&ptr[0]);
 				add_point = 1;
+				reverse_transform(node, &coord[0], &coord[1]);
 				break;
 			case 'Z': case 'z':
 				coord[0] = get_x(block, shape_start);
 				coord[1] = get_y(block, shape_start);
 				add_point = 1;
+				//reverse_transform(node, &coord[0], &coord[1]); // already did it
 				//shape_part_id++; // this happens later
 				break;
 			case 'Q': case 'q':
@@ -286,13 +310,13 @@ struct Block * append_path_to_block(struct Node * node, char * path_string, stru
 		}
 		
 		if (add_point) {
-			block = add_row(block);
-			reverse_tranform(node, &coord[0], &coord[1]);
+			block = add_row_and_blank(block);
 			set_xy(block, block->num_rows-1, coord[0], coord[1]);
 			set_rgb(block, block->num_rows-1, red, green, blue);
 			set_cell_from_int32(block, block->num_rows-1, shape_row_id_column_id, shape_row_id);
 			set_cell_from_int32(block, block->num_rows-1, shape_part_id_column_id, shape_part_id);
 			set_cell_from_int32(block, block->num_rows-1, shape_part_type_column_id, 5);
+			set_cell_from_string(block, block->num_rows-1, tagName_column_id, node->tagName);
 		}
 		
 		if (ptr[0] == 'Z' || ptr[0] == 'z') {
@@ -318,20 +342,62 @@ struct Block * append_node_to_block(int depth, struct Node * node, struct Block 
 		
 		if (strcmp(node->tagName, "path")==0) {
 			char * colour = NULL;
-			for (i = 0 ; i < node->num_attr ; i++) {
-				if (strcmp(node->attrNames[i], "d")==0) {
-					block = append_path_to_block(node, node->attrValues[i], block);
-				}
+			if (get_node_attr_value(node, "fill") == NULL) {
+				block = append_path_to_block(node, get_node_attr_value(node, "d"), block);
 			}
 		} else if (strcmp(node->tagName, "rect")==0) {
 			block = append_rect_to_block(node, block);
+		} else if (strcmp(node->tagName, "tspan")==0) {
+			
+			char * x_list = get_node_attr_value(node, "x");
+			
+			int shape_row_id = get_new_shape_row_id(block);
+			
+			double x = 0, y = 0;
+			if (x_list == NULL && strlen(x_list) > 0) {
+			} else {
+				int i = strlen(x_list) - 1;
+				if (x_list[i] == ' ') i--;
+				while (x_list[i] != ' ' && i >= 0) {
+					i--;
+				}
+				i++;
+				x += atof(&x_list[i]) / 2.7;
+			}
+			
+			int text_column_id = -1;
+			char * text = NULL;
+			if (node->num_children == 1 || strcmp(node->children[0]->tagName, "#text")==0) {
+				text = node->children[0]->text;
+				if (text != NULL) {
+					int length = strlen(text);
+					text_column_id = get_column_id_by_name(block, "text");
+					if (text_column_id == -1) {
+						if (length < 50) length = 50;
+						block = add_string_column_with_length_and_blank(block, "text", length);
+						text_column_id = get_column_id_by_name(block, "text");
+					}
+				}
+			}
+			
+			reverse_transform(node, &x, &y);
+			block = add_row_and_blank(block);
+			set_xy(block, block->num_rows-1, x+10, y);
+			set_cell_from_int32(block, block->num_rows-1, get_column_id_by_name(block, "shape_row_id"), shape_row_id);
+			set_cell_from_int32(block, block->num_rows-1, get_column_id_by_name(block, "shape_part_id"), 1);
+			set_cell_from_int32(block, block->num_rows-1, get_column_id_by_name(block, "shape_part_type"), 0); // GL_POINTS
+			set_cell_from_string(block, block->num_rows-1, get_column_id_by_name(block, "tagName"), node->tagName);
+			
+			if (text_column_id != -1 && text != NULL) {
+				set_cell_from_string(block, block->num_rows-1, text_column_id, text); // GL_POINTS
+			}
+			
+			//fprintf(stderr, "text at %f %f\n", x, y);
 		} else if (	strcmp(node->tagName, "circle")==0 || 
 								strcmp(node->tagName, "ellipse")==0 || 
 								strcmp(node->tagName, "line")==0 || 
 								strcmp(node->tagName, "polyline")==0 || 
 								strcmp(node->tagName, "polygon")==0 || 
-								strcmp(node->tagName, "text")==0 || 
-								strcmp(node->tagName, "tspan")==0 || 
 								strcmp(node->tagName, "tref")==0 || 
 								strcmp(node->tagName, "image")==0) {
 			fprintf(stderr, "unsupported SVG tag '%s'\n", node->tagName);
@@ -358,6 +424,7 @@ void free_node(struct Node * node) {
 		free_node(node->children[i]);
 	}
 	free(node->children);
+	free(node->text);
 	free(node);
 }
 
@@ -442,6 +509,7 @@ int main(int argc, char ** argv)
 		block = add_int32_column(block, "shape_part_type");
 		block = add_xy_columns(block);
 		block = add_rgb_columns(block);
+		block = add_string_column_with_length_and_blank(block, "tagName", 10);
 		int shape_row_id = 0;
 		int shape_start = 0;
 		
@@ -453,15 +521,16 @@ int main(int argc, char ** argv)
 		if (reader != NULL)
 		{
 			int ret = xmlTextReaderRead(reader);
-			while (strcmp(xmlTextReaderConstName(reader), "svg")!=0 && ret != 0) {
+			while (ret != 0 && strcmp(xmlTextReaderConstName(reader), "svg")!=0) {
 				ret = xmlTextReaderRead(reader);
 			}
+			ret = xmlTextReaderRead(reader); // why is there two svg tags?  when thats not the case in the file, I just don't know.
 			
-			struct Node * node = new_node(reader);
+			struct Node * root_svg_node = new_node(reader);
+			//fprintf(stderr, "%s, %s\n", root_svg_node->tagName, get_node_attr_value(root_svg_node, "viewBox"));
+			block = append_node_to_block(0, root_svg_node, block);
 			
-			block = append_node_to_block(0, node, block);
-			
-			free_node(node);
+			free_node(root_svg_node);
 			
 			write_block(stdout, block);
 			free_block(block);
