@@ -94,19 +94,33 @@ struct Node * new_node(xmlTextReaderPtr reader) {
 	return NULL;
 }
 
-void append_path_to_block(char * path_string, struct Block * block) {
+struct Block * append_path_to_block(struct Node * node, char * path_string, struct Block * block) {
+	
 	int shape_row_id_column_id = get_column_id_by_name(block, "shape_row_id");
-	if (shape_row_id_column_id == -1) return;
+	if (shape_row_id_column_id == -1) return block;
 	
 	int shape_part_id_column_id = get_column_id_by_name(block, "shape_part_id");
-	if (shape_part_id_column_id == -1) return;
+	if (shape_part_id_column_id == -1) return block;
 	
 	int shape_part_type_column_id = get_column_id_by_name(block, "shape_part_type");
-	if (shape_part_type_column_id == -1) return;
+	if (shape_part_type_column_id == -1) return block;
 	
 	int shape_row_id = 1;
 	if (block->num_rows > 0) {
-		shape_row_id = get_cell_as_int32(block, block->num_rows-1, shape_row_id_column_id);
+		shape_row_id = get_cell_as_int32(block, block->num_rows-1, shape_row_id_column_id) + 1;
+	}
+	
+	double red = 0, green = 0, blue = 0;
+	
+	int i;
+	for (i = 0 ; i < node->num_attr ; i++) {
+		if (strcmp(node->attrNames[i],"stroke")==0 && strlen(node->attrValues[i])==7) {
+			int red_i, green_i, blue_i;
+			sscanf(&node->attrValues[i][1], "%2x%2x%2x", &red_i, &green_i, &blue_i);
+			red = red_i / 255.0;
+			green = green_i / 255.0;
+			blue = blue_i / 255.0;
+		}
 	}
 	
 	int shape_start = block->num_rows;
@@ -123,6 +137,8 @@ void append_path_to_block(char * path_string, struct Block * block) {
 		
 		double coord[4] = { 0, 0, 0, 0 };
 		int add_point = 0;
+		
+		char err[5]; err[0] = ptr[0]; err[1] = 0;
 		
 		switch (ptr[0]) {
 			case 'M': case 'm':
@@ -155,23 +171,23 @@ void append_path_to_block(char * path_string, struct Block * block) {
 			case 'T': case 't':
 			case 'A': case 'a':
 			{
-				char fuck[5]; fuck[0] = ptr[0]; fuck[1] = 0;
-				fprintf(stderr, "read_svg encountered unsupported path step '%s'\n", fuck);
+				char err[5]; err[0] = ptr[0]; err[1] = 0;
+				fprintf(stderr, "read_svg encountered unsupported path step '%s'\n", err);
 				exit(0);
 				break;
 			}
 			default:
 			{
-				char fuck[5]; fuck[0] = ptr[0]; fuck[1] = 0;
-				fprintf(stderr, "read_svg failure at '%s'\n", fuck);
+				char err[5]; err[0] = ptr[0]; err[1] = 0;
+				fprintf(stderr, "read_svg failure at '%s'\n", err);
 				exit(0);
 			}
 		}
 		
-		if (0 && add_point) {
+		if (add_point) {
 			block = add_row(block);
 			set_xy(block, block->num_rows-1, coord[0], coord[1]);
-			//set_rgb(block, block->num_rows-1, red, green, blue);
+			set_rgb(block, block->num_rows-1, red, green, blue);
 			set_cell_from_int32(block, block->num_rows-1, shape_row_id_column_id, shape_row_id);
 			set_cell_from_int32(block, block->num_rows-1, shape_part_id_column_id, shape_part_id);
 			set_cell_from_int32(block, block->num_rows-1, shape_part_type_column_id, 5);
@@ -183,24 +199,33 @@ void append_path_to_block(char * path_string, struct Block * block) {
 		
 		ptr = strtok(NULL, " ");
 	}
+	return block;
 }
 
-void append_node_to_block(int depth, struct Node * node, struct Block * block) {
+struct Block * append_node_to_block(int depth, struct Node * node, struct Block * block) {
 	if (strcmp(node->tagName, "clipPath")==0) {
-		return;
+		return block;
 	} else {
 		int i;
-		if (depth == 6 && strcmp(node->tagName, "path")==0) {
+		for (i = 0 ; i < node->num_attr ; i++) {
+			if (strcmp(node->attrNames[i], "clip-path")==0) {
+				return block;
+			}
+		}
+		
+		if (strcmp(node->tagName, "path")==0) {
+			char * colour = NULL;
 			for (i = 0 ; i < node->num_attr ; i++) {
 				if (strcmp(node->attrNames[i], "d")==0) {
-					append_path_to_block(node->attrValues[i], block);
+					block = append_path_to_block(node, node->attrValues[i], block);
 				}
 			}
 		}
 		for (i = 0 ; i < node->num_children ; i++) {
-			append_node_to_block(depth+1, node->children[i], block);
+			block = append_node_to_block(depth+1, node->children[i], block);
 		}
 	}
+	return block;
 }
 
 void free_node(struct Node * node) {
@@ -445,7 +470,7 @@ int main(int argc, char ** argv)
 			
 			struct Node * node = new_node(reader);
 			
-			append_node_to_block(0, node, block);
+			block = append_node_to_block(0, node, block);
 			
 			//int i;
 			//for (i = 0 ; i < node->children[0]->num_attr ; i++)
@@ -561,6 +586,8 @@ int main(int argc, char ** argv)
 								
 								if (add_point) {
 									block = add_row(block);
+									if (coord[0] < 0) coord[0] *= -1;
+									if (coord[1] < 0) coord[1] *= -1;
 									set_xy(block, block->num_rows-1, coord[0], coord[1]);
 									set_rgb(block, block->num_rows-1, red, green, blue);
 									set_cell_from_int32(block, block->num_rows-1, shape_row_id_column_id, shape_row_id);
