@@ -87,6 +87,10 @@ int main(int argc, char ** argv)
     else
       inspect_block(block);
     
+		if (stdout_is_piped()) {
+			write_block(stdout, block);
+		}
+		
     free_block(block);
   }
 }
