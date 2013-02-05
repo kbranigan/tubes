@@ -928,16 +928,24 @@ void set_rgba(struct Block * block, uint32_t row_id, float r, float g, float b, 
 
 struct Block * add_row(struct Block * block)
 {
-  if (block == NULL) { fprintf(stderr, "add_row called on a NULL block\n"); return NULL; }
+  if (block == NULL) { fprintf(stderr, "%s called on a NULL block\n", __func__); return NULL; }
   
   block = set_num_rows(block, block->num_rows + 1);
   
   return block;
 }
 
+struct Block * add_row_and_blank(struct Block * block)
+{
+	if (block == NULL) { fprintf(stderr, "%s called on a NULL block\n", __func__); return NULL; }
+	block = add_row(block);
+	memset(get_row(block, block->num_rows-1), 0, block->row_bsize);
+	return block;
+}
+
 struct Block * add_row_with_data(struct Block * block, int num_columns, ...)
 {
-  if (block == NULL) { fprintf(stderr, "add_row_with_data called on a NULL block\n"); return NULL; }
+	if (block == NULL) { fprintf(stderr, "%s called on a NULL block\n", __func__); return NULL; }
   if (block->num_columns != num_columns) { fprintf(stderr, "block num_columns not the same as provided num_columns\n"); return block; }
   
   block = add_row(block);
