@@ -23,11 +23,57 @@ struct Node {
 	int num_attr;
 };
 
+char * get_node_attr_value(struct Node * node, char * attrName) {
+	int i;
+	for (i = 0 ; i < node->num_attr ; i++) {
+		if (strcmp(node->attrNames[i], attrName)==0) {
+			return node->attrValues[i];
+		}
+	}
+	return NULL;
+}
+
 void add_child(struct Node * node, struct Node * child) {
 	node->num_children++;
 	node->children = (struct Node **)realloc(node->children, sizeof(struct Node*)*node->num_children);
 	node->children[node->num_children-1] = child;
 	node->children[node->num_children-1]->parent = node;
+}
+
+void reverse_tranform(struct Node * node, double * x, double * y) {
+	//fprintf(stderr, "reverse_tranform (%f, %f)\n", *x, *y);
+	while (node != NULL) {
+		
+		char * transform = get_node_attr_value(node, "transform");
+		
+		if (transform != NULL) {
+			char * temp = malloc(strlen(transform)+1);
+			strncpy(temp, transform, strlen(transform));
+			
+			if (strncmp(temp, "matrix(", 7)==0) { // matrix(1.3333333 0 0 1.3333333 701.58727 132.15322)
+				char * ptr = strtok(&temp[7], " ");
+				double matrix[6] = {0,0,0,0,0,0};
+				matrix[0] = atof(ptr); ptr = strtok(NULL, " "); if (ptr == NULL) { fprintf(stderr, "%s: failure parsing tranform '%s' on node '%s'\n", __func__, transform, node->tagName); return; }
+				matrix[1] = atof(ptr); ptr = strtok(NULL, " "); if (ptr == NULL) { fprintf(stderr, "%s: failure parsing tranform '%s' on node '%s'\n", __func__, transform, node->tagName); return; }
+				matrix[2] = atof(ptr); ptr = strtok(NULL, " "); if (ptr == NULL) { fprintf(stderr, "%s: failure parsing tranform '%s' on node '%s'\n", __func__, transform, node->tagName); return; }
+				matrix[3] = atof(ptr); ptr = strtok(NULL, " "); if (ptr == NULL) { fprintf(stderr, "%s: failure parsing tranform '%s' on node '%s'\n", __func__, transform, node->tagName); return; }
+				matrix[4] = atof(ptr); ptr = strtok(NULL, " "); if (ptr == NULL) { fprintf(stderr, "%s: failure parsing tranform '%s' on node '%s'\n", __func__, transform, node->tagName); return; }
+				matrix[5] = atof(ptr);
+				//fprintf(stderr, "matrix %f %f %f %f %f %f\n", matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+			} else if (strncmp(temp, "scale(", 6)==0) {
+				char * ptr = strtok(&temp[6], ",");
+				double scale[2] = {0,0};
+				scale[0] = atof(ptr); ptr = strtok(NULL, ","); if (ptr == NULL) { fprintf(stderr, "%s: failure parsing tranform '%s' on node '%s'\n", __func__, transform, node->tagName); return; }
+				scale[1] = atof(ptr);
+				(*x) *= scale[0];
+				(*y) *= scale[1];
+				//fprintf(stderr, "scale %f %f\n", scale[0], scale[1]);
+			}
+			free(temp);
+		}
+		
+		node = node->parent;
+	}
 }
 
 struct Node * new_node(xmlTextReaderPtr reader) {
@@ -94,6 +140,61 @@ struct Node * new_node(xmlTextReaderPtr reader) {
 	return NULL;
 }
 
+struct Block * append_rect_to_block(struct Node * node, struct Block * block) {
+	int shape_row_id = 1;
+	if (block->num_rows > 0) shape_row_id = get_cell_as_int32(block, block->num_rows-1, get_column_id_by_name(block, "shape_row_id")) + 1;
+	
+	if (get_node_attr_value(node, "x") == NULL) { fprintf(stderr, "%s expects rect node to have x attribute\n", __func__); return block; }
+	if (get_node_attr_value(node, "y") == NULL) { fprintf(stderr, "%s expects rect node to have y attribute\n", __func__); return block; }
+	if (get_node_attr_value(node, "width") == NULL) { fprintf(stderr, "%s expects rect node to have width attribute\n", __func__); return block; }
+	if (get_node_attr_value(node, "height") == NULL) { fprintf(stderr, "%s expects rect node to have height attribute\n", __func__); return block; }
+	
+	double left = atof(get_node_attr_value(node, "x"));
+	double bottom = atof(get_node_attr_value(node, "y"));
+	double right = left + atof(get_node_attr_value(node, "width"));
+	double top = bottom + atof(get_node_attr_value(node, "height"));
+	
+	//reverse_tranform(node, &left, &bottom); // traverses up the xml to apply scales and tranforms, rotates don't work
+	//reverse_tranform(node, &right, &top); // traverses up the xml to apply scales and tranforms, rotates don't work
+	
+	char * fill_char = get_node_attr_value(node, "fill");
+	char * fill_opacity_char = get_node_attr_value(node, "fill-opacity");
+	
+	double red = 0, green = 0, blue = 0;
+	if (fill_char != NULL) {
+		int red_i = 0, green_i = 0, blue_i = 0;
+		sscanf(&fill_char[1], "%2x%2x%2x", &red_i, &green_i, &blue_i);
+		red = red_i / 255.0;
+		green = red_i / 255.0;
+		blue = red_i / 255.0;
+	}
+	
+	double alpha = 1;
+	if (fill_opacity_char != NULL) {
+		alpha = atof(fill_opacity_char);
+	}
+	
+	int shape_row_id_column_id = get_column_id_by_name(block, "shape_row_id");
+	int shape_part_id_column_id = get_column_id_by_name(block, "shape_part_id");
+	int shape_part_type_column_id = get_column_id_by_name(block, "shape_part_type");
+	
+	int i;
+	for (i = 0 ; i < 4 ; i++)
+	{
+		block = add_row(block);
+		set_rgba(block, block->num_rows-1, red, green, blue, alpha);
+		set_cell_from_int32(block, block->num_rows-1, shape_row_id_column_id, shape_row_id);
+		set_cell_from_int32(block, block->num_rows-1, shape_part_id_column_id, 1);
+		set_cell_from_int32(block, block->num_rows-1, shape_part_type_column_id, 7); // GL_QUADS
+	}
+	set_xy(block, block->num_rows-4, left, bottom);
+	set_xy(block, block->num_rows-3, right, bottom);
+	set_xy(block, block->num_rows-2, right, top);
+	set_xy(block, block->num_rows-1, left, top);
+	
+	return block;
+}
+
 struct Block * append_path_to_block(struct Node * node, char * path_string, struct Block * block) {
 	
 	int shape_row_id_column_id = get_column_id_by_name(block, "shape_row_id");
@@ -145,7 +246,7 @@ struct Block * append_path_to_block(struct Node * node, char * path_string, stru
 				shape_start = block->num_rows;
 			case 'L': case 'l':
 				coord[0] = atof(&ptr[1]);
-				ptr = strtok(NULL, " ");
+				ptr = strtok(NULL, " "); if (ptr == NULL) { fprintf(stderr, "%s failure at line %d\n", __FILE__, __LINE__); exit(0); }
 				coord[1] = atof(&ptr[0]);
 				add_point = 1;
 				break;
@@ -157,11 +258,11 @@ struct Block * append_path_to_block(struct Node * node, char * path_string, stru
 				break;
 			case 'Q': case 'q':
 				coord[0] = atof(&ptr[1]);
-				ptr = strtok(NULL, " ");
+				ptr = strtok(NULL, " "); if (ptr == NULL) { fprintf(stderr, "%s failure at line %d\n", __FILE__, __LINE__); exit(0); }
 				coord[1] = atof(&ptr[0]);
-				ptr = strtok(NULL, " ");
+				ptr = strtok(NULL, " "); if (ptr == NULL) { fprintf(stderr, "%s failure at line %d\n", __FILE__, __LINE__); exit(0); }
 				coord[2] = atof(&ptr[0]);
-				ptr = strtok(NULL, " ");
+				ptr = strtok(NULL, " "); if (ptr == NULL) { fprintf(stderr, "%s failure at line %d\n", __FILE__, __LINE__); exit(0); }
 				coord[3] = atof(&ptr[0]);
 				break;
 			case 'H': case 'h':
@@ -186,6 +287,7 @@ struct Block * append_path_to_block(struct Node * node, char * path_string, stru
 		
 		if (add_point) {
 			block = add_row(block);
+			reverse_tranform(node, &coord[0], &coord[1]);
 			set_xy(block, block->num_rows-1, coord[0], coord[1]);
 			set_rgb(block, block->num_rows-1, red, green, blue);
 			set_cell_from_int32(block, block->num_rows-1, shape_row_id_column_id, shape_row_id);
@@ -203,9 +305,10 @@ struct Block * append_path_to_block(struct Node * node, char * path_string, stru
 }
 
 struct Block * append_node_to_block(int depth, struct Node * node, struct Block * block) {
-	if (strcmp(node->tagName, "clipPath")==0) {
-		return block;
-	} else {
+	//if (strcmp(node->tagName, "clipPath")==0) {
+		//return block;
+	//} else 
+	{
 		int i;
 		for (i = 0 ; i < node->num_attr ; i++) {
 			if (strcmp(node->attrNames[i], "clip-path")==0) {
@@ -220,7 +323,21 @@ struct Block * append_node_to_block(int depth, struct Node * node, struct Block 
 					block = append_path_to_block(node, node->attrValues[i], block);
 				}
 			}
+		} else if (strcmp(node->tagName, "rect")==0) {
+			block = append_rect_to_block(node, block);
+		} else if (	strcmp(node->tagName, "circle")==0 || 
+								strcmp(node->tagName, "ellipse")==0 || 
+								strcmp(node->tagName, "line")==0 || 
+								strcmp(node->tagName, "polyline")==0 || 
+								strcmp(node->tagName, "polygon")==0 || 
+								strcmp(node->tagName, "text")==0 || 
+								strcmp(node->tagName, "tspan")==0 || 
+								strcmp(node->tagName, "tref")==0 || 
+								strcmp(node->tagName, "image")==0) {
+			fprintf(stderr, "unsupported SVG tag '%s'\n", node->tagName);
 		}
+		
+		
 		for (i = 0 ; i < node->num_children ; i++) {
 			block = append_node_to_block(depth+1, node->children[i], block);
 		}
@@ -243,134 +360,6 @@ void free_node(struct Node * node) {
 	free(node->children);
 	free(node);
 }
-
-/*struct Matrix {
-	double d[3][3];
-	int xmldepth;
-};
-
-struct Matrixs {
-	struct Matrix * matrixs;
-	int num_matrixs;
-};
-
-void push_matrix(struct Matrixs * stack, char * str, int xmldepth) {
-	if (stack == NULL || str == NULL)
-	{
-		fprintf(stderr, "push_matrix called with NULL stack\n");
-		return;
-	}
-	
-	stack->num_matrixs++;
-	stack->matrixs = realloc(stack->matrixs, (stack->num_matrixs)*sizeof(struct Matrix));
-	memset(&stack->matrixs[stack->num_matrixs-1], 0, sizeof(struct Matrix));
-	struct Matrix * matrix = &stack->matrixs[stack->num_matrixs-1];
-	matrix->xmldepth = xmldepth;
-	
-	//fprintf(stderr, "push %s\n", str);
-	
-	if (strncmp(str, "identity", 8)==0)
-	{
-		matrix->d[0][0] = 1;
-		matrix->d[1][1] = 1;
-		matrix->d[2][2] = 1;
-	}
-	else if (strncmp(str, "scale", 5)==0)
-	{
-		char * ptr = strtok(str, ", ");
-		matrix->d[0][0] = atof(&ptr[6]);
-		ptr = strtok(NULL, " "); matrix->d[1][1] = atof(ptr);
-		//fprintf(stderr, "scale (%f %f) IGNORED\n", matrix->d[0], matrix->d[1]);
-	}
-	else if (strncmp(str, "matrix", 6)==0)
-	{
-		char * ptr = strtok(str, ", ");
-		matrix->d[0][0] = atof(&ptr[7]);
-		ptr = strtok(NULL, " "); matrix->d[0][1] = atof(ptr);
-		ptr = strtok(NULL, " "); matrix->d[1][0] = atof(ptr);
-		ptr = strtok(NULL, " "); matrix->d[1][1] = atof(ptr);
-		ptr = strtok(NULL, " "); matrix->d[2][0] = atof(ptr);
-		ptr = strtok(NULL, " "); matrix->d[2][1] = atof(ptr);
-		//fprintf(stderr, "%f %f %f %f %f %f\n", matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
-	}
-	else
-	{
-		fprintf(stderr, "push_matrix called with invalid string\n");
-	}
-}
-
-void pop_matrix(struct Matrixs * stack, int xmldepth) {
-	
-	if (stack == NULL || stack->num_matrixs <= 0)
-	{
-		fprintf(stderr, "pop_matrix called with NULL or empty stack\n");
-		return;
-	}
-	else if (stack->matrixs[stack->num_matrixs-1].xmldepth != xmldepth)
-	{
-		return;
-	}
-	else if (stack->num_matrixs == 1)
-	{
-		//fprintf(stderr, "pop last\n");
-		stack->num_matrixs = 0;
-		free(stack->matrixs);
-		stack->matrixs = NULL;
-	}
-	else
-	{
-		//fprintf(stderr, "pop %d\n", stack->num_matrixs);
-		stack->matrixs = realloc(stack->matrixs, (--stack->num_matrixs)*sizeof(struct Matrixs));
-	}
-}
-
-void multi_matrixs(struct Matrix * product,
-	 struct Matrix * matrix1, struct Matrix * matrix2)
-{
-	int x, y, z;
-	for (x = 0 ; x < 3 ; ++x)
-		for (y = 0 ; y < 3 ; ++y)
-		{
-			double sum = 0;
-			for (z = 0 ; z < 3 ; ++z)
-				sum += matrix1->d[x][z] * matrix2->d[z][y];
-			product->d[x][y] = sum;
-		}
-}
-
-void apply_matrixs(double * coord, struct Matrixs * stack)
-{
-	fprintf(stderr, "coord = {%f, %f}\n", coord[0], coord[1]);
-	int i;
-	
-	struct Matrix all = { { {1,0,0}, {0,1,0}, {0,0,1} }, 0 };
-	
-	for (i = 0 ; i < stack->num_matrixs ; i++)
-	{
-		struct Matrix * matrix = &stack->matrixs[i];
-		struct Matrix temp;
-		memcpy(&temp, &all, sizeof(struct Matrix));
-		multi_matrixs(&all, matrix, &temp);
-		
-		fprintf(stderr, " matrix = {%f,%f,%f},{%f,%f,%f}\n", 
-			matrix->d[0][0], matrix->d[1][0], matrix->d[2][0],
-			matrix->d[0][1], matrix->d[1][1], matrix->d[2][1]);
-		//coord[0] *= matrix->d[0][0];
-		//coord[1] *= matrix->d[1][1];
-	}
-	fprintf(stderr, " matrix = {%f,%f,%f},{%f,%f,%f}\n", 
-		all.d[0][0], all.d[1][0], all.d[2][0],
-		all.d[0][1], all.d[1][1], all.d[2][1]);
-	
-	double oldcoord[3] = { coord[0], coord[1], 0 };
-	double newcoord[3] = { 0, 0, 0 };
-	
-	newcoord[0] = all.d[0][0] * coord[0] + all.d[0][1] * coord[1] + all.d[2][1];
-	newcoord[1] = all.d[1][0] * coord[0] + all.d[1][1] * coord[1] + all.d[2][1];
-	
-	fprintf(stderr, "newcoord = {%f, %f}\n", newcoord[0], newcoord[1]);
-	exit(1);
-}*/
 
 int main(int argc, char ** argv)
 {
@@ -472,205 +461,13 @@ int main(int argc, char ** argv)
 			
 			block = append_node_to_block(0, node, block);
 			
-			//int i;
-			//for (i = 0 ; i < node->children[0]->num_attr ; i++)
-			//{
-			//	fprintf(stderr, "%d: %s %s\n", i, node->children[0]->attrNames[i], node->children[0]->attrValues[i]);
-			//}
-			
 			free_node(node);
 			
 			write_block(stdout, block);
 			free_block(block);
-			xmlCleanupParser();
-			return;
-			
-			ret = xmlTextReaderRead(reader);
-			while (ret == 1)
-			{
-				const xmlChar * name = xmlTextReaderConstName(reader);
-				const xmlChar * value = xmlTextReaderConstValue(reader);
-				if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT && strcmp(name, "g")==0)
-				{
-					while (xmlTextReaderMoveToNextAttribute(reader))
-					{
-						char * attr_name = xmlTextReaderName(reader);
-						char * attr_value = xmlTextReaderValue(reader);
-						if (strcmp(attr_name, "transform")==0)
-						{
-							//push_matrix(&stack, attr_value, xmlTextReaderDepth(reader));
-						}
-					}
-					xmlTextReaderMoveToElement(reader);
-				}
-				/*else if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT && strcmp(name, "clipPath")==0)
-				{
-					while (!((xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT && strcmp(name, "clipPath")==0)))
-						ret = xmlTextReaderRead(reader);
-					//pop_matrix(&stack, xmlTextReaderDepth(reader) + 1);
-				}*/
-				else if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT && strcmp(name, "g")==0)
-				{
-					//pop_matrix(&stack, xmlTextReaderDepth(reader) + 1);
-				}
-				else if (shape_row_id < 5 && xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT && xmlTextReaderDepth(reader) == 7 && strcmp(name, "path")==0)
-				{
-					double red = 0, green = 0, blue = 0;
-					
-					// get color ( stroke="none" fill="#FFFF73" fill-rule="evenodd" fill-opacity="1" )
-					while (xmlTextReaderMoveToNextAttribute(reader))
-					{
-						char * attr_name = xmlTextReaderName(reader);
-						char * attr_value = xmlTextReaderValue(reader);
-						if (strcmp(attr_name, "fill")==0)
-						{
-							int red_i = 0, green_i = 0, blue_i = 0;
-							int ret = sscanf(attr_value+1, "%02x%02x%02x", &red_i, &green_i, &blue_i);
-							red = red_i / 255.0;
-							green = green_i / 255.0;
-							blue = blue_i / 255.0;
-						}
-					}
-					xmlTextReaderMoveToElement(reader);
-					
-					// get points
-					while (xmlTextReaderMoveToNextAttribute(reader))
-					{
-						char * attr_name = xmlTextReaderName(reader);
-						char * attr_value = xmlTextReaderValue(reader);
-						if (strcmp(attr_name, "d")==0)
-						{
-							shape_row_id++;
-							int shape_part_id = 1;
-							char * ptr = strtok(attr_value, " ");
-							while (ptr != NULL)
-							{
-								//srand(time(NULL));
-								//red = rand() / (float)RAND_MAX;	 // kbfu
-								//green = rand() / (float)RAND_MAX; // kbfu
-								//blue = rand() / (float)RAND_MAX;	// kbfu
-								// 713.5 239.5
-								
-								double coord[2] = { 0, 0 };
-								int add_point = 0;
-								
-								switch (ptr[0]) {
-									case 'M': case 'm':
-										shape_start = block->num_rows;
-									case 'L': case 'l':
-										coord[0] = atof(&ptr[1]);
-										ptr = strtok(NULL, " ");
-										coord[1] = atof(&ptr[0]);
-										add_point = 1;
-										break;
-									case 'Z': case 'z':
-										coord[0] = get_x(block, shape_start);
-										coord[1] = get_y(block, shape_start);
-										add_point = 1;
-										//shape_part_id++; // this happens later
-										break;
-									case 'H': case 'h':
-									case 'V': case 'b':
-									case 'C': case 'c':
-									case 'S': case 's':
-									case 'Q': case 'q':
-									case 'T': case 't':
-									case 'A': case 'a':
-										fprintf(stderr, "read_svg encountered unsupported path step\n");
-										exit(0);
-										break;
-									default:
-										fprintf(stderr, "read_svg failure\n");
-										exit(0);
-								}
-								
-								if (add_point) {
-									block = add_row(block);
-									if (coord[0] < 0) coord[0] *= -1;
-									if (coord[1] < 0) coord[1] *= -1;
-									set_xy(block, block->num_rows-1, coord[0], coord[1]);
-									set_rgb(block, block->num_rows-1, red, green, blue);
-									set_cell_from_int32(block, block->num_rows-1, shape_row_id_column_id, shape_row_id);
-									set_cell_from_int32(block, block->num_rows-1, shape_part_id_column_id, shape_part_id);
-									set_cell_from_int32(block, block->num_rows-1, shape_part_type_column_id, 5);
-								}
-								
-								if (ptr[0] == 'Z' || ptr[0] == 'z') {
-									shape_part_id++;
-								}
-								
-								ptr = strtok(NULL, " ");
-							}
-						}
-					}
-					xmlTextReaderMoveToElement(reader);
-				}
-				ret = xmlTextReaderRead(reader);
-			}
 			xmlFreeTextReader(reader);
-			if (ret != 0) fprintf(stderr, "xmlReader failed to parse\n");
+			xmlCleanupParser();
 		}
 		free(chunk.memory);
-		struct Block * opt = NULL;
-		
-		opt = new_block();
-		opt = add_string_attribute(opt, "column_name", "x");
-		opt = add_double_attribute(opt, "offset", 375);
-		block = offset(block, opt);
-		free_block(opt);
-		
-		opt = new_block();
-		opt = add_string_attribute(opt, "column_name", "y");
-		opt = add_double_attribute(opt, "offset", 150);
-		block = offset(block, opt);
-		free_block(opt);
-		
-		opt = new_block();
-		opt = add_string_attribute(opt, "column_name", "x");
-		opt = add_double_attribute(opt, "multiple", 1.3333333);
-		block = multiply(block, opt);
-		free_block(opt);
-		
-		opt = new_block();
-		opt = add_string_attribute(opt, "column_name", "y");
-		opt = add_double_attribute(opt, "multiple", 1.3333333);
-		block = multiply(block, opt);
-		free_block(opt);
-		
-		if (x_multiple != 1) {
-			opt = new_block();
-			opt = add_string_attribute(opt, "column_name", "x");
-			opt = add_double_attribute(opt, "multiple", x_multiple);
-			block = multiply(block, opt);
-			free_block(opt);
-		}
-		
-		if (y_multiple != 1) {
-			opt = new_block();
-			opt = add_string_attribute(opt, "column_name", "y");
-			opt = add_double_attribute(opt, "multiple", y_multiple);
-			block = multiply(block, opt);
-			free_block(opt);
-		}
-		
-		if (x_offset != 0) {
-			opt = new_block();
-			opt = add_string_attribute(opt, "column_name", "x");
-			opt = add_double_attribute(opt, "offset", x_offset);
-			block = offset(block, opt);
-			free_block(opt);
-		}
-		
-		if (y_offset != 0) {
-			opt = new_block();
-			opt = add_string_attribute(opt, "column_name", "y");
-			opt = add_double_attribute(opt, "offset", y_offset);
-			block = offset(block, opt);
-			free_block(opt);
-		}
-		
-		write_block(stdout, block);
-		free_block(block);
-		xmlCleanupParser();
 	}
 }
