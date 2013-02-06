@@ -1,6 +1,19 @@
 
 #############################################################
 
+
+./bin/read_svg -f withlabels.svg \
+  | ./bin/filter --column=tagName --value=tspan > tspan.b
+./bin/read_svg -f withlabels.svg \
+  | ./bin/filter --column=tagName --value=tspan --operator=DELETE \
+  | ./bin/filter --column=tagName --value=rect --operator=DELETE > shapes.b
+cat shapes.b | ./bin/tesselate > shapes.t.b
+cat tspan.b | ./bin/join_geographic -f shapes.t.b | ./bin/unique --column=first_hit_shape_row_id > joined_geographic.b 
+
+cat shapes.b | ./bin/columns --remove=text | ./bin/join_inner --right_file=joined_geographic.b --left_column=shape_row_id --right_column=first_hit_shape_row_id | ./bin/inspect
+
+#############################################################
+
  - zoom in?
  - counts, such as number of addresses, number of bus stops
 
