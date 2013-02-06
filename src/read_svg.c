@@ -233,16 +233,37 @@ struct Block * append_path_to_block(struct Node * node, char * path_string, stru
 		shape_row_id = get_cell_as_int32(block, block->num_rows-1, shape_row_id_column_id) + 1;
 	}
 	
-	double red = 0, green = 0, blue = 0;
+	double red = 0, green = 0, blue = 0, alpha = 1;
 	
-	int i;
-	for (i = 0 ; i < node->num_attr ; i++) {
-		if (strcmp(node->attrNames[i],"stroke")==0 && strlen(node->attrValues[i])==7) {
+	char * fill_char = get_node_attr_value(node, "fill");
+	char * fill_opacity_char = get_node_attr_value(node, "fill-opacity");
+	//fprintf(stderr, "tag = %s, fill_char = %s\n", node->tagName, fill_char);
+	
+	if (fill_char != NULL && strlen(fill_char)==7) {
+		int red_i = 0, green_i = 0, blue_i = 0;
+		sscanf(&fill_char[1], "%2x%2x%2x", &red_i, &green_i, &blue_i);
+		red = red_i / 255.0;
+		green = red_i / 255.0;
+		blue = red_i / 255.0;
+		//fprintf(stderr, "fill_char = %s\n", fill_char);
+	}
+	if (fill_opacity_char != NULL) {
+		alpha = atof(fill_opacity_char);
+	}
+	
+	if (fill_char == NULL || strcmp(fill_char, "none")==0) {
+		char * stroke_char = get_node_attr_value(node, "stroke");
+		char * stroke_opacity_char = get_node_attr_value(node, "stroke-opacity");
+		
+		if (stroke_char != NULL && strlen(stroke_char)==7) {
 			int red_i, green_i, blue_i;
-			sscanf(&node->attrValues[i][1], "%2x%2x%2x", &red_i, &green_i, &blue_i);
+			sscanf(&stroke_char[1], "%2x%2x%2x", &red_i, &green_i, &blue_i);
 			red = red_i / 255.0;
 			green = green_i / 255.0;
 			blue = blue_i / 255.0;
+		}
+		if (stroke_opacity_char != NULL) {
+			alpha = atof(stroke_opacity_char);
 		}
 	}
 	
@@ -312,7 +333,8 @@ struct Block * append_path_to_block(struct Node * node, char * path_string, stru
 		if (add_point) {
 			block = add_row_and_blank(block);
 			set_xy(block, block->num_rows-1, coord[0], coord[1]);
-			set_rgb(block, block->num_rows-1, red, green, blue);
+			set_rgba(block, block->num_rows-1, red, green, blue, alpha);
+			//fprintf(stderr, "%f %f %f\n", red, green, blue);
 			set_cell_from_int32(block, block->num_rows-1, shape_row_id_column_id, shape_row_id);
 			set_cell_from_int32(block, block->num_rows-1, shape_part_id_column_id, shape_part_id);
 			set_cell_from_int32(block, block->num_rows-1, shape_part_type_column_id, 5);
@@ -333,16 +355,10 @@ struct Block * append_node_to_block(int depth, struct Node * node, struct Block 
 		//return block;
 	//} else 
 	{
-		int i;
-		for (i = 0 ; i < node->num_attr ; i++) {
-			if (strcmp(node->attrNames[i], "clip-path")==0) {
-				return block;
-			}
-		}
-		
 		if (strcmp(node->tagName, "path")==0) {
 			char * colour = NULL;
-			if (get_node_attr_value(node, "fill") == NULL) {
+			if (get_node_attr_value(node, "fill") == NULL) 
+			{// && strcmp(get_node_attr_value(node, "fill"), "none")!=0) {
 				block = append_path_to_block(node, get_node_attr_value(node, "d"), block);
 			}
 		} else if (strcmp(node->tagName, "rect")==0) {
@@ -383,6 +399,7 @@ struct Block * append_node_to_block(int depth, struct Node * node, struct Block 
 			reverse_transform(node, &x, &y);
 			block = add_row_and_blank(block);
 			set_xy(block, block->num_rows-1, x+10, y);
+			set_rgba(block, block->num_rows-1, 1, 0, 0, 1);
 			set_cell_from_int32(block, block->num_rows-1, get_column_id_by_name(block, "shape_row_id"), shape_row_id);
 			set_cell_from_int32(block, block->num_rows-1, get_column_id_by_name(block, "shape_part_id"), 1);
 			set_cell_from_int32(block, block->num_rows-1, get_column_id_by_name(block, "shape_part_type"), 0); // GL_POINTS
@@ -403,7 +420,7 @@ struct Block * append_node_to_block(int depth, struct Node * node, struct Block 
 			fprintf(stderr, "unsupported SVG tag '%s'\n", node->tagName);
 		}
 		
-		
+		int i;
 		for (i = 0 ; i < node->num_children ; i++) {
 			block = append_node_to_block(depth+1, node->children[i], block);
 		}
@@ -508,7 +525,7 @@ int main(int argc, char ** argv)
 		block = add_int32_column(block, "shape_part_id");
 		block = add_int32_column(block, "shape_part_type");
 		block = add_xy_columns(block);
-		block = add_rgb_columns(block);
+		block = add_rgba_columns(block);
 		block = add_string_column_with_length_and_blank(block, "tagName", 10);
 		int shape_row_id = 0;
 		int shape_start = 0;
