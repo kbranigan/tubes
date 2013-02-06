@@ -88,17 +88,24 @@ int main(int argc, char ** argv)
 		fprintf(stderr, "No good, '%s' doesn't have the required fields\n", filename);
 	}
 	
+	int polygon_shape_row_id_column_id = get_column_id_by_name(polygons, "shape_row_id");
+	
 	const char * shape_type = get_attribute_value_as_string(polygons, "shape_type");
 	if (shape_type == NULL || strcmp(shape_type, "triangles") != 0) { fprintf(stderr, "Notice: %s expects '%s' to be 'triangles' (WILL END IN FAILURE)\n", argv[0], filename); }
 	
 	struct Block * block = NULL;
 	while ((block = read_block(stdin)))
 	{
+		block = add_command(block, argc, argv);
+		
 		const char * shape_type = get_attribute_value_as_string(block, "shape_type");
 		if (shape_type == NULL || strcmp(shape_type, "points") != 0) { fprintf(stderr, "Notice: %s expects piped blocks to be 'points', assuming points\n", argv[0]); }
 		
 		block = add_int32_column_and_blank(block, "number_of_polygon_hits");
 		int number_of_polygon_hits_column_id = block->num_columns - 1;
+		
+		block = add_int32_column_and_blank(block, "first_hit_shape_row_id");
+		int first_hit_shape_row_id_column_id = block->num_columns - 1;
 		
 		int i;
 		for (i = 0 ; i < block->num_rows ; i++)
@@ -110,13 +117,13 @@ int main(int argc, char ** argv)
 			int shape_start_id = 0, shape_end_id;
 			while ((shape_end_id = get_next_shape_start(polygons, shape_start_id)))
 			{
-				//int shape_row_id = get_cell_as_int32(block, shape_start_id, shape_row_id_column_id);
+				int polygon_shape_row_id = get_cell_as_int32(polygons, shape_start_id, polygon_shape_row_id_column_id);
 				
 				// foreach part of shape
 				int part_start_id = shape_start_id, part_end_id;
 				while ((part_end_id = get_next_part_start(polygons, part_start_id)))
 				{
-					//int shape_part_id = get_cell_as_int32(block, shape_start_id, shape_row_id_column_id);
+					//int shape_part_id = get_cell_as_int32(polygons, shape_start_id, shape_row_id_column_id);
 					
 					// this assumes the polygons are triangles.  if this isn't the case, this just won't work AT ALL
 					int j;
@@ -132,6 +139,8 @@ int main(int argc, char ** argv)
 						{
 							int32_t * number_of_polygon_hits = get_cell(block, i, number_of_polygon_hits_column_id);
 							(*number_of_polygon_hits)++;
+							int32_t * first_hit_shape_row_id = get_cell(block, i, first_hit_shape_row_id_column_id);
+							(*first_hit_shape_row_id) = polygon_shape_row_id;
 						}
 					}
 					
@@ -143,7 +152,6 @@ int main(int argc, char ** argv)
 				if (shape_end_id == polygons->num_rows) break; // last shape
 				shape_start_id = shape_end_id;
 			}
-			fprintf(stderr, ".");
 		}
 		
 		write_block(stdout, block);
