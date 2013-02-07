@@ -105,7 +105,7 @@ int main(int argc, char ** argv)
 				int i;
 				for (i = part_start_id ; i < part_end_id ; i++)
 				{
-					fprintf(fp, "%.6f,%.6f\n", get_x(block, i), get_y(block, i));
+					fprintf(fp, "%.6f,%.6f,100\n", get_x(block, i) / 100, get_y(block, i) / 100);
 				}
 				
 				fprintf(fp, "</coordinates>\n");
