@@ -59,8 +59,13 @@ int main(int argc, char ** argv)
 		int green_column_id = get_column_id_by_name(block, "green");
 		int blue_column_id  = get_column_id_by_name(block, "blue");
 		int alpha_column_id = get_column_id_by_name(block, "alpha");
-		int name_column_id  = get_column_id_by_name(block, name_column_name);
-		fprintf(stderr, "name_column_name = %s, name_column_id = %d\n", name_column_name, name_column_id);
+		
+		int name_column_id  = -1;
+		if (name_column_name[0] != 0) {
+			name_column_id = get_column_id_by_name(block, name_column_name);
+			fprintf(stderr, "name_column_name = %s, name_column_id = %d\n", name_column_name, name_column_id);
+		}
+		
 		int shape_start_id = 0, shape_end_id;
 		while ((shape_end_id = get_next_shape_start(block, shape_start_id)))
 		{
@@ -70,7 +75,7 @@ int main(int argc, char ** argv)
 			if (red_column_id != -1)   red   = 255 * get_cell_as_double(block, shape_start_id, red_column_id);
 			if (green_column_id != -1) green = 255 * get_cell_as_double(block, shape_start_id, green_column_id);
 			if (blue_column_id != -1)  blue  = 255 * get_cell_as_double(block, shape_start_id, blue_column_id);
-			if (alpha_column_id != -1) alpha = 255 * get_cell_as_double(block, shape_start_id, alpha_column_id);
+			if (alpha_column_id != -1) alpha = 255 * get_cell_as_double(block, shape_start_id, alpha_column_id) * 0.5;
 			
 			fprintf(fp, "<Placemark>\n");
 			if (name_column_id != -1) {
@@ -105,7 +110,7 @@ int main(int argc, char ** argv)
 				int i;
 				for (i = part_start_id ; i < part_end_id ; i++)
 				{
-					fprintf(fp, "%.6f,%.6f,100\n", get_x(block, i) / 100, get_y(block, i) / 100);
+					fprintf(fp, "%.6f,%.6f,50\n", get_x(block, i), get_y(block, i));
 				}
 				
 				fprintf(fp, "</coordinates>\n");
