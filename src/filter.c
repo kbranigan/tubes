@@ -55,8 +55,10 @@ int main(int argc, char ** argv)
     }
   }
   
-  if (column_name[0] == 0 || value[0] == 0)
-  { fprintf(stderr, "USAGE: %s --column=\"FULL_ADDRESS\" --value=\"29 CAMDEN ST\"\n", argv[0]); exit(0); }
+  if (column_name[0] == 0 || value[0] == 0) {
+		fprintf(stderr, "USAGE: %s --column=\"FULL_ADDRESS\" --value=\"29 CAMDEN ST\"\n", argv[0]);
+		//exit(0);
+	}
   
   int i,j;
   struct Block * block = NULL;
