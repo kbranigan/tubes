@@ -181,9 +181,9 @@ struct Block * append_rect_to_block(struct Node * node, struct Block * block) {
 	if (fill_char != NULL) {
 		int red_i = 0, green_i = 0, blue_i = 0;
 		sscanf(&fill_char[1], "%2x%2x%2x", &red_i, &green_i, &blue_i);
-		red = red_i / 255.0;
-		green = red_i / 255.0;
-		blue = red_i / 255.0;
+		red   = 128;//red_i / 255.0;
+		green = 128;//red_i / 255.0;
+		blue  = 128;//red_i / 255.0;
 	}
 	
 	double alpha = 1;
@@ -351,79 +351,93 @@ struct Block * append_path_to_block(struct Node * node, char * path_string, stru
 }
 
 struct Block * append_node_to_block(int depth, struct Node * node, struct Block * block) {
-	//if (strcmp(node->tagName, "clipPath")==0) {
+	if (strcmp(node->tagName, "clipPath")==0) {
 		//return block;
-	//} else 
-	{
-		if (strcmp(node->tagName, "path")==0) {
-			char * colour = NULL;
-			if (get_node_attr_value(node, "fill") == NULL) 
-			{// && strcmp(get_node_attr_value(node, "fill"), "none")!=0) {
-				block = append_path_to_block(node, get_node_attr_value(node, "d"), block);
-			}
-		} else if (strcmp(node->tagName, "rect")==0) {
-			block = append_rect_to_block(node, block);
-		} else if (strcmp(node->tagName, "tspan")==0) {
-			
-			char * x_list = get_node_attr_value(node, "x");
-			
-			int shape_row_id = get_new_shape_row_id(block);
-			
-			double x = 0, y = 0;
-			if (x_list == NULL && strlen(x_list) > 0) {
-			} else {
-				int i = strlen(x_list) - 1;
-				if (x_list[i] == ' ') i--;
-				while (x_list[i] != ' ' && i >= 0) {
-					i--;
-				}
-				i++;
-				x += atof(&x_list[i]) / 2.7;
-			}
-			
-			int text_column_id = -1;
-			char * text = NULL;
-			if (node->num_children == 1 || strcmp(node->children[0]->tagName, "#text")==0) {
-				text = node->children[0]->text;
-				if (text != NULL) {
-					int length = strlen(text);
-					text_column_id = get_column_id_by_name(block, "text");
-					if (text_column_id == -1) {
-						if (length < 50) length = 50;
-						block = add_string_column_with_length_and_blank(block, "text", length);
-						text_column_id = get_column_id_by_name(block, "text");
-					}
-				}
-			}
-			
-			reverse_transform(node, &x, &y);
-			block = add_row_and_blank(block);
-			set_xy(block, block->num_rows-1, x+10, y);
-			set_rgba(block, block->num_rows-1, 1, 0, 0, 1);
-			set_cell_from_int32(block, block->num_rows-1, get_column_id_by_name(block, "shape_row_id"), shape_row_id);
-			set_cell_from_int32(block, block->num_rows-1, get_column_id_by_name(block, "shape_part_id"), 1);
-			set_cell_from_int32(block, block->num_rows-1, get_column_id_by_name(block, "shape_part_type"), 0); // GL_POINTS
-			set_cell_from_string(block, block->num_rows-1, get_column_id_by_name(block, "tagName"), node->tagName);
-			
-			if (text_column_id != -1 && text != NULL) {
-				set_cell_from_string(block, block->num_rows-1, text_column_id, text); // GL_POINTS
-			}
-			
-			//fprintf(stderr, "text at %f %f\n", x, y);
-		} else if (	strcmp(node->tagName, "circle")==0 || 
-								strcmp(node->tagName, "ellipse")==0 || 
-								strcmp(node->tagName, "line")==0 || 
-								strcmp(node->tagName, "polyline")==0 || 
-								strcmp(node->tagName, "polygon")==0 || 
-								strcmp(node->tagName, "tref")==0 || 
-								strcmp(node->tagName, "image")==0) {
-			fprintf(stderr, "unsupported SVG tag '%s'\n", node->tagName);
+	}
+	
+	if (strcmp(node->tagName, "g")==0) {
+		if (get_node_attr_value(node, "clip-path") == NULL) {
+			//return block;
+		}
+	}
+	
+	if (strcmp(node->tagName, "path")==0) {
+		if (get_node_attr_value(node, "fill") != NULL && strcmp(get_node_attr_value(node, "fill"), "none") != 0) {
+			block = append_path_to_block(node, get_node_attr_value(node, "d"), block);
+			//return block;
 		}
 		
-		int i;
-		for (i = 0 ; i < node->num_children ; i++) {
-			block = append_node_to_block(depth+1, node->children[i], block);
+		//char * colour = NULL;
+		//if (get_node_attr_value(node, "clip-path") == NULL) 
+		{// && strcmp(get_node_attr_value(node, "fill"), "none")!=0) {
+			//block = append_path_to_block(node, get_node_attr_value(node, "d"), block);
 		}
+	}
+	
+	if (strcmp(node->tagName, "rect")==0) {
+		block = append_rect_to_block(node, block);
+	}
+	
+	if (strcmp(node->tagName, "tspan")==0) {
+		char * x_list = get_node_attr_value(node, "x");
+		
+		int shape_row_id = get_new_shape_row_id(block);
+		
+		double x = 0, y = 0;
+		if (x_list == NULL && strlen(x_list) > 0) {
+		} else {
+			int i = strlen(x_list) - 1;
+			if (x_list[i] == ' ') i--;
+			while (x_list[i] != ' ' && i >= 0) {
+				i--;
+			}
+			i++;
+			x += atof(&x_list[i]) / 2.7;
+		}
+		
+		int text_column_id = -1;
+		char * text = NULL;
+		if (node->num_children == 1 || strcmp(node->children[0]->tagName, "#text")==0) {
+			text = node->children[0]->text;
+			if (text != NULL) {
+				int length = strlen(text);
+				text_column_id = get_column_id_by_name(block, "text");
+				if (text_column_id == -1) {
+					if (length < 50) length = 50;
+					block = add_string_column_with_length_and_blank(block, "text", length);
+					text_column_id = get_column_id_by_name(block, "text");
+				}
+			}
+		}
+		
+		reverse_transform(node, &x, &y);
+		block = add_row_and_blank(block);
+		set_xy(block, block->num_rows-1, x+10, y);
+		set_rgba(block, block->num_rows-1, 1, 0, 0, 1);
+		set_cell_from_int32(block, block->num_rows-1, get_column_id_by_name(block, "shape_row_id"), shape_row_id);
+		set_cell_from_int32(block, block->num_rows-1, get_column_id_by_name(block, "shape_part_id"), 1);
+		set_cell_from_int32(block, block->num_rows-1, get_column_id_by_name(block, "shape_part_type"), 0); // GL_POINTS
+		set_cell_from_string(block, block->num_rows-1, get_column_id_by_name(block, "tagName"), node->tagName);
+		
+		if (text_column_id != -1 && text != NULL) {
+			set_cell_from_string(block, block->num_rows-1, text_column_id, text); // GL_POINTS
+		}
+		
+		//fprintf(stderr, "text at %f %f\n", x, y);
+	}
+	if (strcmp(node->tagName, "circle")==0 || 
+			strcmp(node->tagName, "ellipse")==0 || 
+			strcmp(node->tagName, "line")==0 || 
+			strcmp(node->tagName, "polyline")==0 || 
+			strcmp(node->tagName, "polygon")==0 || 
+			strcmp(node->tagName, "tref")==0 || 
+			strcmp(node->tagName, "image")==0) {
+		fprintf(stderr, "unsupported SVG tag '%s'\n", node->tagName);
+	}
+	
+	int i;
+	for (i = 0 ; i < node->num_children ; i++) {
+		block = append_node_to_block(depth+1, node->children[i], block);
 	}
 	return block;
 }
