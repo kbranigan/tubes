@@ -29,7 +29,7 @@ all: mkbin \
 	bin/test \
 	bin/pass_through \
 	bin/join_geographic \
-	bin/join_inner \
+	bin/join \
 	bin/unique \
 	bin/tesselate \
 	bin/coordinate_convert \
@@ -115,8 +115,8 @@ bin/block_test: bin/block.o src/block_test.c
 bin/join_geographic: bin/block.o src/join_geographic.c
 	gcc -lm bin/block.o src/join_geographic.c -o bin/join_geographic
 
-bin/join_inner: bin/block.o src/join_inner.c
-	gcc -lm bin/block.o src/join_inner.c -o bin/join_inner
+bin/join: bin/block.o src/join.c
+	gcc -lm bin/block.o src/join.c -o bin/join
 
 bin/inspect: bin/block.o src/inspect.c
 	gcc -lm bin/block.o src/inspect.c -o bin/inspect

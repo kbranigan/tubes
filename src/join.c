@@ -1,6 +1,9 @@
 
 #include "block.h"
 
+#define LEFT_JOIN 1
+#define INNER_JOIN 2
+#define RIGHT_JOIN 3
 
 int main(int argc, char ** argv)
 {
@@ -11,6 +14,7 @@ int main(int argc, char ** argv)
 	assert_stdout_is_piped();
 	//assert_stdin_or_out_is_piped();
 	
+	static int join = INNER_JOIN;
 	static char right_file[1000] = "";
 	static char left_column[100] = "";
 	static char right_column[100] = "";
@@ -20,6 +24,7 @@ int main(int argc, char ** argv)
 	while (1)
 	{
 		static struct option long_options[] = {
+			{"join", required_argument, 0, 'j'},
 			{"right_file", required_argument, 0, 'f'},
 			{"left_column", required_argument, 0, 'l'},
 			{"right_column", required_argument, 0, 'r'},
@@ -28,12 +33,23 @@ int main(int argc, char ** argv)
 		};
 		
 		int option_index = 0;
-		c = getopt_long(argc, argv, "d:f:", long_options, &option_index);
+		c = getopt_long(argc, argv, "j:f:l:r:", long_options, &option_index);
 		if (c == -1) break;
 		
 		switch (c)
 		{
 			case 0: break;
+			case 'j': 
+				if (strcmp(optarg, "left")==0) {
+					join = LEFT_JOIN;
+				} else if (strcmp(optarg, "inner")==0) {
+					join = INNER_JOIN;
+				} else if (strcmp(optarg, "right")==0) {
+					join = RIGHT_JOIN;
+				} else {
+					fprintf(stderr, "invalid --join option, choices are: 'left', 'inner' or 'right'\n");
+				}
+				break;
 			case 'f': strncpy(right_file, optarg, sizeof(right_file)); break;
 			case 'l': strncpy(left_column, optarg, sizeof(left_column)); break;
 			case 'r': strncpy(right_column, optarg, sizeof(right_column)); break;
@@ -100,14 +116,27 @@ int main(int argc, char ** argv)
 		}
 		
 		for (i = 0 ; i < left_block->num_rows ; i++) {
+			int found = 0;
 			for (j = 0 ; j < right_block->num_rows ; j++) {
 				if (memcmp(get_cell(left_block, i, left_block_join_column_id), get_cell(right_block, j, right_block_join_column_id), left_column->bsize)==0) {
 					join_block = add_row_and_blank(join_block);
-					memcpy(get_row(join_block, join_block->num_rows-1), get_row(left_block, i), left_block->row_bsize);
+					
+					for (k = 0 ; k < left_block->num_columns ; k++) {
+						memcpy(get_cell(join_block, join_block->num_rows-1, k), get_cell(left_block, i, k), get_column(left_block, k)->bsize);
+					}
+					//memcpy(get_row(join_block, join_block->num_rows-1), get_row(left_block, i), left_block->row_bsize);
+					
 					for (k = 0 ; k < num_columns_from_right_block ; k++) {
 						//fprintf(stderr, "copy cell %d over\n", column_ids_from_right_block[k]);
 						memcpy(get_cell(join_block, join_block->num_rows-1, left_block->num_columns + k), get_cell(right_block, j, column_ids_from_right_block[k]), get_column(right_block, column_ids_from_right_block[k])->bsize);
 					}
+					found++;
+				}
+			}
+			if (found == 0) {
+				join_block = add_row_and_blank(join_block);
+				for (k = 0 ; k < left_block->num_columns ; k++) {
+					memcpy(get_cell(join_block, join_block->num_rows-1, k), get_cell(left_block, i, k), get_column(left_block, k)->bsize);
 				}
 			}
 		}

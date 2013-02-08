@@ -1,16 +1,30 @@
 
 #############################################################
 
+http://gis.toronto.ca/arcgis/rest/services/primary/cot_geospatial2_mtm/MapServer/export?dpi=96&transparent=true&format=svg&layers=show%3A3&bbox=310880.78342223354,4833361.400389468,314391.8112776226,4834628.757090848&size=1427%2C479&f=image
 
+
+wget -O - -o /dev/null "http://gis.toronto.ca/arcgis/rest/services/primary/cot_geospatial2_mtm/MapServer/export?dpi=96&transparent=true&format=svg&layers=show%3A8,3&bbox=302844.048,4846380.249,305601.012,4847438.584&bboxSR=2019&imageSR=2019&size=1042%2C400&f=image" > withlabels.svg
 ./bin/read_svg -f withlabels.svg \
   | ./bin/filter --column=tagName --value=tspan > tspan.b
 ./bin/read_svg -f withlabels.svg \
   | ./bin/filter --column=tagName --value=tspan --operator=DELETE \
   | ./bin/filter --column=tagName --value=rect --operator=DELETE > shapes.b
 cat shapes.b | ./bin/tesselate > shapes.t.b
-cat tspan.b | ./bin/join_geographic -f shapes.t.b | ./bin/unique --column=first_hit_shape_row_id > joined_geographic.b 
+cat tspan.b | ./bin/join_geographic -f shapes.t.b | ./bin/unique --column=first_hit_shape_row_id > joined_geographic.b
+cat shapes.b | ./bin/columns --remove=text | ./bin/join --join=left --right_file=joined_geographic.b --left_column=shape_row_id --right_column=first_hit_shape_row_id | ./bin/bounds --bbox=302844.048,305601.012,4847438.584,4846380.249 | ./bin/coordinate_convert | ./bin/inspect | ./bin/write_kml --filename=output.kml
 
-cat shapes.b | ./bin/columns --remove=text | ./bin/join_inner --right_file=joined_geographic.b --left_column=shape_row_id --right_column=first_hit_shape_row_id | ./bin/inspect
+
+wget -O - -o /dev/null "http://gis.toronto.ca/arcgis/rest/services/primary/cot_geospatial2_mtm/MapServer/export?dpi=96&transparent=true&format=svg&layers=show%3A8,3&bbox=305601.012,4846380.249,308357.976,4847438.584&bboxSR=2019&imageSR=2019&size=1042%2C400&f=image" > withlabels2.svg
+./bin/read_svg -f withlabels2.svg \
+  | ./bin/filter --column=tagName --value=tspan > tspan2.b
+./bin/read_svg -f withlabels2.svg \
+  | ./bin/filter --column=tagName --value=tspan --operator=DELETE \
+  | ./bin/filter --column=tagName --value=rect --operator=DELETE > shapes2.b
+cat shapes2.b | ./bin/tesselate > shapes2.t.b
+cat tspan2.b | ./bin/join_geographic -f shapes2.t.b | ./bin/unique --column=first_hit_shape_row_id > joined_geographic2.b
+cat shapes2.b | ./bin/columns --remove=text | ./bin/join --join=left --right_file=joined_geographic2.b --left_column=shape_row_id --right_column=first_hit_shape_row_id | ./bin/bounds --bbox=305601.012,308357.976,4847438.584,4846380.249 | ./bin/coordinate_convert | ./bin/inspect | ./bin/write_kml --filename=output2.kml
+
 
 #############################################################
 
