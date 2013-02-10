@@ -365,8 +365,14 @@ int main(int argc, char ** argv)
 		}
 		
 		const char * shape_type = get_attribute_value_as_string(block, "shape_type");
-		if (shape_type != NULL && strcmp(shape_type, "triangles")==0) {
-			which = GL_TRIANGLES;
+		if (shape_type != NULL) {
+			if (strcmp(shape_type, "triangles")==0) {
+				which = GL_TRIANGLES;
+			} else if (strcmp(shape_type, "line_loop")==0) {
+				which = GL_LINE_LOOP;
+			} else if (strcmp(shape_type, "line_strip")==0) {
+				which = GL_LINE_STRIP;
+			}
 		}
 		
 		glColor4f(0, 0, 0, 1); // nice default for you
@@ -381,7 +387,7 @@ int main(int argc, char ** argv)
 			while ((part_end_id = get_next_part_start(block, part_start_id))) {
 				//int shape_part_id = get_cell_as_int32(block, shape_start_id, shape_row_id_column_id);
 				
-				if (shape_part_type_column_id != 0) {
+				if (shape_part_type_column_id != -1) {
 					int shape_part_type = get_cell_as_int32(block, part_start_id, shape_part_type_column_id);
 					if (shape_part_type == GL_TRIANGLES) {
 						glBegin(GL_TRIANGLES);

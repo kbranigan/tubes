@@ -30,6 +30,7 @@ all: mkbin \
 	bin/pass_through \
 	bin/join_geographic \
 	bin/join \
+	bin/generate \
 	bin/unique \
 	bin/tesselate \
 	bin/coordinate_convert \
@@ -111,6 +112,9 @@ bin/write_shapefile: bin/block.o src/write_shapefile.c ext/dbfopen.c ext/shpopen
 
 bin/block_test: bin/block.o src/block_test.c
 	gcc -lm bin/block.o src/block_test.c -o bin/block_test
+
+bin/generate: bin/block.o src/generate.c
+	gcc -lm bin/block.o src/generate.c -o bin/generate
 
 bin/join_geographic: bin/block.o src/join_geographic.c
 	gcc -lm bin/block.o src/join_geographic.c -o bin/join_geographic
