@@ -18,6 +18,7 @@ int main(int argc, char ** argv)
   static char database[100] = "";
   static char query[5000] = "";
   int limit = 0;
+	int port = 0; // default
   
   static int debug = 0;
   
@@ -27,12 +28,13 @@ int main(int argc, char ** argv)
     static struct option long_options[] = {
       {"database", required_argument, 0, 'd'},
       {"query", required_argument, 0, 'q'},
+      {"port", required_argument, 0, 'p'},
       {"debug", no_argument, &debug, 1},
       {0, 0, 0, 0}
     };
     
     int option_index = 0;
-    c = getopt_long(argc, argv, "q:d:", long_options, &option_index);
+    c = getopt_long(argc, argv, "q:d:p:", long_options, &option_index);
     if (c == -1) break;
     
     switch (c)
@@ -40,6 +42,7 @@ int main(int argc, char ** argv)
       case 0: break;
       case 'd': strncpy(database, optarg, sizeof(database)); break;
       case 'q': strncpy(query, optarg, sizeof(query)); break;
+			case 'p': port = atoi(optarg); break;
       default: abort();
     }
   }
@@ -56,7 +59,7 @@ int main(int argc, char ** argv)
   MYSQL_FIELD * field;
   
   if ((mysql_init(&mysql) == NULL)) { fprintf(stderr, "ERROR: mysql_init() error\n"); return 0; }
-  if (!mysql_real_connect(&mysql, "localhost", "root", "", database, 0, NULL, 0))
+  if (!mysql_real_connect(&mysql, "localhost", "root", "", database, port, NULL, 0))
   {
     fprintf(stderr, "ERROR: mysql_real_connect error (%s)\n", mysql_error(&mysql));
   }
