@@ -375,7 +375,7 @@ struct Block * append_node_to_block(int depth, struct Node * node, struct Block 
 	}
 	
 	if (strcmp(node->tagName, "rect")==0) {
-		block = append_rect_to_block(node, block);
+		//block = append_rect_to_block(node, block);
 	}
 	
 	if (strcmp(node->tagName, "tspan")==0) {
