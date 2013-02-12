@@ -181,9 +181,9 @@ struct Block * append_rect_to_block(struct Node * node, struct Block * block) {
 	if (fill_char != NULL) {
 		int red_i = 0, green_i = 0, blue_i = 0;
 		sscanf(&fill_char[1], "%2x%2x%2x", &red_i, &green_i, &blue_i);
-		red   = 128;//red_i / 255.0;
-		green = 128;//red_i / 255.0;
-		blue  = 128;//red_i / 255.0;
+		red   = red_i / 255.0;
+		green = green_i / 255.0;
+		blue  = blue_i / 255.0;
 	}
 	
 	double alpha = 1;
@@ -243,8 +243,8 @@ struct Block * append_path_to_block(struct Node * node, char * path_string, stru
 		int red_i = 0, green_i = 0, blue_i = 0;
 		sscanf(&fill_char[1], "%2x%2x%2x", &red_i, &green_i, &blue_i);
 		red = red_i / 255.0;
-		green = red_i / 255.0;
-		blue = red_i / 255.0;
+		green = green_i / 255.0;
+		blue = blue_i / 255.0;
 		//fprintf(stderr, "fill_char = %s\n", fill_char);
 	}
 	if (fill_opacity_char != NULL) {
@@ -530,11 +530,6 @@ int main(int argc, char ** argv)
 	{
 		xmlTextReaderPtr reader;
 		
-		//float matrix[6] = { 1, 0, 0, 1, 0, 0 }; // identity
-		
-		//struct Matrixs stack = { NULL, 0 };
-		//push_matrix(&stack, "identity", 0);
-		
 		struct Block * block = new_block();
 		block = add_command(block, argc, argv);
 		block = add_int32_column(block, "shape_row_id");
@@ -563,18 +558,11 @@ int main(int argc, char ** argv)
 			char viewBox_c[1000] = "";
 			double viewBox[4] = { 0, 0, 0, 0 };
 			strncpy(viewBox_c, get_node_attr_value(root_svg_node, "viewBox"), sizeof(viewBox));
-			
-			//fprintf(stderr, "%s, %s\n", root_svg_node->tagName, get_node_attr_value(root_svg_node, "viewBox"));
 			char * ptr;
 			ptr = strtok(viewBox_c, ", "); viewBox[0] = atof(ptr);
 			ptr = strtok(NULL, ", ");      viewBox[1] = atof(ptr);
 			ptr = strtok(NULL, ", ");      viewBox[2] = atof(ptr);
 			ptr = strtok(NULL, ", ");      viewBox[3] = atof(ptr);
-			
-			//fprintf(stderr, "%f,%f,%f,%f\n", bbox[0], bbox[1], bbox[2], bbox[3]);
-			//fprintf(stderr, "%f,%f,%f,%f\n", viewBox[0], viewBox[1], viewBox[2], viewBox[3]);
-			//fprintf(stderr, "(bbox[2] - bbox[0]) = %f\n", (bbox[2] - bbox[0]));
-			//fprintf(stderr, "(bbox[3] - bbox[1]) = %f\n", (bbox[3] - bbox[1]));
 			
 			block = append_node_to_block(0, root_svg_node, block);
 			
@@ -584,14 +572,11 @@ int main(int argc, char ** argv)
 			for (i = 0 ; i < block->num_rows ; i++) {
 				double x = get_x(block, i);
 				double y = get_y(block, i);
-				//fprintf(stderr, "%f,%f\n", x, y);
 				
 				x = (x - viewBox[0]) / (viewBox[2] - viewBox[0]) * (bbox[2] - bbox[0]) + bbox[0];
 				y = bbox[1] - (y - viewBox[1]) / (viewBox[3] - viewBox[1]) * (bbox[3] - bbox[1]) + (bbox[3] - bbox[1]);
 				
 				set_xy(block, i, x, y);
-				//fprintf(stderr, "%f,%f\n", x, y);
-				//break;
 			}
 			
 			write_block(stdout, block);
