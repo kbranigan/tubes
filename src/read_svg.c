@@ -470,39 +470,41 @@ int main(int argc, char ** argv)
 	
 	static char filename[1000] = "";
 	static int debug = 0;
-	static double x_offset = 0;
-	static double y_offset = 0;
-	static double x_multiple = 1;
-	static double y_multiple = 1;
+	char * ptr = NULL;
+	
+	static double bbox[4] = { 0, 0, 0, 0 };
 	
 	int c;
 	while (1)
 	{
 		static struct option long_options[] = {
 			{"filename", required_argument, 0, 'f'},
-			{"xoffset", required_argument, 0, 'a'},
-			{"yoffset", required_argument, 0, 'b'},
-			{"xmultiple", required_argument, 0, 'c'},
-			{"ymultiple", required_argument, 0, 'd'},
+			{"bbox", required_argument, 0, 'b'},
 			{"debug", no_argument, &debug, 1},
 			{0, 0, 0, 0}
 		};
 		
 		int option_index = 0;
-		c = getopt_long(argc, argv, "f:a:b:c:d:", long_options, &option_index);
+		c = getopt_long(argc, argv, "f:b:", long_options, &option_index);
 		if (c == -1) break;
 		
 		switch (c)
 		{
 			case 0: break;
 			case 'f': strncpy(filename, optarg, sizeof(filename)); break;
-			case 'a': x_offset = atof(optarg); break;
-			case 'b': y_offset = atof(optarg); break;
-			case 'c': x_multiple = atof(optarg); break;
-			case 'd': y_multiple = atof(optarg); break;
+			case 'b':
+			{
+				ptr = strtok(optarg, ","); bbox[0] = atof(ptr);
+				ptr = strtok(NULL, ",");   bbox[1] = atof(ptr);
+				ptr = strtok(NULL, ",");   bbox[2] = atof(ptr);
+				ptr = strtok(NULL, ",");   bbox[3] = atof(ptr);
+				break;
+			}
 			default: abort();
 		}
 	}
+	
+	//fprintf(stderr, "bbox = %f,%f,%f,%f\n", bbox[0], bbox[1], bbox[2], bbox[3]);
 	
 	struct MemoryStruct chunk;
 	chunk.memory = NULL;
@@ -558,10 +560,39 @@ int main(int argc, char ** argv)
 			ret = xmlTextReaderRead(reader); // why is there two svg tags?  when thats not the case in the file, I just don't know.
 			
 			struct Node * root_svg_node = new_node(reader);
+			char viewBox_c[1000] = "";
+			double viewBox[4] = { 0, 0, 0, 0 };
+			strncpy(viewBox_c, get_node_attr_value(root_svg_node, "viewBox"), sizeof(viewBox));
+			
 			//fprintf(stderr, "%s, %s\n", root_svg_node->tagName, get_node_attr_value(root_svg_node, "viewBox"));
+			char * ptr;
+			ptr = strtok(viewBox_c, ", "); viewBox[0] = atof(ptr);
+			ptr = strtok(NULL, ", ");      viewBox[1] = atof(ptr);
+			ptr = strtok(NULL, ", ");      viewBox[2] = atof(ptr);
+			ptr = strtok(NULL, ", ");      viewBox[3] = atof(ptr);
+			
+			//fprintf(stderr, "%f,%f,%f,%f\n", bbox[0], bbox[1], bbox[2], bbox[3]);
+			//fprintf(stderr, "%f,%f,%f,%f\n", viewBox[0], viewBox[1], viewBox[2], viewBox[3]);
+			//fprintf(stderr, "(bbox[2] - bbox[0]) = %f\n", (bbox[2] - bbox[0]));
+			//fprintf(stderr, "(bbox[3] - bbox[1]) = %f\n", (bbox[3] - bbox[1]));
+			
 			block = append_node_to_block(0, root_svg_node, block);
 			
 			free_node(root_svg_node);
+			
+			int i;
+			for (i = 0 ; i < block->num_rows ; i++) {
+				double x = get_x(block, i);
+				double y = get_y(block, i);
+				//fprintf(stderr, "%f,%f\n", x, y);
+				
+				x = (x - viewBox[0]) / (viewBox[2] - viewBox[0]) * (bbox[2] - bbox[0]) + bbox[0];
+				y = bbox[1] - (y - viewBox[1]) / (viewBox[3] - viewBox[1]) * (bbox[3] - bbox[1]) + (bbox[3] - bbox[1]);
+				
+				set_xy(block, i, x, y);
+				//fprintf(stderr, "%f,%f\n", x, y);
+				//break;
+			}
 			
 			write_block(stdout, block);
 			free_block(block);
