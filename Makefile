@@ -29,6 +29,7 @@ all: mkbin \
 	bin/test \
 	bin/pass_through \
 	bin/join_geographic \
+	bin/join_adjacent_geographic_shapes \
 	bin/join \
 	bin/generate \
 	bin/unique \
@@ -118,6 +119,9 @@ bin/generate: bin/block.o src/generate.c
 
 bin/join_geographic: bin/block.o src/join_geographic.c
 	gcc -lm bin/block.o src/join_geographic.c -o bin/join_geographic
+
+bin/join_adjacent_geographic_shapes: bin/block.o src/join_adjacent_geographic_shapes.c
+	gcc -lm bin/block.o src/join_adjacent_geographic_shapes.c -o bin/join_adjacent_geographic_shapes
 
 bin/join: bin/block.o src/join.c
 	gcc -lm bin/block.o src/join.c -o bin/join
