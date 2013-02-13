@@ -14,7 +14,7 @@ int main(int argc, char ** argv)
 	
 	static char clamp_bbox_char[1000] = "";
 	static int debug = 0;
-	static double clamp_bbox[2][2] = {{FLT_MAX, -FLT_MAX}, {FLT_MAX, -FLT_MAX}};
+	static double clamp_bbox[4] = {-FLT_MAX, -FLT_MAX, FLT_MAX, FLT_MAX};
 	
 	int c;
 	while (1) {
@@ -37,19 +37,19 @@ int main(int argc, char ** argv)
 	
 	if (clamp_bbox_char[0] != 0) {
 		char * ptr = strtok(clamp_bbox_char, " ,");
-		if (ptr == NULL) fprintf(stderr, "ERROR: Usage: %s --bbox=\"0,1,0,1\"	(min_x,max_x,min_y,max_y)", argv[0]);
-		clamp_bbox[0][0] = atof(ptr);
+		if (ptr == NULL) fprintf(stderr, "ERROR: Usage: %s --bbox=\"0,0,1,1\"	(min_x,max_x,min_y,max_y)", argv[0]);
+		clamp_bbox[0] = atof(ptr);
 		ptr = strtok(NULL, " ,");
-		if (ptr == NULL) fprintf(stderr, "ERROR: Usage: %s --bbox=\"0,1,0,1\"	(min_x,max_x,min_y,max_y)", argv[0]);
-		clamp_bbox[0][1] = atof(ptr);
+		if (ptr == NULL) fprintf(stderr, "ERROR: Usage: %s --bbox=\"0,0,1,1\"	(min_x,min_y,max_x,max_y)", argv[0]);
+		clamp_bbox[1] = atof(ptr);
 		ptr = strtok(NULL, " ,");
-		if (ptr == NULL) fprintf(stderr, "ERROR: Usage: %s --bbox=\"0,1,0,1\"	(min_x,max_x,min_y,max_y)", argv[0]);
-		clamp_bbox[1][0] = atof(ptr);
+		if (ptr == NULL) fprintf(stderr, "ERROR: Usage: %s --bbox=\"0,0,1,1\"	(min_x,min_y,max_x,max_y)", argv[0]);
+		clamp_bbox[2] = atof(ptr);
 		ptr = strtok(NULL, " ,");
-		if (ptr == NULL) fprintf(stderr, "ERROR: Usage: %s --bbox=\"0,1,0,1\"	(min_x,max_x,min_y,max_y)", argv[0]);
-		clamp_bbox[1][1] = atof(ptr);
+		if (ptr == NULL) fprintf(stderr, "ERROR: Usage: %s --bbox=\"0,0,1,1\"	(min_x,min_y,max_x,max_y)", argv[0]);
+		clamp_bbox[3] = atof(ptr);
 		
-		fprintf(stderr, "clamp x,y to: {{%f,%f},{%f,%f}}\n", clamp_bbox[0][0], clamp_bbox[0][1], clamp_bbox[1][0], clamp_bbox[1][1]);
+		fprintf(stderr, "clamp x,y to: {%f,%f,%f,%f}\n", clamp_bbox[0], clamp_bbox[1], clamp_bbox[2], clamp_bbox[3]);
 	}
 	
 	struct Block * block = NULL;
@@ -71,14 +71,14 @@ int main(int argc, char ** argv)
 		}
 		
 		if (clamp_bbox_char[0] != 0) {
-			double dx = clamp_bbox[0][1] - clamp_bbox[0][0];
-			double dy = clamp_bbox[1][1] - clamp_bbox[1][0];
+			double dx = clamp_bbox[0] - clamp_bbox[2];
+			double dy = clamp_bbox[1] - clamp_bbox[3];
 			for (i = 0 ; i < block->num_rows ; i++) {
 				double x = get_x(block, i);
 				double y = get_y(block, i);
 				//fprintf(stderr, "%f inside %f,%f (%f), dx = %f\n", x, bbox[0][0], bbox[0][1], ((x-bbox[0][0])/(bbox[0][1]-bbox[0][0])), dx);
 				//fprintf(stderr, "%f,%f\n", x, y);
-				set_xy(block, i, ((x-bbox[0][0])/(bbox[0][1]-bbox[0][0]))*dx+clamp_bbox[0][0], ((y-bbox[1][0])/(bbox[1][1]-bbox[1][0]))*dy+clamp_bbox[1][0]);
+				set_xy(block, i, ((x-bbox[0][0])/(bbox[0][1]-bbox[0][0]))*dx+clamp_bbox[0], ((y-bbox[1][0])/(bbox[1][1]-bbox[1][0]))*dy+clamp_bbox[1]);
 				x = get_x(block, i);
 				y = get_y(block, i);
 				//fprintf(stderr, "becomes %f,%f\n", x, y);
