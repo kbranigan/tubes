@@ -1,5 +1,6 @@
 
 #include "block.h"
+#include <math.h>
 
 enum OPERATOR {
   OPERATOR_DELETE = 1,
@@ -67,9 +68,11 @@ int main(int argc, char ** argv)
     int column_id = get_column_id_by_name_or_exit(block, column_name);
     
     struct Column * column = get_column(block, column_id);
-    if (column->type != TYPE_CHAR && (column->type != TYPE_INT || column->bsize != 4))
+    if (column->type != TYPE_CHAR && 
+				(column->type != TYPE_INT || column->bsize != 4) && 
+				(column->type != TYPE_FLOAT))
     {
-      fprintf(stderr, "column '%s' is not a string or int32_t.\n", column_name);
+      fprintf(stderr, "column '%s' is not a string or int32_t or float or double.\n", column_name);
       write_block(stdout, block);
       free_block(block);
       continue;
@@ -78,8 +81,9 @@ int main(int argc, char ** argv)
     struct Block * newblock = new_block();
     newblock = copy_all_attributes(newblock, block);
     
-    int ivalue;
+		int ivalue; double fvalue;
     if (column->type == TYPE_INT) ivalue = atoi(value);
+    if (column->type == TYPE_FLOAT) fvalue = atof(value);
     
     for (i = 0 ; i < block->num_rows ; i++)
     {
@@ -89,6 +93,20 @@ int main(int argc, char ** argv)
       {
         if ((operator == OPERATOR_DELETE && (*(int32_t*)cell) != ivalue) || 
             (operator == OPERATOR_PASS   && (*(int32_t*)cell) == ivalue))
+        newblock->num_rows++;
+      }
+			else if (column->type == TYPE_FLOAT && column->bsize == 4)
+      {
+				float temp = (*(float*)cell);
+        if ((operator == OPERATOR_DELETE && fabs(temp-fvalue) > 0.000001) || 
+            (operator == OPERATOR_PASS   && fabs(temp-fvalue) < 0.000001))
+        newblock->num_rows++;
+      }
+			else if (column->type == TYPE_FLOAT && column->bsize == 8)
+      {
+				double temp = (*(double*)cell);
+        if ((operator == OPERATOR_DELETE && fabs(temp-fvalue) > 0.000001) || 
+            (operator == OPERATOR_PASS   && fabs(temp-fvalue) < 0.000001))
         newblock->num_rows++;
       }
       else if (column->type == TYPE_CHAR)
@@ -105,7 +123,8 @@ int main(int argc, char ** argv)
     }
     int new_num_rows = newblock->num_rows;
     newblock->num_rows = 0;
-    fprintf(stderr, "%d - %d = %d\n", block->num_rows, block->num_rows-new_num_rows, new_num_rows);
+		if (debug)
+    	fprintf(stderr, "%d - %d = %d\n", block->num_rows, block->num_rows-new_num_rows, new_num_rows);
     
     char temp[1000];
     sprintf(temp, "'%s' %s '%s' (removing %d rows)", column_name, operator_names[operator], value, block->num_rows - new_num_rows);
@@ -124,6 +143,26 @@ int main(int argc, char ** argv)
       {
         if ((operator == OPERATOR_DELETE && *(int32_t*)cell != ivalue) || 
             (operator == OPERATOR_PASS   && *(int32_t*)cell == ivalue))
+        {
+          memcpy(get_row(newblock, newblock_row_id), get_row(block, i), block->row_bsize);
+          newblock_row_id++;
+        }
+      }
+			else if (column->type == TYPE_FLOAT && column->bsize == 4)
+      {
+				float temp = (*(float*)cell);
+        if ((operator == OPERATOR_DELETE && fabs(temp-fvalue) > 0.000001) || 
+            (operator == OPERATOR_PASS   && fabs(temp-fvalue) < 0.000001))
+        {
+          memcpy(get_row(newblock, newblock_row_id), get_row(block, i), block->row_bsize);
+          newblock_row_id++;
+        }
+      }
+			else if (column->type == TYPE_FLOAT && column->bsize == 8)
+      {
+				double temp = (*(double*)cell);
+        if ((operator == OPERATOR_DELETE && fabs(temp-fvalue) > 0.000001) || 
+            (operator == OPERATOR_PASS   && fabs(temp-fvalue) < 0.000001))
         {
           memcpy(get_row(newblock, newblock_row_id), get_row(block, i), block->row_bsize);
           newblock_row_id++;
