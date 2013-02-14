@@ -817,11 +817,11 @@ void fprintf_cell(FILE * fp, struct Block * block, uint32_t row_id, uint32_t col
 
 int32_t get_next_shape_start(struct Block * block, int32_t shape_start_id)
 {
-  if (shape_start_id < 0 || shape_start_id >= block->num_rows) return -1;
+  if (shape_start_id < 0 || shape_start_id >= block->num_rows) return 0;
   if (cached_block_ptr != block) update_cached_block_column_ids(block);
   
-  if (cached_block_column_ids.shape_row_id == -1) { fprintf(stderr, "%s called on block without shape_row_id field.\n", __func__); return -1; }
-  if (cached_block_column_ids.shape_part_id == -1) { fprintf(stderr, "%s called on block without shape_part_id field.\n", __func__); return -1; }
+  if (cached_block_column_ids.shape_row_id == -1) { fprintf(stderr, "%s called on block without shape_row_id field.\n", __func__); return 0; }
+  if (cached_block_column_ids.shape_part_id == -1) { fprintf(stderr, "%s called on block without shape_part_id field.\n", __func__); return 0; }
   
   int32_t shape_row_id = get_cell_as_int32(block, shape_start_id, cached_block_column_ids.shape_row_id);
   //int32_t shape_part_id = get_cell_as_int32(block, row_start_id, cached_block_column_ids.shape_part_id);
@@ -839,11 +839,11 @@ int32_t get_next_shape_start(struct Block * block, int32_t shape_start_id)
 
 int32_t get_next_part_start(struct Block * block, int32_t part_start_id)
 {
-  if (part_start_id < 0 || part_start_id >= block->num_rows) return -1;
+  if (part_start_id < 0 || part_start_id >= block->num_rows) return 0;
   if (cached_block_ptr != block) update_cached_block_column_ids(block);
   
-  if (cached_block_column_ids.shape_row_id == -1) { fprintf(stderr, "%s called on block without shape_row_id field.\n", __func__); return -1; }
-  if (cached_block_column_ids.shape_part_id == -1) { fprintf(stderr, "%s called on block without shape_part_id field.\n", __func__); return -1; }
+  if (cached_block_column_ids.shape_row_id == -1) { fprintf(stderr, "%s called on block without shape_row_id field.\n", __func__); return 0; }
+  if (cached_block_column_ids.shape_part_id == -1) { fprintf(stderr, "%s called on block without shape_part_id field.\n", __func__); return 0; }
   
   int32_t shape_row_id = get_cell_as_int32(block, part_start_id, cached_block_column_ids.shape_row_id);
   int32_t shape_part_id = get_cell_as_int32(block, part_start_id, cached_block_column_ids.shape_part_id);
@@ -879,7 +879,7 @@ int32_t get_new_shape_row_id(struct Block * block) {
 
 double get_x(struct Block * block, uint32_t row_id)
 {
-  if (row_id > block->num_rows) { fprintf(stderr, "get_x invalid row_id\n"); exit(0); }
+  if (row_id > block->num_rows) { fprintf(stderr, "get_x invalid row_id (%d)\n", row_id); exit(0); }
   if (cached_block_ptr != block) update_cached_block_column_ids(block);
 	if (cached_block_column_ids.xyz[0] != -1) {
 		return get_cell_as_double(block, row_id, cached_block_column_ids.xyz[0]);
@@ -890,7 +890,7 @@ double get_x(struct Block * block, uint32_t row_id)
 
 double get_y(struct Block * block, uint32_t row_id)
 {
-  if (row_id > block->num_rows) { fprintf(stderr, "get_y invalid row_id\n"); exit(0); }
+  if (row_id > block->num_rows) { fprintf(stderr, "get_y invalid row_id (%d)\n", row_id); exit(0); }
   if (cached_block_ptr != block) update_cached_block_column_ids(block);
 	if (cached_block_column_ids.xyz[1] != -1) {
 		return get_cell_as_double(block, row_id, cached_block_column_ids.xyz[1]);
@@ -901,7 +901,7 @@ double get_y(struct Block * block, uint32_t row_id)
 
 double get_z(struct Block * block, uint32_t row_id)
 {
-  if (row_id > block->num_rows) { fprintf(stderr, "get_z invalid row_id\n"); exit(0); }
+  if (row_id > block->num_rows) { fprintf(stderr, "get_z invalid row_id (%d)\n", row_id); exit(0); }
   if (cached_block_ptr != block) update_cached_block_column_ids(block);
 	if (cached_block_column_ids.xyz[2] != -1) {
 		return get_cell_as_double(block, row_id, cached_block_column_ids.xyz[2]);
@@ -912,7 +912,7 @@ double get_z(struct Block * block, uint32_t row_id)
 
 void set_xy(struct Block * block, uint32_t row_id, double x, double y)
 {
-  if (row_id > block->num_rows) { fprintf(stderr, "set_xy invalid row_id\n"); exit(0); }
+  if (row_id > block->num_rows) { fprintf(stderr, "set_xy invalid row_id (%d)\n", row_id); exit(0); }
   if (cached_block_ptr != block) update_cached_block_column_ids(block);
   if (cached_block_column_ids.xyz[0] != -1) set_cell_from_double(block, row_id, cached_block_column_ids.xyz[0], x);
   if (cached_block_column_ids.xyz[1] != -1) set_cell_from_double(block, row_id, cached_block_column_ids.xyz[1], y);
@@ -926,7 +926,7 @@ void set_xyz(struct Block * block, uint32_t row_id, double x, double y, double z
 
 void set_rgb(struct Block * block, uint32_t row_id, float r, float g, float b)
 {
-  if (row_id > block->num_rows) { fprintf(stderr, "set_rgb invalid row_id\n"); exit(0); }
+  if (row_id > block->num_rows) { fprintf(stderr, "set_rgb invalid row_id (%d)\n", row_id); exit(0); }
   if (cached_block_ptr != block) update_cached_block_column_ids(block);
   if (cached_block_column_ids.rgba[0] != -1) set_cell(block, row_id, cached_block_column_ids.rgba[0], &r);
   if (cached_block_column_ids.rgba[1] != -1) set_cell(block, row_id, cached_block_column_ids.rgba[1], &g);
