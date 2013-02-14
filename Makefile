@@ -14,6 +14,7 @@ all: mkbin \
 	bin/nextbus \
 	bin/columns \
 	bin/filter \
+	bin/filter_by_distance \
 	bin/append \
 	bin/add_color \
 	bin/read_dem \
@@ -191,6 +192,9 @@ bin/append: bin/block.o src/append.c
 
 bin/filter: bin/block.o src/filter.c
 	gcc -lm bin/block.o src/filter.c -o bin/filter
+
+bin/filter_by_distance: bin/block.o src/filter_by_distance.c
+	gcc -lm bin/block.o src/filter_by_distance.c -o bin/filter_by_distance
 
 bin/test: bin/block.o src/test.c
 	gcc -lm bin/block.o src/test.c -o bin/test
