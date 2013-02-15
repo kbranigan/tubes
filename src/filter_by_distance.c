@@ -81,7 +81,9 @@ int main(int argc, char ** argv) {
 			shape_start_id = shape_end_id;
 		}
 		
-		fprintf(stderr, "filter_count = %d\n", filter_count);
+		char temp[1000];
+		sprintf(temp, "filtered %d rows by distance < %f", filter_count, distance);
+		block = add_string_attribute(block, "filter", temp);
 		
 		write_block(stdout, block);
 		free_block(block);
