@@ -273,11 +273,6 @@ struct Block * append_path_to_block(struct Node * node, char * path_string, stru
 	char * ptr = strtok(path_string, " ");
 	while (ptr != NULL)
 	{
-		//srand(time(NULL));
-		//red = rand() / (float)RAND_MAX;	 // kbfu
-		//green = rand() / (float)RAND_MAX; // kbfu
-		//blue = rand() / (float)RAND_MAX;	// kbfu
-		// 713.5 239.5
 		
 		double coord[4] = { 0, 0, 0, 0 };
 		int add_point = 0;

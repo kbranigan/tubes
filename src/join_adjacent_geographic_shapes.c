@@ -61,7 +61,6 @@ int main(int argc, char ** argv) {
 						
 						fprintf(stderr, "%d,%d (%f, %f)\n", i, j, x, y);
 						
-						
 					}
 				}
 			}
