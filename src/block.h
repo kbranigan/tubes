@@ -181,6 +181,8 @@ struct Block * add_row(struct Block * block);
 struct Block * add_row_and_blank(struct Block * block);
 struct Block * add_row_with_data(struct Block * block, int num_columns, ...);
 
+struct Block * remove_row(struct Block * block, uint32_t row_id);
+
 uint32_t get_row_bsize_from_columns(struct Block * block);
 
 void * get_cell(struct Block * block, uint32_t row_id, uint32_t column_id);

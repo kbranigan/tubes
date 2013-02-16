@@ -984,6 +984,13 @@ struct Block * add_row_with_data(struct Block * block, int num_columns, ...)
   return block;
 }
 
+struct Block * remove_row(struct Block * block, uint32_t row_id) {
+	if (block == NULL) { fprintf(stderr, "%s called on a NULL block\n", __func__); return NULL; }
+	if (block->num_columns != num_columns) { fprintf(stderr, "block num_columns not the same as provided num_columns\n"); return block; }
+	
+	
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct Block * sort_block_using_int32_column(struct Block * block, int32_t column_id, char order)
