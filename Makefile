@@ -6,6 +6,7 @@ all: mkbin \
 	bin/read_csv \
 	bin/write_csv \
 	bin/write_kml \
+	bin/write_js \
 	bin/write_mysql \
 	bin/shapefile \
 	bin/write_shapefile \
@@ -183,6 +184,9 @@ bin/write_csv: bin/block.o src/write_csv.c
 
 bin/write_kml: bin/block.o src/write_kml.c
 	gcc -lm bin/block.o src/write_kml.c -o bin/write_kml
+
+bin/write_js: bin/block.o src/write_js.c
+	gcc -lm bin/block.o src/write_js.c -o bin/write_js
 
 bin/write_mysql: bin/block.o src/write_mysql.c
 	gcc -lm bin/block.o src/write_mysql.c -o bin/write_mysql
