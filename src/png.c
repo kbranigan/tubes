@@ -372,6 +372,8 @@ int main(int argc, char ** argv)
 				which = GL_LINE_LOOP;
 			} else if (strcmp(shape_type, "line_strip")==0) {
 				which = GL_LINE_STRIP;
+			} else if (strcmp(shape_type, "points")==0) {
+				which = GL_POINTS;
 			}
 		}
 		
