@@ -85,7 +85,7 @@ int main(int argc, char ** argv) {
 		}
 		
 		char temp[1000];
-		sprintf(temp, "filtered %d rows by distance < %f", filter_count, distance);
+		sprintf(temp, "filtered %d row(s) by distance < %f", filter_count, distance);
 		block = add_string_attribute(block, "filter", temp);
 		
 		write_block(stdout, block);

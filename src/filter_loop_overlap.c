@@ -40,6 +40,8 @@ int main(int argc, char ** argv) {
 	struct Block * block = NULL;
 	while ((block = read_block(stdin))) {
 		
+		block = add_command(block, argc, argv);
+		
 		const char * shape_type = get_attribute_value_as_string(block, "shape_type");
 		
 		int is_line_loop = 0;
@@ -65,11 +67,30 @@ int main(int argc, char ** argv) {
 				for (i = part_end_id-1 ; i > part_start_id ; i--) {
 					double px = get_x(block, i), py = get_y(block, i);
 					if (fabs(x-px) < distance && fabs(y-py) < distance) {
+						
+						int ok = 1;
 						// found a match some place with the first point, continue and see if it goes all the way
-						fprintf(stderr, "matches %d with %d (shape has %d points)\n", part_start_id, i, part_end_id - part_start_id);
+						//fprintf(stderr, "matches %d with %d (shape has %d points)\n", part_start_id, i, part_end_id - part_start_id);
 						for (j = i ; j < part_end_id ; j++) {
-							fprintf(stderr, "%d\n", j);
+							px = get_x(block, j), py = get_y(block, j);
+							double tx = get_x(block, part_start_id+(j-i)), ty = get_y(block, part_start_id+(j-i));
+							//fprintf(stderr, "%d vs %d\n", j, part_start_id+(j-i));
+							if (fabs(tx-px) < distance && fabs(ty-py) > distance) {
+								ok = 0;
+								//fprintf(stderr, "  fail\n");
+							}
+							//fprintf(stderr, "%d\n", j);
 						}
+						
+						if (ok) {
+							for (j = i ; j < part_end_id ; j++) {
+								filter_count++;
+								block = remove_row(block, j);
+								part_end_id--;
+								j--;
+							}
+						}
+						
 						break;
 					}
 				}
@@ -87,7 +108,7 @@ int main(int argc, char ** argv) {
 		}
 		
 		char temp[1000];
-		sprintf(temp, "filtered %d rows by distance < %f", filter_count, distance);
+		sprintf(temp, "filtered %d row(s) by loop overlap", filter_count);
 		block = add_string_attribute(block, "filter", temp);
 		
 		write_block(stdout, block);
