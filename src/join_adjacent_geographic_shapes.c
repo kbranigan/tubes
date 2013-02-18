@@ -54,22 +54,25 @@ int main(int argc, char ** argv) {
 			
 			int i, j;
 			for (i = 0 ; i < block->num_rows ; i++) {
-				if (i == 0) continue;
-				double x1 = get_x(block, i-0), y1 = get_y(block, i-0);
-				double x2 = get_x(block, i-1), y2 = get_y(block, i-1);
+				double x1 = get_x(block, i), y1 = get_y(block, i);
 				for (j = 0 ; j < prev_block->num_rows ; j++) {
-					if (j == 0) continue;
-					double px1 = get_x(prev_block, j-0), py1 = get_y(prev_block, j-0);
-					double px2 = get_x(prev_block, j-1), py2 = get_y(prev_block, j-1);
-					if ((fabs(x1-px1) < 0.000001 && fabs(y1-py1) < 0.000001 && 
-							fabs(x2-px2) < 0.000001 && fabs(y2-py2) < 0.000001) ||
-							(fabs(x1-px2) < 0.000001 && fabs(y1-py2) < 0.000001 && 
-							fabs(x2-px1) < 0.000001 && fabs(y2-py1) < 0.000001)
-							) {
+					double px1 = get_x(prev_block, j), py1 = get_y(prev_block, j);
+					if ((fabs(x1-px1) < 0.000001 && fabs(y1-py1) < 0.000001)) {
 						
+						double nx[2] = { get_x(block, (i > 0) ? (i-1) : block->num_rows-1), get_x(block, (i < block->num_rows-2 ? (i+1) : 0)) };
+						double ny[2] = { get_y(block, (i > 0) ? (i-1) : block->num_rows-1), get_y(block, (i < block->num_rows-2 ? (i+1) : 0)) };
 						
+						double npx[2] = { get_x(prev_block, (j > 0) ? (j-1) : prev_block->num_rows-1), get_x(prev_block, (j < prev_block->num_rows-2 ? (j+1) : 0)) };
+						double npy[2] = { get_y(prev_block, (j > 0) ? (j-1) : prev_block->num_rows-1), get_y(prev_block, (j < prev_block->num_rows-2 ? (j+1) : 0)) };
 						
-						//fprintf(stderr, "%d,%d (%f, %f) (%f, %f)\n", i, j, x1, y1, x2, y2);
+						//double x2 = get_x(block, i+1), y2 = get_y(block, i+1);
+						//double px2 = get_x(prev_block, j+1), y2 = get_y(prev_block, j+1);
+						
+						if (fabs(nx[0]-npx[0]) < 0.000001 && fabs(ny[0]-npy[0]) < 0.000001) {
+							fprintf(stderr, "%d-%d to %d-%d\n", i, ((i > 0) ? (i-1) : block->num_rows-1), j, (j > 0) ? (j-1) : prev_block->num_rows-1);
+						} else if (fabs(nx[1]-npx[0]) < 0.000001 && fabs(ny[1]-npy[0]) < 0.000001) { // only match 2 of 4 combination, otherwise this'll trigger twice
+							fprintf(stderr, "%d-%d to %d-%d\n", i, (i < block->num_rows-2 ? (i+1) : 0), j, (j > 0) ? (j-1) : prev_block->num_rows-1);
+						}
 					}
 				}
 			}
@@ -153,12 +156,12 @@ int main(int argc, char ** argv) {
 			
 		}
 		
-		write_block(stdout, block);
+		//write_block(stdout, block);
 		prev_block = block;
 	}
-	if (block != NULL) {
-		//write_block(stdout, block);
-		//free_block(block);
+	if (prev_block != NULL) {
+		write_block(stdout, prev_block);
+		free_block(prev_block);
 	}
 }
 

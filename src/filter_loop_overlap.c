@@ -88,7 +88,9 @@ int main(int argc, char ** argv) {
 								block = remove_row(block, j);
 								part_end_id--;
 								j--;
+								//fprintf(stderr, "remove(%d)\n", j);
 							}
+							//fprintf(stderr, "block->num_rows = %d\n", block->num_rows);
 						}
 						
 						break;
