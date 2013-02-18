@@ -235,18 +235,34 @@ int main(int argc, char ** argv)
   float zoom = 1;
   int num_attributes = -1;
   int c;
-  while ((c = getopt(argc, argv, "f:w:r:s:p:z:")) != -1)
-  switch (c)
-  {
-    case 'f': strncpy(file_name, optarg, sizeof(file_name)); break;
-    case 's': strncpy(sprite_file_name, optarg, sizeof(sprite_file_name)); break;
-    case 'p': sprite_point_size = atoi(optarg); break;
-    case 'w': texture_width = atoi(optarg); break;
-    case 'r': rotation = atof(optarg); break;
-    case 'z': zoom = atof(optarg); break;
-    default:  abort();
-  }
-  
+  while (1) {
+		static struct option long_options[] = {
+			{"filename", required_argument, 0, 'f'},
+			{"sprite", no_argument, 0, 's'},
+			{"pointsize", no_argument, 0, 'p'},
+			{"width", no_argument, 0, 'w'},
+			{"rotation", no_argument, 0, 'r'},
+			{"zoom", no_argument, 0, 'z'},
+			//{"debug", no_argument, &debug, 1},
+			{0, 0, 0, 0}
+		};
+		
+		int option_index = 0;
+		c = getopt_long(argc, argv, "f:w:r:s:p:z:", long_options, &option_index);
+		if (c == -1) break;
+		
+		switch (c) {
+			case 0: break;
+			case 'f': strncpy(file_name, optarg, sizeof(file_name)); break;
+			case 's': strncpy(sprite_file_name, optarg, sizeof(sprite_file_name)); break;
+			case 'p': sprite_point_size = atoi(optarg); break;
+			case 'w': texture_width = atoi(optarg); break;
+			case 'r': rotation = atof(optarg); break;
+			case 'z': zoom = atof(optarg); break;
+			default:  abort();
+		}
+	}
+	
   if (file_name[0] == 0 && argc == 2 && argv[1] != NULL)
     strncpy(file_name, argv[1], sizeof(file_name));
   else if (file_name[0] == 0)
@@ -507,6 +523,6 @@ int main(int argc, char ** argv)
   glReadPixels(0, 0, texture_width, texture_height, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)png.pixels);
   
   _write_png(&png, file_name);
-  fprintf(stderr, "%s: %dx%d bmp created named '%s'\n", argv[0], texture_width, texture_height, file_name);
+  fprintf(stderr, "%s: %dx%d png created named '%s'\n", argv[0], texture_width, texture_height, file_name);
 }
 
