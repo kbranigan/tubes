@@ -2,7 +2,6 @@
 vpath %.c src/functions/in:src/functions/inout:src/functions/out
 
 all: mkbin \
-	kevin \
 	bin/read_csv \
 	bin/write_csv \
 	bin/write_kml \
@@ -16,16 +15,12 @@ all: mkbin \
 	bin/columns \
 	bin/filter \
 	bin/filter_by_distance \
+	bin/filter_loop_overlap \
 	bin/append \
 	bin/add_color \
 	bin/read_dem \
 	bin/strcat \
-	bin/read_kml \
-	bin/read_svg \
 	bin/curl \
-	bin/read_nextbus \
-	bin/read_mysql \
-	bin/read_mysql_table \
 	bin/upgrade_block \
 	bin/png \
 	bin/test \
@@ -39,7 +34,15 @@ all: mkbin \
 	bin/coordinate_convert \
 	bin/bounds
 
-kevin: \
+extras: mkbin \
+	bin/read_mysql \
+	bin/read_mysql_table \
+	bin/read_nextbus \
+	bin/read_svg \
+	bin/read_kml \
+	bin/png
+
+kevin: mkbin \
 	kevin/add_wday \
 	kevin/add_ticket_totals_to_addresses \
 	kevin/add_color_to_addresses_tickets_by_wday_and_time \
@@ -199,6 +202,9 @@ bin/filter: bin/block.o src/filter.c
 
 bin/filter_by_distance: bin/block.o src/filter_by_distance.c
 	gcc -lm bin/block.o src/filter_by_distance.c -o bin/filter_by_distance
+
+bin/filter_loop_overlap: bin/block.o src/filter_loop_overlap.c
+	gcc -lm bin/block.o src/filter_loop_overlap.c -o bin/filter_loop_overlap
 
 bin/test: bin/block.o src/test.c
 	gcc -lm bin/block.o src/test.c -o bin/test
