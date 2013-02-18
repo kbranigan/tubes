@@ -986,9 +986,14 @@ struct Block * add_row_with_data(struct Block * block, int num_columns, ...)
 
 struct Block * remove_row(struct Block * block, uint32_t row_id) {
 	if (block == NULL) { fprintf(stderr, "%s called on a NULL block\n", __func__); return NULL; }
-	if (block->num_columns != num_columns) { fprintf(stderr, "block num_columns not the same as provided num_columns\n"); return block; }
+	if (row_id < 0 || row_id >= block->num_rows) { fprintf(stderr, "%s called on block with invalid row_id (%d)\n", __func__, row_id); return block; }
 	
+	if (row_id < block->num_rows - 1) {
+		memmove(get_row(block, row_id), get_row(block, row_id+1), block->row_bsize * (block->num_rows - row_id - 1));
+	}
+	block = set_num_rows(block, block->num_rows-1);
 	
+	return block;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////

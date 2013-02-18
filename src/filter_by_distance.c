@@ -61,34 +61,14 @@ int main(int argc, char ** argv) {
 				
 				int i, j;
 				for (i = part_start_id ; i < part_end_id ; i++) {
-					//if (i == part_end_id-1) continue;
 					if (i == 0) continue;
 					double px = get_x(block, i-1), py = get_y(block, i-1);
 					double  x = get_x(block, i),    y = get_y(block, i);
 					if (fabs(x-px) < distance && fabs(y-py) < distance) {
-						if (i < block->num_rows-1) {
-							filter_count++;
-							memmove(get_row(block, i), get_row(block, i+1), block->row_bsize * (block->num_rows - i - 1));
-						}
-						block = set_num_rows(block, block->num_rows-1);
+						block = remove_row(block, i);
+						filter_count++;
 						part_end_id--;
 						i--;
-					}
-				}
-				
-				// find if there is any overlap in the end of the shape 
-				if (is_line_loop == 1 || 1) { // kbfu
-					double x = get_x(block, part_start_id), y = get_y(block, part_start_id);
-					for (i = part_end_id-1 ; i > part_start_id ; i--) {
-						double px = get_x(block, i), py = get_y(block, i);
-						if (fabs(x-px) < distance && fabs(y-py) < distance) {
-							// found a match some place with the first point, continue and see if it goes all the way
-							fprintf(stderr, "matches %d with %d (shape has %d points)\n", part_start_id, i, part_start_id - part_end_id);
-							
-							
-							
-							break;
-						}
 					}
 				}
 				
