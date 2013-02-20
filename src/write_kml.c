@@ -71,7 +71,7 @@ int main(int argc, char ** argv)
 		{
 			int shape_row_id = get_cell_as_int32(block, shape_start_id, shape_row_id_column_id);
 			
-			int red = 0, green = 0, blue = 0, alpha = 1;
+			int red = 255, green = 255, blue = 255, alpha = 100;
 			if (red_column_id != -1)   red   = 255 * get_cell_as_double(block, shape_start_id, red_column_id);
 			if (green_column_id != -1) green = 255 * get_cell_as_double(block, shape_start_id, green_column_id);
 			if (blue_column_id != -1)  blue  = 255 * get_cell_as_double(block, shape_start_id, blue_column_id);
