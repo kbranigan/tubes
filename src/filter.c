@@ -81,8 +81,18 @@ int main(int argc, char ** argv)
     struct Block * newblock = new_block();
     newblock = copy_all_attributes(newblock, block);
     
-		int ivalue; double fvalue;
-    if (column->type == TYPE_INT) ivalue = atoi(value);
+		int * ivalues = NULL;
+		int num_ivalues = 0;
+		if (column->type == TYPE_INT) {
+			char * ptr = strtok(value, ",");
+			while (ptr != NULL) {
+				num_ivalues++;
+				ivalues = (int*)realloc(ivalues, sizeof(int)*num_ivalues);
+				ivalues[num_ivalues-1] = atoi(ptr);
+				ptr = strtok(NULL, ",");
+			}
+		}
+		double fvalue;
     if (column->type == TYPE_FLOAT) fvalue = atof(value);
     
     for (i = 0 ; i < block->num_rows ; i++)
@@ -91,9 +101,12 @@ int main(int argc, char ** argv)
       
       if (column->type == TYPE_INT && column->bsize == 4)
       {
-        if ((operator == OPERATOR_DELETE && (*(int32_t*)cell) != ivalue) || 
-            (operator == OPERATOR_PASS   && (*(int32_t*)cell) == ivalue))
-        newblock->num_rows++;
+				int j;
+				for (j = 0 ; j < num_ivalues ; j++) {
+					if ((operator == OPERATOR_DELETE && (*(int32_t*)cell) != ivalues[j]) || 
+							(operator == OPERATOR_PASS   && (*(int32_t*)cell) == ivalues[j]))
+					newblock->num_rows++;
+				}
       }
 			else if (column->type == TYPE_FLOAT && column->bsize == 4)
       {
@@ -141,11 +154,13 @@ int main(int argc, char ** argv)
       
       if (column->type == TYPE_INT && column->bsize == 4)
       {
-        if ((operator == OPERATOR_DELETE && *(int32_t*)cell != ivalue) || 
-            (operator == OPERATOR_PASS   && *(int32_t*)cell == ivalue))
-        {
-          memcpy(get_row(newblock, newblock_row_id), get_row(block, i), block->row_bsize);
-          newblock_row_id++;
+				int j;
+				for (j = 0 ; j < num_ivalues ; j++) {
+					if ((operator == OPERATOR_DELETE && (*(int32_t*)cell) != ivalues[j]) || 
+							(operator == OPERATOR_PASS   && (*(int32_t*)cell) == ivalues[j])) {
+						memcpy(get_row(newblock, newblock_row_id), get_row(block, i), block->row_bsize);
+						newblock_row_id++;
+					}
         }
       }
 			else if (column->type == TYPE_FLOAT && column->bsize == 4)
@@ -184,4 +199,5 @@ int main(int argc, char ** argv)
     free_block(newblock);
     free_block(block);
   }
+	free(ivalues);
 }
