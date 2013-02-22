@@ -30,6 +30,7 @@ all: mkbin \
 	bin/join \
 	bin/generate \
 	bin/unique \
+	bin/clip \
 	bin/tesselate \
 	bin/coordinate_convert \
 	bin/bounds
@@ -95,6 +96,9 @@ kevin/add_address_id_and_is_opp: bin/block.o bin/block_hashtable.o bin/hashtable
 kevin/add_wday: bin/block.o kevin/add_wday.c
 	gcc -lm bin/block.o kevin/add_wday.c -o kevin/add_wday
 
+bin/gpc.o: ext/gpc.c
+	gcc ext/gpc.c -c -o bin/gpc.o
+
 bin/hashtable.o: ext/hashtable.c
 	gcc ext/hashtable.c -c -o bin/hashtable.o
 
@@ -121,6 +125,9 @@ bin/block_test: bin/block.o src/block_test.c
 
 bin/generate: bin/block.o src/generate.c
 	gcc -lm bin/block.o src/generate.c -o bin/generate
+
+bin/clip: bin/block.o src/clip.c bin/gpc.o
+	gcc -lm bin/block.o bin/gpc.o src/clip.c -o bin/clip
 
 bin/join_geographic: bin/block.o src/join_geographic.c
 	gcc -lm bin/block.o src/join_geographic.c -o bin/join_geographic
