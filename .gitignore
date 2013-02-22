@@ -15,6 +15,6 @@ images/*
 *.js
 *.pdf
 block/bin/*
-CGAL*
+ext/CGAL*
 temp*
 layer*
