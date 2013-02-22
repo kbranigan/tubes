@@ -4,10 +4,10 @@
 int main(int argc, char ** argv)
 {
 	static char filename[1000] = "";
-	static char name_column_name[100] = "";
+	static char name_column_name[100] = "NAME";
+	static char variable_name[100] = "blocks";
 	
-	static int output_header = 1;
-	static int output_quotes = 1;
+	static int as_simple_shapes = 0;
 	
 	int c;
 	while (1)
@@ -15,11 +15,13 @@ int main(int argc, char ** argv)
 		static struct option long_options[] = {
 			{"filename", required_argument, 0, 'f'},
 			{"name", required_argument, 0, 'n'},
+			{"variable_name", required_argument, 0, 'v'},
+			{"shapes", no_argument, &as_simple_shapes, 's'},
 			{0, 0, 0, 0}
 		};
 		
 		int option_index = 0;
-		c = getopt_long(argc, argv, "f:n:", long_options, &option_index);
+		c = getopt_long(argc, argv, "f:n:v:", long_options, &option_index);
 		if (c == -1) break;
 		
 		switch (c)
@@ -27,6 +29,7 @@ int main(int argc, char ** argv)
 			case 0: break;
 			case 'f': strncpy(filename, optarg, sizeof(filename)); break;
 			case 'n': strncpy(name_column_name, optarg, sizeof(name_column_name)); break;
+			case 'v': strncpy(variable_name, optarg, sizeof(variable_name)); break;
 			default: abort();
 		}
 	}
@@ -42,12 +45,14 @@ int main(int argc, char ** argv)
 		return -1;
 	}
 	
-	fprintf(fp, "var blocks = {\n");
+	fprintf(fp, "var %s = {\n", variable_name);
 	fprintf(fp, "  \"blocks\": [\n");
 	
 	struct Block * block = NULL;
 	while ((block = read_block(stdin)))
 	{
+		int name_column_id = get_column_id_by_name(block, name_column_name);
+		
 		fprintf(fp, "    {\n");
 		
 		fprintf(fp, "      \"attributes\": [");
@@ -73,19 +78,22 @@ int main(int argc, char ** argv)
 		}
 		fprintf(fp, "\n      ],\n");
 		
-		int as_simple_shapes = 1; // kbfu
 		if (as_simple_shapes) {
 			fprintf(fp, "      \"shapes\": [");
 			int shape_start_id = 0, shape_end_id;
 			while ((shape_end_id = get_next_shape_start(block, shape_start_id))) {
 				//int shape_row_id = get_cell_as_int32(block, shape_start_id, shape_row_id_column_id);
-				fprintf(fp, "%s\n        [", (shape_start_id==0) ? "" : ",");
+				fprintf(fp, "%s\n        {", (shape_start_id==0) ? "" : ",");
+				if (name_column_id != -1) {
+					fprintf(fp, "\n          \"name\":\"%s\",", (char*)get_cell(block, shape_start_id, name_column_id));
+				}
+				fprintf(fp, "\n          \"parts\":[");
 				
 				// foreach part of shape
 				int part_start_id = shape_start_id, part_end_id;
 				while ((part_end_id = get_next_part_start(block, part_start_id))) {
 					//int shape_part_id = get_cell_as_int32(block, shape_start_id, shape_row_id_column_id);
-					fprintf(fp, "%s[", (part_start_id==shape_start_id) ? "" : ",");
+					fprintf(fp, "%s\n            [", (part_start_id==shape_start_id) ? "" : ",");
 					
 					int i;
 					for (i = part_start_id ; i < part_end_id ; i++) {
@@ -98,8 +106,9 @@ int main(int argc, char ** argv)
 					}
 					part_start_id = part_end_id;
 				}
+				fprintf(fp, "\n          ]");
 				
-				fprintf(fp, "]");
+				fprintf(fp, "\n        }");
 				if (shape_end_id == block->num_rows) {
 					break; // last shape
 				}
