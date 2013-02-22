@@ -61,6 +61,9 @@ int main(int argc, char ** argv)
 		//exit(0);
 	}
   
+	int * ivalues = NULL;
+	int num_ivalues = 0;
+	
   int i,j;
   struct Block * block = NULL;
   while ((block = read_block(stdin)))
@@ -81,9 +84,11 @@ int main(int argc, char ** argv)
     struct Block * newblock = new_block();
     newblock = copy_all_attributes(newblock, block);
     
-		int * ivalues = NULL;
-		int num_ivalues = 0;
 		if (column->type == TYPE_INT) {
+			if (ivalues != NULL) {
+				free(ivalues);
+				num_ivalues = 0;
+			}
 			char * ptr = strtok(value, ",");
 			while (ptr != NULL) {
 				num_ivalues++;
