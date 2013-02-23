@@ -52,27 +52,58 @@ int main(int argc, char ** argv) {
 		
 		if (prev_block != NULL) {
 			
-			int i, j;
-			for (i = 0 ; i < block->num_rows ; i++) {
+			int i, j, k;
+			for (i = 0 ; i < block->num_rows-1 ; i++) {
 				double x1 = get_x(block, i), y1 = get_y(block, i);
-				for (j = 0 ; j < prev_block->num_rows ; j++) {
+				for (j = 0 ; j < prev_block->num_rows-1 ; j++) {
 					double px1 = get_x(prev_block, j), py1 = get_y(prev_block, j);
 					if ((fabs(x1-px1) < 0.000001 && fabs(y1-py1) < 0.000001)) {
 						
-						double nx[2] = { get_x(block, (i > 0) ? (i-1) : block->num_rows-1), get_x(block, (i < block->num_rows-2 ? (i+1) : 0)) };
-						double ny[2] = { get_y(block, (i > 0) ? (i-1) : block->num_rows-1), get_y(block, (i < block->num_rows-2 ? (i+1) : 0)) };
+						double x2 = get_x(block, i+1), y2 = get_y(block, i+1);
 						
-						double npx[2] = { get_x(prev_block, (j > 0) ? (j-1) : prev_block->num_rows-1), get_x(prev_block, (j < prev_block->num_rows-2 ? (j+1) : 0)) };
-						double npy[2] = { get_y(prev_block, (j > 0) ? (j-1) : prev_block->num_rows-1), get_y(prev_block, (j < prev_block->num_rows-2 ? (j+1) : 0)) };
+						if (j < prev_block->num_rows-2) {
+							double px2 = get_x(prev_block, j+1), py2 = get_y(prev_block, j+1);
+							if (fabs(x2-px2) < 0.000001 && fabs(y2-py2) < 0.000001) {
+								fprintf(stderr, "a: %d-%d to %d-%d\n", i, i+1, j, j+1);
+							}
+						}
+						
+						if (j > 0) {
+							double px2 = get_x(prev_block, j-1), py2 = get_y(prev_block, j-1);
+							if (fabs(x2-px2) < 0.000001 && fabs(y2-py2) < 0.000001) {
+								int32_t shape_row_id = get_cell_as_int32(block, i, get_column_id_by_name(block, "shape_row_id"));
+								int32_t p_shape_row_id = get_cell_as_int32(prev_block, j, get_column_id_by_name(block, "shape_row_id"));
+								fprintf(stderr, "b: %d-%d (%d) to %d-%d (%d)\n", i, i+1, shape_row_id, j, j-1, p_shape_row_id);
+								k = i+1;
+								while (k != i) {
+									fprintf(stderr, "%d ", k);
+									k++;
+									if (k == block->num_rows) {
+										k = 0;
+									}
+								}
+							}
+						}
+						
+						/*
+						int32_t  ids[2] = { ((i > 0) ? (i-1) : block->num_rows-1),      (i < block->num_rows-2 ? (i+1) : 0) };
+						int32_t pids[2] = { ((j > 0) ? (j-1) : prev_block->num_rows-1), (j < prev_block->num_rows-2 ? (j+1) : 0) };
+						
+						double  nx[2] = { get_x(block, ids[0]), get_x(block, ids[1]) };
+						double  ny[2] = { get_y(block, ids[0]), get_y(block, ids[1]) };
+						
+						double npx[2] = { get_x(prev_block, pids[0]), get_x(prev_block, pids[1]) };
+						double npy[2] = { get_y(prev_block, pids[0]), get_y(prev_block, pids[1]) };
 						
 						//double x2 = get_x(block, i+1), y2 = get_y(block, i+1);
 						//double px2 = get_x(prev_block, j+1), y2 = get_y(prev_block, j+1);
 						
 						if (fabs(nx[0]-npx[0]) < 0.000001 && fabs(ny[0]-npy[0]) < 0.000001) {
-							fprintf(stderr, "%d-%d to %d-%d\n", i, ((i > 0) ? (i-1) : block->num_rows-1), j, (j > 0) ? (j-1) : prev_block->num_rows-1);
+							fprintf(stderr, "%d-%d to %d-%d\n", i, ids[0], j, pids[0]);
 						} else if (fabs(nx[1]-npx[0]) < 0.000001 && fabs(ny[1]-npy[0]) < 0.000001) { // only match 2 of 4 combination, otherwise this'll trigger twice
-							fprintf(stderr, "%d-%d to %d-%d\n", i, (i < block->num_rows-2 ? (i+1) : 0), j, (j > 0) ? (j-1) : prev_block->num_rows-1);
+							fprintf(stderr, "%d-%d to %d-%d\n", i, ids[1], j, pids[0]);
 						}
+						*/
 					}
 				}
 			}
