@@ -67,7 +67,7 @@ int main(int argc, char ** argv) {
 	
 	//static char filename[1000] = "";
 	//static int output_header = 1;
-	static double min_distance = 0.00001;
+	static double min_distance = 0.0001;
 	static int debug = 0;
 	
 	int c;

@@ -1,0 +1,172 @@
+<html>
+<head>
+  <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+  <meta charset="utf-8">
+  <title>Google Maps JavaScript API v3 Example: Polygon Simple</title>
+  <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
+  <script src="parks.js"></script>
+  <script src="toronto.js"></script>
+  <script>
+      
+/*
+http://github.com/kbranigan/tubes
+
+
+./bin/shapefile -f data/toronto_parks_wgs84_dec2011/upark_WGS84.dbf | \
+./bin/filter --column=shape_row_id --value="2068,2033,1997,1543,690,1766,1805,1726,1596,1598,1635,1480,1268,964,1639,760,562,439,251,433,625,183,259,966,1567,1431,1153,920,1421,1970,1342,933,771,813,286,175,144,290,1064,1436,1914,1818,1567,800,975,822,608,1281,1554,1822,1639,708,1145,1856,1959,1034,706" | \
+./bin/simplify_shapes --distance=0.0001 | \
+./bin/write_js --shapes --filename=parks/parks.js --variable_name=parks
+
+./bin/shapefile -f torontoBoundary_wgs84/citygcs_regional_mun_wgs84.dbf | \
+./bin/filter_by_distance | \
+./bin/simplify_shapes --distance=0.0001 | \
+./bin/write_js --filename=parks/toronto.js --variable_name=toronto --shapes
+
+*/
+      
+      var completed_count = 0;
+      var completed_max = 0;
+      
+      function update_completed_header() {
+        document.getElementById('completed_header').innerHTML = "Completed: " + completed_count + "/" + completed_max;
+      }
+      
+      function ucwords(str) {
+        return (str + '').replace(/^([a-z\u00E0-\u00FC])|\s+([a-z\u00E0-\u00FC])/g, function ($1) {
+          return $1.toUpperCase();
+        });
+      }
+      
+      function initialize() {
+        var min_x = parks['blocks'][0]['attributes'][1][1];
+        var max_x = parks['blocks'][0]['attributes'][2][1];
+        var min_y = parks['blocks'][0]['attributes'][3][1];
+        var max_y = parks['blocks'][0]['attributes'][4][1];
+        
+        var myLatLng = new google.maps.LatLng((min_y+max_y)/2.0, (min_x+max_x)/2.0);
+        var mapOptions = {
+          zoom: 12,
+          center: myLatLng,
+          mapTypeId: google.maps.MapTypeId.TERRAIN
+        };
+        
+        var map = new google.maps.Map(document.getElementById('map_canvas'), mapOptions);
+        
+        completed_count = 0;
+        completed_max = parks['blocks'][0]['shapes'].length;
+        
+        update_completed_header();
+        
+        /*
+        var points = [];
+        points.push(new google.maps.LatLng(min_y, min_x));
+        points.push(new google.maps.LatLng(min_y, max_x));
+        points.push(new google.maps.LatLng(max_y, max_x));
+        points.push(new google.maps.LatLng(max_y, min_x));
+        var p = new google.maps.Polygon({paths: points, strokeColor: '#FF0000', strokeOpacity: 0.8 });
+        p.setMap(map);
+        */
+        
+        var points = [];
+        for (var i = 0 ; i < toronto['blocks'][0]['shapes'][0]['parts'][0].length ; i++) {
+          var p = toronto['blocks'][0]['shapes'][0]['parts'][0][i];
+          points.push(new google.maps.LatLng(p[1], p[0]));
+        }
+        var p = new google.maps.Polygon({ clickable:false, paths: points, strokeColor: '#0000FF', strokeOpacity: 1.0, strokeWidth: 2, fillOpacity: 0.0 });
+        p.setMap(map);
+        
+        for (var shape_id = 0 ; shape_id < parks['blocks'][0]['shapes'].length ; shape_id++) {
+          for (var part_id = 0 ; part_id < parks['blocks'][0]['shapes'][shape_id]['parts'].length ; part_id++) {
+            
+            var rand_x = ((max_x-min_x)/4.0*Math.random() + min_x);
+            var rand_y = ((max_y-min_y)/4.0*Math.random() + min_y);
+            
+            var bbox = [ 180.0, 180.0, -180.0, -180.0 ];
+            for (var i = 0 ; i < parks['blocks'][0]['shapes'][shape_id]['parts'][part_id].length ; i++) {
+              var p = parks['blocks'][0]['shapes'][shape_id]['parts'][part_id][i];
+              if (p[0] < bbox[0]) bbox[0] = p[0];
+              if (p[1] < bbox[1]) bbox[1] = p[1];
+              if (p[0] > bbox[2]) bbox[2] = p[0];
+              if (p[1] > bbox[3]) bbox[3] = p[1];
+            }
+            
+            /*
+            var points = [];
+            points.push(new google.maps.LatLng(bbox[1],bbox[0]));
+            points.push(new google.maps.LatLng(bbox[1],bbox[2]));
+            points.push(new google.maps.LatLng(bbox[3],bbox[2]));
+            points.push(new google.maps.LatLng(bbox[3],bbox[0]));
+            var p = new google.maps.Polygon({paths: points, strokeColor: '#FF0000', strokeOpacity: 0.8 });
+            p.setMap(map);
+            */
+            
+            var points = [];
+            for (var i = 0 ; i < parks['blocks'][0]['shapes'][shape_id]['parts'][part_id].length ; i++) {
+              var p = parks['blocks'][0]['shapes'][shape_id]['parts'][part_id][i];
+              points.push(new google.maps.LatLng(p[1]-bbox[1]+(max_y-min_y)/3.0+rand_y, p[0]-bbox[0]+(max_x-min_x)/3.0+rand_x));
+              //points.push(new google.maps.LatLng(p[1], p[0]));
+            }
+            
+            document.getElementById('completed_list').innerHTML += 
+              "<div id=\"shape_"+shape_id+"\">" + ucwords(parks['blocks'][0]['shapes'][shape_id]['name'].toLowerCase()) + "</div>";
+            
+            //alert(points);
+            var park = new google.maps.Polygon({
+              paths: points,
+              strokeColor: '#FF0000', strokeOpacity: 0.8, strokeWeight: 2,
+              fillColor: '#FF0000', fillOpacity: 0.35, draggable: true,
+              title: parks['blocks'][0]['shapes'][shape_id]['name']
+            });
+            park.bbox = bbox;
+            park.shape_id = shape_id;
+            
+            google.maps.event.addListener(park, 'click', function() {
+              //this.setOptions({fillColor:'#00FF00',strokeColor:'#00FF00',strokeOpacity:0.0,fillOpacity:0.25});
+              //document.getElementById('completed_list').innerHTML += this.title + "<br />";
+            });
+            google.maps.event.addListener(park, 'dragend', function() {
+              //this.setOptions({fillColor:'#00FF00',strokeColor:'#00FF00',strokeOpacity:0.0,fillOpacity:0.25});
+              //document.getElementById('completed_list').innerHTML += this.title + "<br />";
+              var bbox = [ 180.0, 180.0, -180.0, -180.0 ];
+              var path = this.getPath().getArray();
+              for (var i = 0 ; i < path.length ; i++) {
+                if (path[i].lng() < bbox[0]) { bbox[0] = path[i].lng(); }
+                if (path[i].lat() < bbox[1]) { bbox[1] = path[i].lat(); }
+                if (path[i].lng() > bbox[2]) { bbox[2] = path[i].lng(); }
+                if (path[i].lat() > bbox[3]) { bbox[3] = path[i].lat(); }
+              }
+              
+              if (Math.abs(bbox[0] - this.bbox[0]) < Math.abs((this.bbox[0]-this.bbox[2])*0.06) &&
+                  Math.abs(bbox[1] - this.bbox[1]) < Math.abs((this.bbox[1]-this.bbox[3])*0.06)) {
+                this.setOptions({draggable:false, fillColor:'#00FF00', strokeColor:'#00FF00'});
+                //document.getElementById('completed_list').innerHTML += this.title + "<br />";
+                document.getElementById('shape_'+this.shape_id).style.fontWeight = 'bold';
+                document.getElementById('shape_'+this.shape_id).style.color = 'black';
+                completed_count++;
+                update_completed_header();
+              }
+            });
+            park.setMap(map);
+            //break;
+          }
+          //break;
+          //if (shape_id > 1000) break;
+        }
+      }
+    </script>
+    
+    <style type='text/css'>
+      html, body { height: 100%; margin: 0; padding: 0; }
+      #map_canvas { height: 100%; width:75%; }
+      #completed { height: 100%; width:25%; top:0px; right:0px; position:absolute }
+      #completed_header, #completed_list { margin:10px ; font: 11px Arial; color: #666; }
+    </style>
+  </head>
+  <body onload="initialize()">
+    <div id="map_canvas"></div>
+    <div id="completed">
+      <div id="completed_header">Completed: 0/0</div>
+      <div id="completed_list"></div>
+    </div>
+  </body>
+</html>
