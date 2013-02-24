@@ -984,6 +984,30 @@ struct Block * add_row_with_data(struct Block * block, int num_columns, ...)
   return block;
 }
 
+struct Block * insert_row_before(struct Block * block, uint32_t row_id) {
+	if (block == NULL) { fprintf(stderr, "%s called on a NULL block\n", __func__); return NULL; }
+	if (row_id < 0 || row_id >= block->num_rows) { fprintf(stderr, "%s called on block with invalid row_id (%d)\n", __func__, row_id); return block; }
+	
+	block = add_row(block);
+	memmove(get_row(block, row_id+1), get_row(block, row_id), block->row_bsize * (block->num_rows - row_id));
+	
+	fprintf(stderr, " NOT TESTED\n");
+	
+	return block;
+}
+
+struct Block * insert_row_after(struct Block * block, uint32_t row_id) {
+	if (block == NULL) { fprintf(stderr, "%s called on a NULL block\n", __func__); return NULL; }
+	if (row_id < 0 || row_id >= block->num_rows) { fprintf(stderr, "%s called on block with invalid row_id (%d)\n", __func__, row_id); return block; }
+	
+	block = add_row(block);
+	memmove(get_row(block, row_id+2), get_row(block, row_id+1), block->row_bsize * (block->num_rows - row_id - 1));
+	
+	fprintf(stderr, " NOT TESTED\n");
+	
+	return block;
+}
+
 struct Block * remove_row(struct Block * block, uint32_t row_id) {
 	if (block == NULL) { fprintf(stderr, "%s called on a NULL block\n", __func__); return NULL; }
 	if (row_id < 0 || row_id >= block->num_rows) { fprintf(stderr, "%s called on block with invalid row_id (%d)\n", __func__, row_id); return block; }
@@ -994,6 +1018,34 @@ struct Block * remove_row(struct Block * block, uint32_t row_id) {
 	block = set_num_rows(block, block->num_rows-1);
 	
 	return block;
+}
+
+struct Block * new_block_from_row_bitmask(struct Block * block, uint32_t * row_bitmask) {
+	if (block == NULL) { fprintf(stderr, "%s called on a NULL block\n", __func__); return NULL; }
+	if (row_bitmask == NULL) { fprintf(stderr, "%s called with a NULL row_bitmask\n", __func__); return NULL; }
+	
+	struct Block * temp = new_block();
+	temp = copy_all_attributes(temp, block); 
+	temp = copy_all_columns(temp, block); 
+	
+	int i, j = 0;
+	for (i = 0 ; i < block->num_rows ; i++) {
+		if (row_bitmask[i] == 1) {
+			j++;
+		}
+	}
+	
+	temp = set_num_rows(temp, j);
+	
+	j = 0;
+	for (i = 0 ; i < block->num_rows ; i++) {
+		if (row_bitmask[i] == 1) {
+			memcpy(get_row(temp, j), get_row(block, i), block->row_bsize);
+			j++;
+		}
+	}
+	
+	return temp;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
