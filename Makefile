@@ -33,6 +33,7 @@ all: mkbin \
 	bin/clip \
 	bin/tesselate \
 	bin/coordinate_convert \
+	bin/simplify_shapes \
 	bin/bounds
 
 extras: mkbin \
@@ -128,6 +129,9 @@ bin/generate: bin/block.o src/generate.c
 
 bin/clip: bin/block.o src/clip.c bin/gpc.o
 	gcc -lm bin/block.o bin/gpc.o src/clip.c -o bin/clip
+
+bin/simplify_shapes: bin/block.o src/simplify_shapes.c
+	gcc -lm bin/block.o src/simplify_shapes.c -o bin/simplify_shapes
 
 bin/join_geographic: bin/block.o src/join_geographic.c
 	gcc -lm bin/block.o src/join_geographic.c -o bin/join_geographic
