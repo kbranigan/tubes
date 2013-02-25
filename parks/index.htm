@@ -6,6 +6,17 @@
   <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
   <script src="parks.js"></script>
   <script src="toronto.js"></script>
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-351485-5']);
+    _gaq.push(['_trackPageview']);
+    
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
   <script>
       
 /*
@@ -13,7 +24,7 @@ http://github.com/kbranigan/tubes
 
 
 ./bin/shapefile -f data/toronto_parks_wgs84_dec2011/upark_WGS84.dbf | \
-./bin/filter --column=shape_row_id --value="2068,2033,1997,1543,690,1766,1805,1726,1596,1598,1635,1480,1268,964,1639,760,562,439,251,433,625,183,259,966,1567,1431,1153,920,1421,1970,1342,933,771,813,286,175,144,290,1064,1436,1914,1818,1567,800,975,822,608,1281,1554,1822,1639,708,1145,1856,1959,1034,706" | \
+./bin/filter --column=shape_row_id --value="2068,2033,1997,1543,690,1766,1805,1726,1596,1598,1635,1480,1268,964,1639,760,562,439,251,433,625,183,259,966,1567,1431,1153,920,1421,1970,1342,933,771,813,286,175,144,290,1064,1436,1914,1818,1567,800,975,822,608,1281,1554,1822,1639,708,1145,1856,1959,1034" | \
 ./bin/simplify_shapes --distance=0.0001 | \
 ./bin/write_js --shapes --filename=parks/parks.js --variable_name=parks
 
@@ -24,11 +35,18 @@ http://github.com/kbranigan/tubes
 
 */
       
+      var start_time = new Date();
+      
       var completed_count = 0;
       var completed_max = 0;
+      var timer;
       
       function update_completed_header() {
         document.getElementById('completed_header').innerHTML = "Completed: " + completed_count + "/" + completed_max;
+        if (completed_count == completed_max) {
+          document.getElementById('completed_header').innerHTML += " DONE!!!"
+          clearInterval(timer);
+        }
       }
       
       function ucwords(str) {
@@ -37,7 +55,22 @@ http://github.com/kbranigan/tubes
         });
       }
       
+      function updateTime() {
+        var d = new Date();
+        var sec = Math.round((d.getTime() - start_time.getTime()) / 1000);
+        var hr = 0; while (sec > 3600) { sec -= 3600; hr++; }
+        var min = 0; while (sec > 60) { sec -= 60; min++; }
+        if (min < 10) min = '0' + min;
+        if (sec < 10) sec = '0' + sec;
+        var t = min + ':' + sec;
+        if (hr > 0) t = hr + ':' + t;
+        document.getElementById('display_time').innerHTML = t;
+      }
+      
       function initialize() {
+        
+        timer = setInterval(updateTime, 1000);
+        
         var min_x = parks['blocks'][0]['attributes'][1][1];
         var max_x = parks['blocks'][0]['attributes'][2][1];
         var min_y = parks['blocks'][0]['attributes'][3][1];
@@ -104,13 +137,11 @@ http://github.com/kbranigan/tubes
             for (var i = 0 ; i < parks['blocks'][0]['shapes'][shape_id]['parts'][part_id].length ; i++) {
               var p = parks['blocks'][0]['shapes'][shape_id]['parts'][part_id][i];
               points.push(new google.maps.LatLng(p[1]-bbox[1]+(max_y-min_y)/3.0+rand_y, p[0]-bbox[0]+(max_x-min_x)/3.0+rand_x));
-              //points.push(new google.maps.LatLng(p[1], p[0]));
             }
             
             document.getElementById('completed_list').innerHTML += 
               "<div id=\"shape_"+shape_id+"\">" + ucwords(parks['blocks'][0]['shapes'][shape_id]['name'].toLowerCase()) + "</div>";
             
-            //alert(points);
             var park = new google.maps.Polygon({
               paths: points,
               strokeColor: '#FF0000', strokeOpacity: 0.8, strokeWeight: 2,
@@ -119,6 +150,7 @@ http://github.com/kbranigan/tubes
             });
             park.bbox = bbox;
             park.shape_id = shape_id;
+            park.part_id = part_id;
             
             google.maps.event.addListener(park, 'click', function() {
               //this.setOptions({fillColor:'#00FF00',strokeColor:'#00FF00',strokeOpacity:0.0,fillOpacity:0.25});
@@ -136,12 +168,20 @@ http://github.com/kbranigan/tubes
                 if (path[i].lat() > bbox[3]) { bbox[3] = path[i].lat(); }
               }
               
-              if (Math.abs(bbox[0] - this.bbox[0]) < Math.abs((this.bbox[0]-this.bbox[2])*0.06) &&
-                  Math.abs(bbox[1] - this.bbox[1]) < Math.abs((this.bbox[1]-this.bbox[3])*0.06)) {
-                this.setOptions({draggable:false, fillColor:'#00FF00', strokeColor:'#00FF00'});
+              if (Math.abs(bbox[0] - this.bbox[0]) < Math.abs((this.bbox[0]-this.bbox[2])*0.08) &&
+                  Math.abs(bbox[1] - this.bbox[1]) < Math.abs((this.bbox[1]-this.bbox[3])*0.08)) {
+                
+                var points = [];
+                for (var i = 0 ; i < parks['blocks'][0]['shapes'][this.shape_id]['parts'][this.part_id].length ; i++) {
+                  var p = parks['blocks'][0]['shapes'][this.shape_id]['parts'][this.part_id][i];
+                  points.push(new google.maps.LatLng(p[1], p[0]));
+                  //points.push(new google.maps.LatLng(p[1], p[0]));
+                }
+                this.setOptions({ path: points, draggable:false, fillColor:'#00FF00', strokeColor:'#00FF00'});
                 //document.getElementById('completed_list').innerHTML += this.title + "<br />";
                 document.getElementById('shape_'+this.shape_id).style.fontWeight = 'bold';
                 document.getElementById('shape_'+this.shape_id).style.color = 'black';
+                document.getElementById('shape_'+this.shape_id).innerHTML += "<span>"+document.getElementById('display_time').innerHTML+"</span>";
                 completed_count++;
                 update_completed_header();
               }
@@ -160,12 +200,16 @@ http://github.com/kbranigan/tubes
       #map_canvas { height: 100%; width:75%; }
       #completed { height: 100%; width:25%; top:0px; right:0px; position:absolute }
       #completed_header, #completed_list { margin:10px ; font: 11px Arial; color: #666; }
+      #completed_header { font-size: 15px ; color:#000 }
+      #display_time { margin:10px; position:absolute; right:0px; top:0px; }
+      #completed_list span { float: right; }
     </style>
   </head>
   <body onload="initialize()">
     <div id="map_canvas"></div>
     <div id="completed">
       <div id="completed_header">Completed: 0/0</div>
+      <div id="display_time"></div>
       <div id="completed_list"></div>
     </div>
   </body>
