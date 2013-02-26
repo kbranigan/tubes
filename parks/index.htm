@@ -42,9 +42,10 @@ http://github.com/kbranigan/tubes
       var timer;
       
       function update_completed_header() {
-        document.getElementById('completed_header').innerHTML = "Completed: " + completed_count + "/" + completed_max;
+        document.getElementById('completed_header').innerHTML = completed_count + "/" + completed_max;
         if (completed_count == completed_max) {
-          document.getElementById('completed_header').innerHTML += " DONE!!!"
+          //document.getElementById('completed_header').innerHTML += " DONE!!!"
+          document.getElementById('completed_header').innerHTML = "all " + completed_max;
           clearInterval(timer);
         }
       }
@@ -181,7 +182,7 @@ http://github.com/kbranigan/tubes
                 //document.getElementById('completed_list').innerHTML += this.title + "<br />";
                 document.getElementById('shape_'+this.shape_id).style.fontWeight = 'bold';
                 document.getElementById('shape_'+this.shape_id).style.color = 'black';
-                document.getElementById('shape_'+this.shape_id).innerHTML += "<span>"+document.getElementById('display_time').innerHTML+"</span>";
+                document.getElementById('shape_'+this.shape_id).innerHTML += "<span>#"+(completed_count+1)+" at "+document.getElementById('display_time').innerHTML+"</span>";
                 completed_count++;
                 update_completed_header();
               }
@@ -199,17 +200,21 @@ http://github.com/kbranigan/tubes
       html, body { height: 100%; margin: 0; padding: 0; }
       #map_canvas { height: 100%; width:75%; }
       #completed { height: 100%; width:25%; top:0px; right:0px; position:absolute }
-      #completed_header, #completed_list { margin:10px ; font: 11px Arial; color: #666; }
-      #completed_header { font-size: 15px ; color:#000 }
-      #display_time { margin:10px; position:absolute; right:0px; top:0px; }
-      #completed_list span { float: right; }
+      #display_time, #completed_header, #completed_list { margin:10px ; font: 11px Arial; color: #666; }
+      #display_time, #completed_header { font-size: 15px ; color:#000 }
+      #completed_list span, #float_right { float: right; text-align:right; }
+      #float_right { margin-top:10px }
+      #float_right, #float_right span { font: 14px Arial }
     </style>
   </head>
   <body onload="initialize()">
     <div id="map_canvas"></div>
     <div id="completed">
-      <div id="completed_header">Completed: 0/0</div>
-      <div id="display_time"></div>
+      <img src='branigan1.png' />
+      <div id="float_right">
+        Completed: <span id="completed_header">0/54</span><br />
+        Elapsed Time: <span id="display_time">00:00</span><br />
+      </div>
       <div id="completed_list"></div>
     </div>
   </body>
