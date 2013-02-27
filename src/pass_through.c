@@ -1,7 +1,31 @@
 
 #include "block.h"
 
+struct Block * pass_through(struct Block * block) {
+	return block;
+}
+
 int main(int argc, char ** argv) {
+	
+	if (stdout_is_piped()) // other wise you don't see the seg fault
+		setup_segfault_handling(argv);
+	
+	assert_stdin_is_piped();
+	assert_stdout_is_piped();
+	//assert_stdin_or_out_is_piped();
+	
+	static char filename[500] = "";
+	static char filename2[500] = "";
+	static int fart = 0;
+	
+	struct Params * params = NULL;
+	params = add_string_param(params, "filename", 'f', filename);
+	params = add_string_param(params, "filename2", 'g', filename2);
+	params = add_flag_param(params, "fart", 'h', &fart);
+	eval_params(params, argc, argv);
+	
+	foreach_block(stdin, stdout, 1, &pass_through, NULL, NULL);
+	
 	/*
 	if (stdout_is_piped()) // other wise you don't see the seg fault
 		setup_segfault_handling(argv);
@@ -34,11 +58,10 @@ int main(int argc, char ** argv) {
 			default: abort();
 		}
 	}
-	*/
 	
 	struct Block * block = NULL;
 	while ((block = read_block(stdin))) {
-		/*
+		
 		// foreach shape
 		int shape_start_id = 0, shape_end_id;
 		while ((shape_end_id = get_next_shape_start(block, shape_start_id))) {
@@ -60,9 +83,9 @@ int main(int argc, char ** argv) {
 			}
 			shape_start_id = shape_end_id;
 		}
-		*/
 		
 		write_block(stdout, block);
 		free_block(block);
 	}
+	*/
 }
