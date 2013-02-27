@@ -34,6 +34,7 @@ all: mkbin \
 	bin/tesselate \
 	bin/coordinate_convert \
 	bin/simplify_shapes \
+	bin/winding_direction \
 	bin/bounds
 
 extras: mkbin \
@@ -132,6 +133,9 @@ bin/clip: bin/block.o src/clip.c bin/gpc.o
 
 bin/simplify_shapes: bin/block.o src/simplify_shapes.c
 	gcc -lm bin/block.o src/simplify_shapes.c -o bin/simplify_shapes
+
+bin/winding_direction: bin/block.o src/winding_direction.c
+	gcc -lm bin/block.o src/winding_direction.c -o bin/winding_direction
 
 bin/join_geographic: bin/block.o src/join_geographic.c
 	gcc -lm bin/block.o src/join_geographic.c -o bin/join_geographic
