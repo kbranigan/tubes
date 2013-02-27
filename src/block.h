@@ -188,6 +188,11 @@ struct Block * new_block_from_row_bitmask(struct Block * block, uint32_t * row_b
 
 struct Block * remove_row(struct Block * block, uint32_t row_id);
 
+int foreach_block(FILE * fpin, FILE * fpout, int free_blocks,
+		struct Block * (*blockFuncPtr)(struct Block * block),
+		struct Block * (*shapeFuncPtr)(struct Block * block, uint32_t shape_start_id, uint32_t shape_end_id),
+		struct Block * (*partFuncPtr)(struct Block * block, uint32_t shape_start_id, uint32_t shape_end_id, uint32_t part_start_id, uint32_t part_end_id));
+
 uint32_t get_row_bsize_from_columns(struct Block * block);
 
 void * get_cell(struct Block * block, uint32_t row_id, uint32_t column_id);
@@ -227,6 +232,24 @@ void inspect_block(struct Block * block);
 const char * get_type_name(enum TYPE type, uint32_t bsize);
 
 struct Block * sort_block_using_int32_column(struct Block * block, int32_t column_id, char order);
+
+struct Param {
+	char name[30];
+	char name_char;
+	enum TYPE type;
+	void * dest;
+};
+
+struct Params {
+	struct Param * params;
+	int num_params;
+};
+
+struct Params * _add_param(struct Params * params, const char * name, char name_char, enum TYPE type, void * dest);
+struct Params * add_string_param(struct Params * params, const char * name, char name_char, char * dest);
+struct Params * add_float_param(struct Params * params, const char * name, char name_char, char * dest);
+struct Params * add_flag_param(struct Params * params, const char * name, char name_char, int * dest);
+int eval_params(struct Params * params, int argc, char ** argv);
 
 #include "functions/functions.h"
 

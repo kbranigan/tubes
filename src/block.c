@@ -83,6 +83,33 @@ struct Block * new_block()
   return block;
 }
 
+struct Block * new_block_from_row_bitmask(struct Block * block, uint32_t * row_bitmask) {
+	if (block == NULL) { fprintf(stderr, "%s called on a NULL block\n", __func__); return NULL; }
+	if (row_bitmask == NULL) { fprintf(stderr, "%s called with a NULL row_bitmask\n", __func__); return NULL; }
+	
+	struct Block * temp = new_block();
+	temp = copy_all_attributes(temp, block); 
+	temp = copy_all_columns(temp, block); 
+	
+	int i, j = 0;
+	for (i = 0 ; i < block->num_rows ; i++) {
+		if (row_bitmask[i] == 1) {
+			j++;
+		}
+	}
+	
+	temp = set_num_rows(temp, j);
+	
+	j = 0;
+	for (i = 0 ; i < block->num_rows ; i++) {
+		if (row_bitmask[i] == 1) {
+			memcpy(get_row(temp, j), get_row(block, i), block->row_bsize);
+			j++;
+		}
+	}
+	return temp;
+}
+
 struct Block * realloc_block(struct Block * block)
 {
   return (struct Block *)realloc(block, sizeof(struct Block) + block->attributes_bsize + block->columns_bsize + block->data_bsize);
@@ -1020,39 +1047,57 @@ struct Block * remove_row(struct Block * block, uint32_t row_id) {
 	return block;
 }
 
-struct Block * new_block_from_row_bitmask(struct Block * block, uint32_t * row_bitmask) {
-	if (block == NULL) { fprintf(stderr, "%s called on a NULL block\n", __func__); return NULL; }
-	if (row_bitmask == NULL) { fprintf(stderr, "%s called with a NULL row_bitmask\n", __func__); return NULL; }
-	
-	struct Block * temp = new_block();
-	temp = copy_all_attributes(temp, block); 
-	temp = copy_all_columns(temp, block); 
-	
-	int i, j = 0;
-	for (i = 0 ; i < block->num_rows ; i++) {
-		if (row_bitmask[i] == 1) {
-			j++;
+int foreach_block(FILE * fpin, FILE * fpout, int free_blocks,
+		struct Block * (*blockFuncPtr)(struct Block * block),
+		struct Block * (*shapeFuncPtr)(struct Block * block, uint32_t shape_start_id, uint32_t shape_end_id),
+		struct Block * (*partFuncPtr)(struct Block * block, uint32_t shape_start_id, uint32_t shape_end_id, uint32_t part_start_id, uint32_t part_end_id)) {
+	struct Block * block = NULL;
+	while ((block = read_block(fpin))) {
+		if (blockFuncPtr != NULL) {
+			(*blockFuncPtr)(block);
+		}
+		
+		if (shapeFuncPtr != NULL || partFuncPtr != NULL) {
+			int shape_start_id = 0, shape_end_id;
+			while ((shape_end_id = get_next_shape_start(block, shape_start_id))) {
+				if (shapeFuncPtr != NULL) {
+					(*shapeFuncPtr)(block, shape_start_id, shape_end_id);
+				}
+				
+				int part_start_id = shape_start_id, part_end_id;
+				while ((part_end_id = get_next_part_start(block, part_start_id))) {
+					if (partFuncPtr != NULL) {
+						(*partFuncPtr)(block, shape_start_id, shape_end_id, part_start_id, part_end_id);
+					}
+					
+					if (part_end_id == shape_end_id) {
+						break; // last part of shape
+					}
+					part_start_id = part_end_id;
+				}
+				
+				if (shape_end_id == block->num_rows) {
+					break; // last shape
+				}
+				shape_start_id = shape_end_id;
+			}
+		}
+		
+		if (fpout != NULL) {
+			write_block(fpout, block);
+		}
+		
+		if (free_blocks) {
+			free_block(block);
 		}
 	}
-	
-	temp = set_num_rows(temp, j);
-	
-	j = 0;
-	for (i = 0 ; i < block->num_rows ; i++) {
-		if (row_bitmask[i] == 1) {
-			memcpy(get_row(temp, j), get_row(block, i), block->row_bsize);
-			j++;
-		}
-	}
-	
-	return temp;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct Block * sort_block_using_int32_column(struct Block * block, int32_t column_id, char order)
 {
-  if (block == NULL) { fprintf(stderr, "add_row_with_data called on a NULL block\n"); return; }
+	if (block == NULL) { fprintf(stderr, "%s called on a NULL block\n", __func__); return; }
   if (block->num_rows <= 1) return;
   
   int32_t * indexes = malloc(sizeof(int32_t)*block->num_rows);
@@ -1218,3 +1263,112 @@ const char * get_type_name(enum TYPE type, uint32_t bsize)
     return get_type_name_temp;
   }
 }
+
+struct Params * _add_param(struct Params * params, const char * name, char name_char, enum TYPE type, void * dest) {
+	if (params == NULL) {
+		params = (struct Params *)malloc(sizeof(struct Params));
+		memset(params, 0, sizeof(struct Params));
+	}
+	params->params = (struct Param *)realloc(params->params, sizeof(struct Param)*(params->num_params+1));
+	params->num_params++;
+	memset(&params->params[params->num_params-1], 0, sizeof(struct Param));
+	
+	if (name != NULL) {
+		strncpy(params->params[params->num_params-1].name, name, 30);
+	}
+	
+	params->params[params->num_params-1].name_char = name_char;
+	params->params[params->num_params-1].type = type;
+	params->params[params->num_params-1].dest = dest;
+	return params;
+}
+
+struct Params * add_string_param(struct Params * params, const char * name, char name_char, char * dest) {
+	return _add_param(params, name, name_char, TYPE_CHAR, (void*)dest);
+}
+
+struct Params * add_float_param(struct Params * params, const char * name, char name_char, char * dest) {
+	return _add_param(params, name, name_char, TYPE_FLOAT, (void*)dest);
+}
+
+struct Params * add_flag_param(struct Params * params, const char * name, char name_char, int * dest) {
+	return _add_param(params, name, name_char, 0, (void*)dest);
+}
+
+int eval_params(struct Params * params, int argc, char ** argv) {
+	if (params == NULL) { fprintf(stderr, "%s called with NULL params\n", __func__); return; }
+	
+	struct option * long_options = (struct option*)malloc(sizeof(struct option)*(params->num_params+1));
+	memset(long_options, 0, sizeof(struct option)*(params->num_params+1));
+	
+	char char_list[100] = "";
+	
+	//fprintf(stderr, "%d\n", params->num_params);
+	int i;
+	for (i = 0 ; i < params->num_params ; i++) {
+		char temp[3] = { 0, 0, 0 };
+		//fprintf(stderr, "%d: %d\n", i, params->params[i].name_char);
+		temp[0] = params->params[i].name_char;
+		if (params->params[i].type) {
+			temp[1] = ':';
+		}
+		strcat(char_list, temp);
+		
+		struct option * curr_option = &long_options[i];
+		curr_option->name = params->params[i].name;
+		if (params->params[i].type == 0) { // flag
+			curr_option->has_arg = 0;
+			curr_option->flag = params->params[i].dest;
+			curr_option->val = 1;
+		} else {
+			curr_option->has_arg = 1;
+			curr_option->flag = 0;
+			curr_option->val = params->params[i].name_char;
+		}
+	}
+	
+	int c;
+	while (1) {
+		
+		int option_index = 0;
+		c = getopt_long(argc, argv, char_list, long_options, &option_index);
+		if (c == -1) break;
+		if (c == 0) continue;
+		
+		for (i = 0 ; i < params->num_params ; i++) {
+			if (c == params->params[i].name_char) {
+				if (params->params[i].type == TYPE_CHAR) {
+					if (optarg == NULL) {
+						fprintf(stderr, "argument for char param '%s' is required\n", params->params[i].name);
+						break;
+					} else {
+						strcpy(params->params[i].dest, optarg);
+					}
+				} else if (params->params[i].type == TYPE_INT) {
+					if (optarg == NULL) {
+						fprintf(stderr, "argument for int param '%s' is required\n", params->params[i].name);
+						break;
+					} else {
+						int temp = atoi(optarg);
+						(*(int*)params->params[i].dest) = temp;
+					}
+				} else if (params->params[i].type == TYPE_FLOAT) {
+					if (optarg == NULL) {
+						fprintf(stderr, "argument for float param '%s' is required\n", params->params[i].name);
+						break;
+					} else {
+						float temp = atof(optarg);
+						(*(float*)params->params[i].dest) = temp;
+					}
+				} else {
+					fprintf(stderr, "error\n");
+				}
+				break;
+			}
+		}
+		if (i == params->num_params) abort();
+	}
+	free(long_options);
+	free(params);
+}
+
