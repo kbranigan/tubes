@@ -22,7 +22,6 @@ all: mkbin \
 	bin/strcat \
 	bin/curl \
 	bin/upgrade_block \
-	bin/png \
 	bin/test \
 	bin/pass_through \
 	bin/join_geographic \
