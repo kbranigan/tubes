@@ -1054,20 +1054,23 @@ int foreach_block(FILE * fpin, FILE * fpout, int free_blocks,
 	struct Block * block = NULL;
 	while ((block = read_block(fpin))) {
 		if (blockFuncPtr != NULL) {
-			(*blockFuncPtr)(block);
+			struct Block * temp = (*blockFuncPtr)(block);
+			if (temp != NULL) block = temp;
 		}
 		
 		if (shapeFuncPtr != NULL || partFuncPtr != NULL) {
 			int shape_start_id = 0, shape_end_id;
 			while ((shape_end_id = get_next_shape_start(block, shape_start_id))) {
 				if (shapeFuncPtr != NULL) {
-					(*shapeFuncPtr)(block, shape_start_id, shape_end_id);
+					struct Block * temp = (*shapeFuncPtr)(block, shape_start_id, shape_end_id);
+					if (temp != NULL) block = temp;
 				}
 				
 				int part_start_id = shape_start_id, part_end_id;
 				while ((part_end_id = get_next_part_start(block, part_start_id))) {
 					if (partFuncPtr != NULL) {
-						(*partFuncPtr)(block, shape_start_id, shape_end_id, part_start_id, part_end_id);
+						struct Block * temp = (*partFuncPtr)(block, shape_start_id, shape_end_id, part_start_id, part_end_id);
+						if (temp != NULL) block = temp;
 					}
 					
 					if (part_end_id == shape_end_id) {
@@ -1264,7 +1267,7 @@ const char * get_type_name(enum TYPE type, uint32_t bsize)
   }
 }
 
-struct Params * _add_param(struct Params * params, const char * name, char name_char, enum TYPE type, void * dest) {
+struct Params * _add_param(struct Params * params, const char * name, char name_char, enum TYPE type, void * dest, int required) {
 	if (params == NULL) {
 		params = (struct Params *)malloc(sizeof(struct Params));
 		memset(params, 0, sizeof(struct Params));
@@ -1280,19 +1283,20 @@ struct Params * _add_param(struct Params * params, const char * name, char name_
 	params->params[params->num_params-1].name_char = name_char;
 	params->params[params->num_params-1].type = type;
 	params->params[params->num_params-1].dest = dest;
+	params->params[params->num_params-1].required = required;
 	return params;
 }
 
-struct Params * add_string_param(struct Params * params, const char * name, char name_char, char * dest) {
-	return _add_param(params, name, name_char, TYPE_CHAR, (void*)dest);
+struct Params * add_string_param(struct Params * params, const char * name, char name_char, char * dest, int required) {
+	return _add_param(params, name, name_char, TYPE_CHAR, (void*)dest, required);
 }
 
-struct Params * add_float_param(struct Params * params, const char * name, char name_char, char * dest) {
-	return _add_param(params, name, name_char, TYPE_FLOAT, (void*)dest);
+struct Params * add_float_param(struct Params * params, const char * name, char name_char, char * dest, int required) {
+	return _add_param(params, name, name_char, TYPE_FLOAT, (void*)dest, required);
 }
 
-struct Params * add_flag_param(struct Params * params, const char * name, char name_char, int * dest) {
-	return _add_param(params, name, name_char, 0, (void*)dest);
+struct Params * add_flag_param(struct Params * params, const char * name, char name_char, int * dest, int required) {
+	return _add_param(params, name, name_char, 0, (void*)dest, required);
 }
 
 int eval_params(struct Params * params, int argc, char ** argv) {
@@ -1339,10 +1343,11 @@ int eval_params(struct Params * params, int argc, char ** argv) {
 			if (c == params->params[i].name_char) {
 				if (params->params[i].type == TYPE_CHAR) {
 					if (optarg == NULL) {
-						fprintf(stderr, "argument for char param '%s' is required\n", params->params[i].name);
+						fprintf(stderr, "argument for string param '%s' is required\n", params->params[i].name);
 						break;
 					} else {
 						strcpy(params->params[i].dest, optarg);
+						params->params[i].found = 1;
 					}
 				} else if (params->params[i].type == TYPE_INT) {
 					if (optarg == NULL) {
@@ -1351,6 +1356,7 @@ int eval_params(struct Params * params, int argc, char ** argv) {
 					} else {
 						int temp = atoi(optarg);
 						(*(int*)params->params[i].dest) = temp;
+						params->params[i].found = 1;
 					}
 				} else if (params->params[i].type == TYPE_FLOAT) {
 					if (optarg == NULL) {
@@ -1359,6 +1365,7 @@ int eval_params(struct Params * params, int argc, char ** argv) {
 					} else {
 						float temp = atof(optarg);
 						(*(float*)params->params[i].dest) = temp;
+						params->params[i].found = 1;
 					}
 				} else {
 					fprintf(stderr, "error\n");
@@ -1366,8 +1373,19 @@ int eval_params(struct Params * params, int argc, char ** argv) {
 				break;
 			}
 		}
-		if (i == params->num_params) abort();
+		if (i == params->num_params) {
+			fprintf(stderr, "ERROR: superfluous param\n");
+			abort();
+		}
 	}
+	
+	for (i = 0 ; i < params->num_params ; i++) {
+		if (params->params[i].required && !params->params[i].found) {
+			fprintf(stderr, "%s: ERROR: param '%s' required. ABORTING\n", argv[0], params->params[i].name);
+			abort();
+		}
+	}
+	
 	free(long_options);
 	free(params);
 }

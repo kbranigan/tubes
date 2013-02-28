@@ -9,6 +9,7 @@ struct Block * pass_through_blocks(struct Block * block) {
 }
 
 struct Block * pass_through_parts(struct Block * block, uint32_t shape_start_id, uint32_t shape_end_id, uint32_t part_start_id, uint32_t part_end_id) {
+	return block;
 }
 
 int main(int argc, char ** argv) {
@@ -21,8 +22,8 @@ int main(int argc, char ** argv) {
 	//assert_stdin_or_out_is_piped();
 	
 	struct Params * params = NULL;
-	params = add_string_param(params, "filename", 'f', filename);
-	params = add_flag_param(params, "debug", 'd', &debug);
+	params = add_string_param(params, "filename", 'f', filename, 0);
+	params = add_flag_param(params, "debug", 'd', &debug, 0);
 	eval_params(params, argc, argv);
 	
 	if (debug) {

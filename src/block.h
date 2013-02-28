@@ -238,6 +238,8 @@ struct Param {
 	char name_char;
 	enum TYPE type;
 	void * dest;
+	int required;
+	int found;
 };
 
 struct Params {
@@ -245,10 +247,10 @@ struct Params {
 	int num_params;
 };
 
-struct Params * _add_param(struct Params * params, const char * name, char name_char, enum TYPE type, void * dest);
-struct Params * add_string_param(struct Params * params, const char * name, char name_char, char * dest);
-struct Params * add_float_param(struct Params * params, const char * name, char name_char, char * dest);
-struct Params * add_flag_param(struct Params * params, const char * name, char name_char, int * dest);
+struct Params * _add_param(struct Params * params, const char * name, char name_char, enum TYPE type, void * dest, int required);
+struct Params * add_string_param(struct Params * params, const char * name, char name_char, char * dest, int required);
+struct Params * add_float_param(struct Params * params, const char * name, char name_char, char * dest, int required);
+struct Params * add_flag_param(struct Params * params, const char * name, char name_char, int * dest, int required);
 int eval_params(struct Params * params, int argc, char ** argv);
 
 #include "functions/functions.h"
