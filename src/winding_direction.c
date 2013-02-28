@@ -1,17 +1,25 @@
 
 #include "block.h"
 
+struct Block * each_block(struct Block * block);
+int each_shape(struct Block * block, uint32_t shape_start_id, uint32_t shape_end_id);
+int each_part(struct Block * block, uint32_t part_start_id, uint32_t part_end_id);
+
 // http://www.gamedev.net/topic/564749-2d-polygon-winding-order/
 
 static char direction[100] = "";
 
-struct Block * block_level(struct Block * block) {
-	//block = add_string_attribute(block, "winding_direction", "that_way");
+struct Block * each_block(struct Block * block) {
+	foreach_shape(block, &each_shape);
 	return block;
 }
 
-struct Block * winding_direction(struct Block * block, uint32_t shape_start_id, uint32_t shape_end_id, uint32_t part_start_id, uint32_t part_end_id) {
-	
+int each_shape(struct Block * block, uint32_t shape_start_id, uint32_t shape_end_id) {
+	foreach_part(block, shape_start_id, shape_end_id, &each_part);
+	return 0;
+}
+
+int each_part(struct Block * block, uint32_t part_start_id, uint32_t part_end_id) {
 	double area = 0;
 	
 	int i;
@@ -32,8 +40,7 @@ struct Block * winding_direction(struct Block * block, uint32_t shape_start_id, 
 		}
 		free(temp);
 	}
-	
-	return block;
+	return 0;
 }
 
 int main(int argc, char ** argv) {
@@ -55,7 +62,7 @@ int main(int argc, char ** argv) {
 		abort();
 	}
 	
-	foreach_block(stdin, stdout, 1, &block_level, NULL, &winding_direction);
+	foreach_block(stdin, stdout, 1, &each_block);
 }
 
 
