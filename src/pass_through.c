@@ -1,15 +1,25 @@
 
 #include "block.h"
 
+struct Block * each_block(struct Block * block);
+int each_shape(struct Block * block, uint32_t shape_start_id, uint32_t shape_end_id);
+int each_part(struct Block * block, uint32_t part_start_id, uint32_t part_end_id);
+
 static char filename[500] = "";
 static int debug = 0;
 
-struct Block * pass_through_blocks(struct Block * block) {
+struct Block * each_block(struct Block * block) {
+	foreach_shape(block, &each_shape);
 	return block;
 }
 
-struct Block * pass_through_parts(struct Block * block, uint32_t shape_start_id, uint32_t shape_end_id, uint32_t part_start_id, uint32_t part_end_id) {
-	return block;
+int each_shape(struct Block * block, uint32_t shape_start_id, uint32_t shape_end_id) {
+	foreach_part(block, shape_start_id, shape_end_id, &each_part);
+	return 0;
+}
+
+int each_part(struct Block * block, uint32_t part_start_id, uint32_t part_end_id) {
+	return 0;
 }
 
 int main(int argc, char ** argv) {
@@ -30,8 +40,11 @@ int main(int argc, char ** argv) {
 		fprintf(stderr, "debug enabled\n");
 	}
 	
-	foreach_block(stdin, stdout, 1, &pass_through_blocks, NULL, &pass_through_parts);
+	add_command_in_foreach(argc, argv);
 	
+	foreach_block(stdin, stdout, 1, &each_block);
+}
+
 	/*
 	if (stdout_is_piped()) // other wise you don't see the seg fault
 		setup_segfault_handling(argv);
@@ -94,4 +107,3 @@ int main(int argc, char ** argv) {
 		free_block(block);
 	}
 	*/
-}
