@@ -1047,43 +1047,32 @@ struct Block * remove_row(struct Block * block, uint32_t row_id) {
 	return block;
 }
 
+
+int command_argc = 0;
+char ** command_argv = NULL;
+void add_command_in_foreach(int argc, char ** argv) {
+	command_argc = argc;
+	command_argv = argv;
+}
+
 int foreach_block(FILE * fpin, FILE * fpout, int free_blocks,
-		struct Block * (*blockFuncPtr)(struct Block * block),
-		struct Block * (*shapeFuncPtr)(struct Block * block, uint32_t shape_start_id, uint32_t shape_end_id),
-		struct Block * (*partFuncPtr)(struct Block * block, uint32_t shape_start_id, uint32_t shape_end_id, uint32_t part_start_id, uint32_t part_end_id)) {
+		struct Block * (*blockFuncPtr)(struct Block * block)) {
+	if (blockFuncPtr == NULL) return 0;
+	int count = 0;
 	struct Block * block = NULL;
 	while ((block = read_block(fpin))) {
-		if (blockFuncPtr != NULL) {
-			struct Block * temp = (*blockFuncPtr)(block);
-			if (temp != NULL) block = temp;
+		
+		if (command_argc != 0) {
+			block = add_command(block, command_argc, command_argv);
 		}
 		
-		if (shapeFuncPtr != NULL || partFuncPtr != NULL) {
-			int shape_start_id = 0, shape_end_id;
-			while ((shape_end_id = get_next_shape_start(block, shape_start_id))) {
-				if (shapeFuncPtr != NULL) {
-					struct Block * temp = (*shapeFuncPtr)(block, shape_start_id, shape_end_id);
-					if (temp != NULL) block = temp;
-				}
-				
-				int part_start_id = shape_start_id, part_end_id;
-				while ((part_end_id = get_next_part_start(block, part_start_id))) {
-					if (partFuncPtr != NULL) {
-						struct Block * temp = (*partFuncPtr)(block, shape_start_id, shape_end_id, part_start_id, part_end_id);
-						if (temp != NULL) block = temp;
-					}
-					
-					if (part_end_id == shape_end_id) {
-						break; // last part of shape
-					}
-					part_start_id = part_end_id;
-				}
-				
-				if (shape_end_id == block->num_rows) {
-					break; // last shape
-				}
-				shape_start_id = shape_end_id;
-			}
+		count++;
+		if (blockFuncPtr != NULL) {
+			block = (*blockFuncPtr)(block);
+		}
+		
+		if (block == NULL) {
+			continue;
 		}
 		
 		if (fpout != NULL) {
@@ -1093,6 +1082,41 @@ int foreach_block(FILE * fpin, FILE * fpout, int free_blocks,
 		if (free_blocks) {
 			free_block(block);
 		}
+	}
+	return count;
+}
+
+int foreach_shape(struct Block * block,
+		int (*shapeFuncPtr)(struct Block * block, uint32_t shape_start_id, uint32_t shape_end_id)) {
+	if (shapeFuncPtr == NULL) return 0;
+	if (block == NULL) { fprintf(stderr, "%s called on a NULL block\n", __func__); return; }
+	
+	int shape_start_id = 0, shape_end_id;
+	while ((shape_end_id = get_next_shape_start(block, shape_start_id))) {
+		int offset = (*shapeFuncPtr)(block, shape_start_id, shape_end_id);
+		shape_end_id += offset;
+		
+		if (shape_end_id == block->num_rows) {
+			break; // last shape
+		}
+		shape_start_id = shape_end_id;
+	}
+}
+
+int foreach_part(struct Block * block, uint32_t shape_start_id, uint32_t shape_end_id,
+		int (*partFuncPtr)(struct Block * block, uint32_t part_start_id, uint32_t part_end_id)) {
+	if (partFuncPtr == NULL) return 0;
+	if (block == NULL) { fprintf(stderr, "%s called on a NULL block\n", __func__); return; }
+	
+	int part_start_id = shape_start_id, part_end_id;
+	while ((part_end_id = get_next_part_start(block, part_start_id))) {
+		int offset = (*partFuncPtr)(block, part_start_id, part_end_id);
+		part_end_id += offset;
+		
+		if (part_end_id == shape_end_id) {
+			break; // last part of shape
+		}
+		part_start_id = part_end_id;
 	}
 }
 

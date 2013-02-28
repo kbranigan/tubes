@@ -189,9 +189,13 @@ struct Block * new_block_from_row_bitmask(struct Block * block, uint32_t * row_b
 struct Block * remove_row(struct Block * block, uint32_t row_id);
 
 int foreach_block(FILE * fpin, FILE * fpout, int free_blocks,
-		struct Block * (*blockFuncPtr)(struct Block * block),
-		struct Block * (*shapeFuncPtr)(struct Block * block, uint32_t shape_start_id, uint32_t shape_end_id),
-		struct Block * (*partFuncPtr)(struct Block * block, uint32_t shape_start_id, uint32_t shape_end_id, uint32_t part_start_id, uint32_t part_end_id));
+	struct Block * (*blockFuncPtr)(struct Block * block));
+
+int foreach_shape(struct Block * block,
+	int (*shapeFuncPtr)(struct Block * block, uint32_t shape_start_id, uint32_t shape_end_id));
+
+int foreach_part(struct Block * block, uint32_t shape_start_id, uint32_t shape_end_id,
+	int (*partFuncPtr)(struct Block * block, uint32_t part_start_id, uint32_t part_end_id));
 
 uint32_t get_row_bsize_from_columns(struct Block * block);
 
@@ -226,6 +230,7 @@ struct Block * append_block(struct Block * block, struct Block * src);
 void fprintf_cell(FILE * fp, struct Block * block, uint32_t row_id, uint32_t column_id);
 
 struct Block * add_command(struct Block * block, int argc, char ** argv);
+void add_command_in_foreach(int argc, char ** argv);
 
 void inspect_block(struct Block * block);
 
