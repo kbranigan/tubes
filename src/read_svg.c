@@ -347,20 +347,33 @@ struct Block * append_path_to_block(struct Node * node, char * path_string, stru
 
 struct Block * append_node_to_block(int depth, struct Node * node, struct Block * block) {
 	if (strcmp(node->tagName, "clipPath")==0) {
-		//return block;
+		return block;
 	}
 	
 	if (strcmp(node->tagName, "g")==0) {
-		if (get_node_attr_value(node, "clip-path") == NULL) {
-			//return block;
+		if (get_node_attr_value(node, "clip-path") != NULL) {
+			return block;
 		}
 	}
 	
-	if (strcmp(node->tagName, "path")==0) {
-		if (get_node_attr_value(node, "fill") != NULL && strcmp(get_node_attr_value(node, "fill"), "none") != 0) {
-			block = append_path_to_block(node, get_node_attr_value(node, "d"), block);
-			//return block;
+	int inside_labels = 0;
+	struct Node * temp = node;
+	while (temp) {
+		if (get_node_attr_value(temp, "id") != NULL && strcmp(get_node_attr_value(temp, "id"), "Labels") == 0) {
+			inside_labels = 1;
+			break;
 		}
+		temp = temp->parent;
+	}
+	
+	if (strcmp(node->tagName, "path")==0) {
+		if (!inside_labels) {
+			block = append_path_to_block(node, get_node_attr_value(node, "d"), block);
+		}
+		//if (get_node_attr_value(node, "fill") != NULL && strcmp(get_node_attr_value(node, "fill"), "none") != 0) {
+		//	fprintf(stderr, "no skip\n");
+		//	block = append_path_to_block(node, get_node_attr_value(node, "d"), block);
+		//}
 		
 		//char * colour = NULL;
 		//if (get_node_attr_value(node, "clip-path") == NULL) 
@@ -499,6 +512,9 @@ int main(int argc, char ** argv)
 		}
 	}
 	
+	if (bbox[0] == 0 && bbox[1] == 0 && bbox[2] == 0 && bbox[3] == 0) {
+		fprintf(stderr, "%s: bbox not defined\n", argv[0]);
+	}
 	//fprintf(stderr, "bbox = %f,%f,%f,%f\n", bbox[0], bbox[1], bbox[2], bbox[3]);
 	
 	struct MemoryStruct chunk;
@@ -563,18 +579,22 @@ int main(int argc, char ** argv)
 			
 			free_node(root_svg_node);
 			
-			int i;
-			for (i = 0 ; i < block->num_rows ; i++) {
-				double x = get_x(block, i);
-				double y = get_y(block, i);
+			if (bbox[0] != 0 || bbox[1] != 0 || bbox[2] != 0 || bbox[3] != 0) {
+				int i;
+				for (i = 0 ; i < block->num_rows ; i++) {
+					double x = get_x(block, i);
+					double y = get_y(block, i);
 				
-				x = (x - viewBox[0]) / (viewBox[2] - viewBox[0]) * (bbox[2] - bbox[0]) + bbox[0];
-				y = bbox[1] - (y - viewBox[1]) / (viewBox[3] - viewBox[1]) * (bbox[3] - bbox[1]) + (bbox[3] - bbox[1]);
+					x = (x - viewBox[0]) / (viewBox[2] - viewBox[0]) * (bbox[2] - bbox[0]) + bbox[0];
+					y = bbox[1] - (y - viewBox[1]) / (viewBox[3] - viewBox[1]) * (bbox[3] - bbox[1]) + (bbox[3] - bbox[1]);
 				
-				set_xy(block, i, x, y);
+					set_xy(block, i, x, y);
+				}
 			}
 			
-			write_block(stdout, block);
+			if (block->num_rows > 0) {
+				write_block(stdout, block);
+			}
 			free_block(block);
 			xmlFreeTextReader(reader);
 			xmlCleanupParser();
