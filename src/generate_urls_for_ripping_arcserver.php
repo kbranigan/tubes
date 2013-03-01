@@ -29,30 +29,92 @@ for ($x = $bigbbox[0] ; $x <= $bigbbox[2] ; $x += 2116.67) {
 	}
 }
 
-$svg_layers = "13"; // -1,8,9,11,13
+$svg_layer = "8"; // -1,8,9,11,13
 
-$i = 0;
 foreach ($bboxs as $localfile => $bbox)
 {
 	list($x1,$y1,$x2,$y2) = explode(',', $bbox);
 	
-	$url = "http://gis.toronto.ca/arcgis/rest/services/primary/cot_geospatial2_mtm/MapServer/export";
-	$url .= "?dpi=96&transparent=true&format=svg&layers=show:$svg_layers";
-	$url .= '&bbox='.$bbox;
-	$url .= '&size=800,800&f=image';
-	if (!is_file("export.$svg_layers.$localfile.svg"))
-		exec("../bin/curl --url=\"$url\" > export.$svg_layers.$localfile.svg\n");
+	// download
+	if (!is_file("layer$svg_layer/export.$svg_layer.$localfile.svg")) {
+		$url = "http://gis.toronto.ca/arcgis/rest/services/primary/cot_geospatial2_mtm/MapServer/export";
+		$url .= "?dpi=96&transparent=true&format=svg&layers=show:$svg_layer";
+		$url .= '&bbox='.$bbox;
+		$url .= '&size=800,800&f=image';
+		$cmd = "./bin/curl --url=\"$url\" > layer$svg_layer/export.$svg_layer.$localfile.svg\n";
+		print "$cmd\n";
+		exec($cmd);
+		sleep(2);
+	}
 	
-	//$cmd = "./bin/read_svg --filename=export.$localfile.svg --bbox=\"$bbox\" | ./bin/coordinate_convert > export.binary.$localfile.b";
-	//exec($cmd);
+	// convert
+	if (!is_file("layer$svg_layer/export.binary.$svg_layer.$localfile.b")) {
+		$cmd =	"./bin/read_svg --filename=layer$svg_layer/export.$svg_layer.$localfile.svg --bbox=\"$bbox\" ".
+						"> layer$svg_layer/export.binary.$svg_layer.$localfile.b";
+		print "$cmd\n";
+		exec($cmd);
+	}
 	
-	print "export.binary.$localfile.b ";
+	// tspan
+	if (!is_file("layer$svg_layer/export.tspan.$svg_layer.$localfile.b")) {
+		$cmd =	"cat layer$svg_layer/export.binary.$svg_layer.$localfile.b ".
+						"| ./bin/filter --column=tagName --value=tspan ".
+						"> layer$svg_layer/export.tspan.$svg_layer.$localfile.b";
+		print "$cmd\n";
+		exec($cmd);
+	}
 	
-	//$i++;
-	sleep(2);
+	// path
+	if (!is_file("layer$svg_layer/export.path.$svg_layer.$localfile.b")) {
+		$cmd =	"cat layer$svg_layer/export.binary.$svg_layer.$localfile.b ".
+						"| ./bin/filter --column=tagName --value=tspan --operator=DELETE ".
+						"| ./bin/filter --column=tagName --value=rect --operator=DELETE ".
+						"> layer$svg_layer/export.path.$svg_layer.$localfile.b";
+		print "$cmd\n";
+		exec($cmd);
+	}
+	
+	// tesselate
+	if (!is_file("layer$svg_layer/export.tesselate.$svg_layer.$localfile.b")) {
+		$cmd =	"cat layer$svg_layer/export.path.$svg_layer.$localfile.b ".
+						"| ./bin/tesselate ".
+						"> layer$svg_layer/export.tesselate.$svg_layer.$localfile.b";
+		print "$cmd\n";
+		exec($cmd);
+	}
+	
+	// joined geographic
+	if (!is_file("layer$svg_layer/export.joined_geographic.$svg_layer.$localfile.b")) {
+		$cmd =	"cat layer$svg_layer/export.tspan.$svg_layer.$localfile.b ".
+						"| ./bin/join_geographic -f layer$svg_layer/export.tesselate.$svg_layer.$localfile.b ".
+						"| ./bin/unique --column=first_hit_shape_row_id ".
+						"> layer$svg_layer/export.joined_geographic.$svg_layer.$localfile.b";
+		print "$cmd\n";
+		exec($cmd);
+	}
+	
+	// final
+	if (!is_file("layer$svg_layer/export.final.$svg_layer.$localfile.b")) {
+		$cmd =	"cat layer$svg_layer/export.path.$svg_layer.$localfile.b ".
+						"| ./bin/columns --remove=text ".
+						"| ./bin/join --join=left ".
+								" --right_file=layer$svg_layer/export.joined_geographic.$svg_layer.$localfile.b ".
+								" --left_column=shape_row_id ".
+								" --right_column=first_hit_shape_row_id".
+						"| ./bin/coordinate_convert ".
+						"> layer$svg_layer/export.final.$svg_layer.$localfile.b";
+		print "$cmd\n";
+		exec($cmd);
+	}
+	
+	//cat tspan2.b | ./bin/join_geographic -f shapes2.t.b | ./bin/unique --column=first_hit_shape_row_id > joined_geographic2.b
+
 }
 
-
+//if (!is_file("layer$svg_layer/export.binary.all.b")) {
+//	$cmd = "cat layer$svg_layer/export.binary.$svg_layer.* | ./bin/append > layer$svg_layer/export.binary.all.b";
+//	print "$cmd\n";
+//}
 
 
 
