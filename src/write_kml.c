@@ -85,7 +85,7 @@ int main(int argc, char ** argv)
 			fprintf(fp, "<PolyStyle>\n");
 			fprintf(fp, "<color>%02x%02x%02x%02x</color>\n", alpha, blue, green, red);
 			fprintf(fp, "<colorMode>normal</colorMode>\n");
-			fprintf(fp, "<outline>1</outline>\n");
+			fprintf(fp, "<outline>0</outline>\n");
 			fprintf(fp, "</PolyStyle>\n");
 			fprintf(fp, "</Style>\n");
 			//fprintf(fp, "<MultiGeometry>\n");
