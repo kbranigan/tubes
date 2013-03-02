@@ -120,7 +120,7 @@ void free_block(struct Block * block);
 struct Block * realloc_block(struct Block * block);
 
 struct Attribute * get_attribute(struct Block * block, uint32_t attribute_id);
-struct Block * _add_attribute(struct Block * block, enum TYPE type, uint32_t bsize, const char * name, void * value);
+struct Block * _add_attribute(struct Block * block, enum TYPE type, uint32_t value_length, const char * name, void * value);
 struct Block * add_int32_attribute(struct Block * block, const char * name, int32_t value);
 struct Block * add_int64_attribute(struct Block * block, const char * name, int64_t value);
 struct Block * add_float_attribute(struct Block * block, const char * name, float value);
