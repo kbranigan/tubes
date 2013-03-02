@@ -30,6 +30,7 @@ all: mkbin \
 	bin/generate \
 	bin/unique \
 	bin/clip \
+	bin/attributes \
 	bin/tesselate \
 	bin/coordinate_convert \
 	bin/simplify_shapes \
@@ -144,6 +145,9 @@ bin/join_adjacent_geographic_shapes: bin/block.o src/join_adjacent_geographic_sh
 
 bin/join: bin/block.o src/join.c
 	gcc -lm bin/block.o src/join.c -o bin/join
+
+bin/attributes: bin/block.o src/attributes.c
+	gcc -lm bin/block.o src/attributes.c -o bin/attributes
 
 bin/inspect: bin/block.o src/inspect.c
 	gcc -lm bin/block.o src/inspect.c -o bin/inspect

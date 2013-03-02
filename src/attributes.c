@@ -12,33 +12,13 @@ int main(int argc, char ** argv)
   
   static char remove_attributes_all[1000] = "";
   static char int_attributes_all[1000] = "";
-  static int output_header = 1;
   static int debug = 0;
   
-  int c;
-  while (1)
-  {
-    static struct option long_options[] = {
-      {"remove", required_argument, 0, 'r'},
-      {"makeint", required_argument, 0, 'i'},
-      //{"add", no_argument, &output_header, 1},
-      {"debug", no_argument, &debug, 1},
-      {0, 0, 0, 0}
-    };
-    
-    int option_index = 0;
-    c = getopt_long(argc, argv, "r:i:", long_options, &option_index);
-    if (c == -1) break;
-    
-    switch (c)
-    {
-      case 0: break;
-      case 'r': strncpy(remove_attributes_all, optarg, sizeof(remove_attributes_all)); break;
-      case 'i': strncpy(int_attributes_all, optarg, sizeof(int_attributes_all)); break;
-      default: abort();
-    }
-  }
-  
+	struct Params * params = NULL;
+	params = add_string_param(params, "remove", 'r', remove_attributes_all, 0);
+	params = add_string_param(params, "makeint", 'i', int_attributes_all, 0);
+	params = add_flag_param(params, "debug", 'd', &debug, 0);
+	
   char remove_attributes_copy[1000] = "";
   strncpy(remove_attributes_copy, remove_attributes_all, 1000);
   
@@ -85,26 +65,26 @@ int main(int argc, char ** argv)
     
     for (i = 0 ; i < block->num_attributes ; i++)
     {
-      struct attribute * col = get_attribute(block, i);
+      struct Attribute * attr = get_attribute(block, i);
       for (j = 0 ; j < num_remove_attributes ; j++)
       {
         // fprintf(stderr, "%s(%d(%d)) vs %s(%d) = %d\n", 
-        //                  attribute_get_name(col), col->name_length, strlen(attribute_get_name(col)), 
+        //                  attribute_get_name(attr), attr->name_length, strlen(attribute_get_name(attr)), 
         //                  remove_attributes[j], strlen(remove_attributes[j]), 
-        //                   strcmp(attribute_get_name(col), remove_attributes[j]));
-        if (strcmp(attribute_get_name(col), remove_attributes[j])==0) break;
+        //                   strcmp(attribute_get_name(attr), remove_attributes[j]));
+        if (strcmp(attribute_get_name(attr), remove_attributes[j])==0) break;
       }
       if (j == num_remove_attributes) // not a attribute to be removed
       {
-        //fprintf(stderr, "%d: %s (%d) - do not remove\n", i, attribute_get_name(col), strlen(attribute_get_name(col)));
+        //fprintf(stderr, "%d: %s (%d) - do not remove\n", i, attribute_get_name(attr), strlen(attribute_get_name(attr)));
         for (j = 0 ; j < num_int_attributes ; j++)
-          if (strcmp(attribute_get_name(col), int_attributes[j])==0) break;
+          if (strcmp(attribute_get_name(attr), int_attributes[j])==0) break;
         if (j == num_int_attributes)
         {
           num_remove_attribute_ids++;
           remove_attribute_ids = realloc(remove_attribute_ids, sizeof(int)*num_remove_attribute_ids);
           remove_attribute_ids[num_remove_attribute_ids-1] = i;
-          newblock = _add_attribute(newblock, col->type, col->bsize, attribute_get_name(col));
+          newblock = _add_attribute(newblock, attr->type, attr->value_length, attribute_get_name(attr), attribute_get_value(attr));
         }
       }
     }
@@ -114,15 +94,15 @@ int main(int argc, char ** argv)
     
     for (i = 0 ; i < block->num_attributes ; i++)
     {
-      struct attribute * col = get_attribute(block, i);
+      struct Attribute * attr = get_attribute(block, i);
       for (j = 0 ; j < num_int_attributes ; j++)
-        if (strcmp(attribute_get_name(col), int_attributes[j])==0) break;
+        if (strcmp(attribute_get_name(attr), int_attributes[j])==0) break;
       if (j != num_int_attributes)
       {
         num_int_attribute_ids++;
         int_attribute_ids = realloc(int_attribute_ids, sizeof(int)*num_int_attribute_ids);
         int_attribute_ids[num_int_attribute_ids-1] = i;
-        newblock = add_int32_attribute(newblock, attribute_get_name(col));
+        newblock = add_int32_attribute(newblock, attribute_get_name(attr), *(int32_t*)attribute_get_value(attr));
       }
     }
     
@@ -134,9 +114,9 @@ int main(int argc, char ** argv)
       {
         void * dst = get_cell(newblock, i, j);
         void * src = get_cell(block, i, remove_attribute_ids[j]);
-        struct attribute * col = get_attribute(block, remove_attribute_ids[j]);
+        struct Attribute * attr = get_attribute(block, remove_attribute_ids[j]);
         
-        memcpy(dst, src, col->bsize);
+        memcpy(dst, src, attr->value_length);
       }
       for (j = 0 ; j < num_int_attribute_ids ; j++)
       {
