@@ -39,29 +39,14 @@ int main(int argc, char ** argv)
   float water_level = 75;
   int set_invalid_data_to_water_level = 1;
   
-  int c;
-  while ((c = getopt(argc, argv, "f:w:c:s:")) != -1)
-  switch (c)
-  {
-    case 'f':
-      strncpy(filename, optarg, 300);
-      break;
-    case 's':
-      strncpy(style_file, optarg, 300);
-      break;
-    case 'w':
-      water_level = atof(optarg);
-      break;
-    case 'c': // 45,5.5,3.3,2.2,1.1   [semi colon separated]
-    {
-      break;
-    }
-    default:
-      abort();
-  }
-  
+	struct Params * params = NULL;
+	params = add_string_param(params, "filename", 'f', filename, 1);
+	params = add_string_param(params, "style", 's', style_file, 0);
+	params = add_float_param(params, "water_level", 'w', &water_level, 0);
+	eval_params(params, argc, argv);
+	
   pFile = fopen(filename, "rb");
-  if (pFile == NULL) { fprintf(stderr, "Usage: %s -f [file_name]\n", argv[0]); exit(1); }
+  if (pFile == NULL) { fprintf(stderr, "Usage: %s --filename=[file_name]\n", argv[0]); exit(1); }
   
   FILE * fpColor = fopen(style_file, "r");
   if (!fpColor) { fprintf(stderr, "Error: %s -c '%s' should be a valid file\n", argv[0], optarg); exit(1); }
@@ -90,6 +75,7 @@ int main(int argc, char ** argv)
     color->alpha = (ptr != NULL) ? atof(ptr) : 1.0;
   }
   fclose(fpColor);
+	fprintf(stderr, "num_colors = %d in style_file = '%s'\n", num_colors, style_file);
   
   fseek (pFile, 0, SEEK_END);
   lSize = ftell (pFile);
@@ -195,11 +181,15 @@ int main(int argc, char ** argv)
   }
   
   struct Block * block = new_block();
+	block = add_string_attribute(block, "shape_type", "points");
+	block = add_int32_column(block, "shape_row_id");
+	block = add_int32_column(block, "shape_part_id");
+	block = add_int32_column(block, "shape_part_type");
   
-  block = add_xy_columns(block);
-  block = add_rgba_columns(block);
+	block = add_xy_columns(block);
+	block = add_rgba_columns(block);
   
-  block = set_num_rows(block, 1201*1201);
+	block = set_num_rows(block, 1201*1201);
   
   for (col_id = 0 ; col_id < 1201 ; col_id++)
   {
@@ -249,13 +239,21 @@ int main(int argc, char ** argv)
               c[j] *= 1 + ((elevation_data[col_id][row_id] - elevation_data[col_id-1][row_id]) + (elevation_data[col_id+1][row_id] - elevation_data[col_id][row_id])) * 0.03;
         }
         
-        set_xy(block, col_id*1201 + row_id, v[0], v[1]);
+				set_cell_from_int32(block, col_id*1201 + row_id, 0, col_id*1201 + row_id);
+				set_cell_from_int32(block, col_id*1201 + row_id, 1, 0);
+				set_cell_from_int32(block, col_id*1201 + row_id, 2, 0);
+        //set_cell_from_int32(block, col_id*600 + row_id, 3, elevation_data[col_id][row_id]);
+				set_xy(block, col_id*1201 + row_id, v[0], v[1]);
         set_rgba(block, col_id*1201 + row_id, c[0], c[1], c[2], 1);//c[3]);
       }
       else
       {
         float c[4] = { 1, 0, 0, 1 };
-        set_xy(block, col_id*1201 + row_id, v[0], v[1]);
+				set_cell_from_int32(block, col_id*1201 + row_id, 0, col_id*1201 + row_id);
+				set_cell_from_int32(block, col_id*1201 + row_id, 1, 0);
+				set_cell_from_int32(block, col_id*1201 + row_id, 2, 0);
+        //set_cell_from_int32(block, col_id*600 + row_id, 3, elevation_data[col_id][row_id]);
+				set_xy(block, col_id*1201 + row_id, v[0], v[1]);
         set_rgba(block, col_id*1201 + row_id, c[0], c[1], c[2], c[3]);
       }
       
