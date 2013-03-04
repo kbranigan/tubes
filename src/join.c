@@ -15,46 +15,27 @@ int main(int argc, char ** argv)
 	//assert_stdin_or_out_is_piped();
 	
 	static int join = INNER_JOIN;
+	static char join_as_string[100] = "";
 	static char right_file[1000] = "";
 	static char left_column[100] = "";
 	static char right_column[100] = "";
 	static int debug = 0;
 	
-	int c;
-	while (1)
-	{
-		static struct option long_options[] = {
-			{"join", required_argument, 0, 'j'},
-			{"right_file", required_argument, 0, 'f'},
-			{"left_column", required_argument, 0, 'l'},
-			{"right_column", required_argument, 0, 'r'},
-			{"debug", no_argument, &debug, 1},
-			{0, 0, 0, 0}
-		};
-		
-		int option_index = 0;
-		c = getopt_long(argc, argv, "j:f:l:r:", long_options, &option_index);
-		if (c == -1) break;
-		
-		switch (c)
-		{
-			case 0: break;
-			case 'j': 
-				if (strcmp(optarg, "left")==0) {
-					join = LEFT_JOIN;
-				} else if (strcmp(optarg, "inner")==0) {
-					join = INNER_JOIN;
-				} else if (strcmp(optarg, "right")==0) {
-					join = RIGHT_JOIN;
-				} else {
-					fprintf(stderr, "invalid --join option, choices are: 'left', 'inner' or 'right'\n");
-				}
-				break;
-			case 'f': strncpy(right_file, optarg, sizeof(right_file)); break;
-			case 'l': strncpy(left_column, optarg, sizeof(left_column)); break;
-			case 'r': strncpy(right_column, optarg, sizeof(right_column)); break;
-			default: abort();
-		}
+	struct Params * params = NULL;
+	params = add_string_param(params, "join", 'j', join_as_string, 1);
+	params = add_string_param(params, "right_file", 'f', right_file, 1);
+	params = add_string_param(params, "left_column", 'l', left_column, 1);
+	params = add_string_param(params, "right_column", 'r', right_column, 1);
+	eval_params(params, argc, argv);
+	
+	if (strcmp(join_as_string, "left")==0) {
+		join = LEFT_JOIN;
+	} else if (strcmp(join_as_string, "inner")==0) {
+		join = INNER_JOIN;
+	} else if (strcmp(join_as_string, "right")==0) {
+		join = RIGHT_JOIN;
+	} else {
+		fprintf(stderr, "invalid --join option, choices are: 'left', 'inner' or 'right'\n");
 	}
 	
 	if (right_file[0] == 0 || left_column[0] == 0 || right_column[0] == 0)
