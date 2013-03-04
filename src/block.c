@@ -1315,7 +1315,7 @@ struct Params * add_string_param(struct Params * params, const char * name, char
 	return _add_param(params, name, name_char, TYPE_CHAR, (void*)dest, required);
 }
 
-struct Params * add_float_param(struct Params * params, const char * name, char name_char, char * dest, int required) {
+struct Params * add_float_param(struct Params * params, const char * name, char name_char, float * dest, int required) {
 	return _add_param(params, name, name_char, TYPE_FLOAT, (void*)dest, required);
 }
 
