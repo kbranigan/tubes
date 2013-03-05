@@ -10,7 +10,7 @@ mysql_select_db("mb");
 $codes = array();//1,5,8,9,29,207,210,264,312);
 
 // meter based infractions
-$codes = array(39,40,46,261,301,302,303,304,305,306,307,308,309,310,311,312,313,314);
+//$codes = array(39,40,46,261,301,302,303,304,305,306,307,308,309,310,311,312,313,314);
 
 if (count($codes) == 0)
 {
@@ -112,13 +112,13 @@ while (list($lf_name) = mysql_fetch_array($r_streets))
 							//$wday = $ticket->wday;
 							//$code = $ticket->infraction_code;
 							$offset = time_to_offset($ticket->time_of_infraction);
-					
+							
 							if (!isset($infractions[$code][$wday]))
 								$infractions[$code][$wday] = str_pad("", 48, " ");
-					
+							
 							if (ord($infractions[$code][$wday][$offset]) < 126)
 								$infractions[$code][$wday][$offset] = chr(ord($infractions[$code][$wday][$offset]) + 1);
-					
+							
 							$tickets_all_day[$code][$wday]++;
 						}
 					}
@@ -135,13 +135,13 @@ while (list($lf_name) = mysql_fetch_array($r_streets))
 							//$wday = $ticket->wday;
 							//$code = $ticket->infraction_code;
 							$offset = time_to_offset($ticket->time_of_infraction);
-					
+							
 							if (!isset($infractions[$code][$wday]))
 								$infractions[$code][$wday] = str_pad("", 48, " ");
-					
+							
 							if (ord($infractions[$code][$wday][$offset]) < 126)
 								$infractions[$code][$wday][$offset] = chr(ord($infractions[$code][$wday][$offset]) + 1);
-					
+							
 							$tickets_all_day[$code][$wday]++;
 						}
 					}
@@ -159,13 +159,13 @@ while (list($lf_name) = mysql_fetch_array($r_streets))
 						$wday = $ticket->wday;
 						$code = $ticket->infraction_code;
 						$offset = time_to_offset($ticket->time_of_infraction);
-					
+						
 						if (!isset($infractions[$code][$wday]))
 							$infractions[$code][$wday] = str_pad("", 48, " ");
-					
+						
 						if (ord($infractions[$code][$wday][$offset]) < 126)
 							$infractions[$code][$wday][$offset] = chr(ord($infractions[$code][$wday][$offset]) + 1);
-					
+						
 						$tickets_all_day[$code][$wday]++;
 					}
 				}
@@ -182,13 +182,13 @@ while (list($lf_name) = mysql_fetch_array($r_streets))
 						$wday = $ticket->wday;
 						$code = $ticket->infraction_code;
 						$offset = time_to_offset($ticket->time_of_infraction);
-					
+						
 						if (!isset($infractions[$code][$wday]))
 							$infractions[$code][$wday] = str_pad("", 48, " ");
-					
+						
 						if (ord($infractions[$code][$wday][$offset]) < 126)
 							$infractions[$code][$wday][$offset] = chr(ord($infractions[$code][$wday][$offset]) + 1);
-					
+						
 						$tickets_all_day[$code][$wday]++;
 					}
 				}
