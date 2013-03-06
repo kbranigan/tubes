@@ -142,6 +142,7 @@ struct Block * copy_all_attributes(struct Block * block, struct Block * src);
 
 void fprintf_attribute_value(FILE * fp, struct Block * block, uint32_t attribute_id);
 
+struct Block * add_shape_columns(struct Block * block);
 struct Block * add_xy_columns(struct Block * block);
 struct Block * add_xyz_columns(struct Block * block);
 struct Block * add_rgb_columns(struct Block * block);
@@ -219,6 +220,7 @@ double get_x(struct Block * block, uint32_t row_id);
 double get_y(struct Block * block, uint32_t row_id);
 double get_z(struct Block * block, uint32_t row_id);
 
+void set_shape_part(struct Block * block, uint32_t row_id, int shape_row_id, int shape_part_id);
 void set_xy(struct Block * block, uint32_t row_id, double x, double y);
 void set_xyz(struct Block * block, uint32_t row_id, double x, double y, double z);
 void set_rgb(struct Block * block, uint32_t row_id, float r, float g, float b);
@@ -237,20 +239,6 @@ void inspect_block(struct Block * block);
 const char * get_type_name(enum TYPE type, uint32_t bsize);
 
 struct Block * sort_block_using_int32_column(struct Block * block, int32_t column_id, char order);
-
-struct Param {
-	char name[30];
-	char name_char;
-	enum TYPE type;
-	void * dest;
-	int required;
-	int found;
-};
-
-struct Params {
-	struct Param * params;
-	int num_params;
-};
 
 struct Params * _add_param(struct Params * params, const char * name, char name_char, enum TYPE type, void * dest, int required);
 struct Params * add_string_param(struct Params * params, const char * name, char name_char, char * dest, int required);

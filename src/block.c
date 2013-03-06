@@ -597,48 +597,76 @@ struct Block * add_float_column_and_blank(struct Block * block, const char * nam
 struct Block * add_double_column_and_blank(struct Block * block, const char * name) { block = add_double_column(block, name); blank_column_values(block, name); return block; }
 struct Block * add_string_column_with_length_and_blank(struct Block * block, const char * name, uint32_t length) { block = add_string_column_with_length(block, name, length); blank_column_values(block, name); return block; }
 
-struct Block * add_xy_columns(struct Block * block)
-{
-  if (get_column_id_by_name(block, "x") == -1) block = add_float_column(block, "x");
-  if (get_column_id_by_name(block, "y") == -1) block = add_float_column(block, "y");
-  return block;
+struct Block * add_shape_columns(struct Block * block) {
+	if (block == NULL) { fprintf(stderr, "%s called on NULL block\n", __func__); return; }
+	block = add_int32_column(block, "shape_row_id");
+	block = add_int32_column(block, "shape_part_type");
+	block = add_xy_columns(block);
+	return block;
 }
 
-struct Block * add_xyz_columns(struct Block * block)
-{
-  block = add_xy_columns(block);
-  if (get_column_id_by_name(block, "z") == -1) block = add_float_column(block, "z");
-  return block;
+
+struct Block * add_xy_columns(struct Block * block) {
+	if (block == NULL) { fprintf(stderr, "%s called on NULL block\n", __func__); return; }
+	update_cached_block_column_ids(block);
+	if (get_column_id_by_name(block, "x") == -1) {
+		block = add_float_column(block, "x");
+	}
+	if (get_column_id_by_name(block, "y") == -1) {
+		block = add_float_column(block, "y");
+	}
+	return block;
 }
 
-struct Block * add_rgb_columns(struct Block * block)
-{
-  if (get_column_id_by_name(block, "red") == -1)   block = add_float_column(block, "red");
-  if (get_column_id_by_name(block, "green") == -1) block = add_float_column(block, "green");
-  if (get_column_id_by_name(block, "blue") == -1)  block = add_float_column(block, "blue");
-  return block;
+struct Block * add_xyz_columns(struct Block * block) {
+	if (block == NULL) { fprintf(stderr, "%s called on NULL block\n", __func__); return; }
+	update_cached_block_column_ids(block);
+	block = add_xy_columns(block);
+	if (get_column_id_by_name(block, "z") == -1) {
+		block = add_float_column(block, "z");
+	}
+	return block;
 }
 
-struct Block * add_rgba_columns(struct Block * block)
-{
-  block = add_rgb_columns(block);
-  if (get_column_id_by_name(block, "alpha") == -1) block = add_float_column(block, "alpha");
-  return block;
+struct Block * add_rgb_columns(struct Block * block) {
+	if (block == NULL) { fprintf(stderr, "%s called on NULL block\n", __func__); return; }
+	update_cached_block_column_ids(block);
+	if (get_column_id_by_name(block, "red") == -1) {
+		block = add_float_column(block, "red");
+	}
+	if (get_column_id_by_name(block, "green") == -1) {
+		block = add_float_column(block, "green");
+	}
+	if (get_column_id_by_name(block, "blue") == -1) {
+		block = add_float_column(block, "blue");
+	}
+	return block;
 }
 
-void blank_column_values(struct Block * block, const char * column_name)
-{
-  if (block == NULL) { fprintf(stderr, "blank_column_values called on NULL block\n"); return; }
-  if (column_name == NULL) { fprintf(stderr, "blank_column_values called with NULL column_name\n"); return; }
-  uint32_t column_id = get_column_id_by_name(block, column_name);
-  if (column_id == -1) { fprintf(stderr, "blank_column_values called on column '%s', column not found.\n", column_name); return; }
-  struct Column * column = get_column(block, column_id);
-  
-  int row_id;
-  for (row_id = 0 ; row_id < block->num_rows ; row_id++)
-  {
-    memset(get_cell(block, row_id, column_id), 0, column->bsize);//get_type_size(column->type));
-  }
+struct Block * add_rgba_columns(struct Block * block) {
+	if (block == NULL) { fprintf(stderr, "%s called on NULL block\n", __func__); return; }
+	update_cached_block_column_ids(block);
+	block = add_rgb_columns(block);
+	if (get_column_id_by_name(block, "alpha") == -1) {
+		block = add_float_column(block, "alpha");
+	}
+	return block;
+}
+
+void blank_column_values(struct Block * block, const char * column_name) {
+	if (block == NULL) { fprintf(stderr, "%s called on NULL block\n", __func__); return; }
+	if (column_name == NULL) { fprintf(stderr, "%s called with NULL column_name\n", __func__); return; }
+	uint32_t column_id = get_column_id_by_name(block, column_name);
+	if (column_id == -1) {
+		fprintf(stderr, "%s called on column '%s', column not found.\n", column_name, __func__);
+		return;
+	}
+	struct Column * column = get_column(block, column_id);
+	
+	int row_id;
+	for (row_id = 0 ; row_id < block->num_rows ; row_id++) {
+		memset(get_cell(block, row_id, column_id), 0, column->bsize);//get_type_size(column->type));
+	}
 }
 
 /*struct Block * column_string_set_length(struct Block * block, uint32_t column_id, int32_t length)
@@ -915,10 +943,9 @@ double get_x(struct Block * block, uint32_t row_id)
 	}
 }
 
-double get_y(struct Block * block, uint32_t row_id)
-{
-  if (row_id > block->num_rows) { fprintf(stderr, "get_y invalid row_id (%d)\n", row_id); exit(0); }
-  if (cached_block_ptr != block) update_cached_block_column_ids(block);
+double get_y(struct Block * block, uint32_t row_id) {
+	if (row_id > block->num_rows) { fprintf(stderr, "get_y invalid row_id (%d)\n", row_id); exit(0); }
+	if (cached_block_ptr != block) update_cached_block_column_ids(block);
 	if (cached_block_column_ids.xyz[1] != -1) {
 		return get_cell_as_double(block, row_id, cached_block_column_ids.xyz[1]);
 	} else {
@@ -926,15 +953,23 @@ double get_y(struct Block * block, uint32_t row_id)
 	}
 }
 
-double get_z(struct Block * block, uint32_t row_id)
-{
-  if (row_id > block->num_rows) { fprintf(stderr, "get_z invalid row_id (%d)\n", row_id); exit(0); }
-  if (cached_block_ptr != block) update_cached_block_column_ids(block);
+double get_z(struct Block * block, uint32_t row_id) {
+	if (row_id > block->num_rows) { fprintf(stderr, "get_z invalid row_id (%d)\n", row_id); exit(0); }
+	if (row_id > block->num_rows) { fprintf(stderr, "%s invalid row_id (%d)\n", __func__, row_id); return; }
+	if (cached_block_ptr != block) update_cached_block_column_ids(block);
 	if (cached_block_column_ids.xyz[2] != -1) {
 		return get_cell_as_double(block, row_id, cached_block_column_ids.xyz[2]);
 	} else {
 		return 0;
 	}
+}
+
+void set_shape_part(struct Block * block, uint32_t row_id, int shape_row_id, int shape_part_id) {
+	if (block == NULL) { fprintf(stderr, "%s called on NULL block\n", __func__); return; }
+	if (row_id > block->num_rows) { fprintf(stderr, "%s invalid row_id (%d)\n", __func__, row_id); return; }
+	if (cached_block_ptr != block) update_cached_block_column_ids(block);
+	if (cached_block_column_ids.shape_row_id != -1) set_cell_from_double(block, row_id, cached_block_column_ids.shape_row_id, shape_row_id);
+	if (cached_block_column_ids.shape_part_id != -1) set_cell_from_double(block, row_id, cached_block_column_ids.shape_part_id, shape_part_id);
 }
 
 void set_xy(struct Block * block, uint32_t row_id, double x, double y)
@@ -1290,6 +1325,22 @@ const char * get_type_name(enum TYPE type, uint32_t bsize)
     return get_type_name_temp;
   }
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////
+
+struct Param {
+	char name[30];
+	char name_char;
+	enum TYPE type;
+	void * dest;
+	int required;
+	int found;
+};
+
+struct Params {
+	struct Param * params;
+	int num_params;
+};
 
 struct Params * _add_param(struct Params * params, const char * name, char name_char, enum TYPE type, void * dest, int required) {
 	if (params == NULL) {
