@@ -1,10 +1,38 @@
 
 #############################################################
 
-http://gis.toronto.ca/arcgis/rest/services/primary/cot_geospatial2_mtm/MapServer/export?dpi=96&transparent=true&format=svg&layers=show%3A3&bbox=310880.78342223354,4833361.400389468,314391.8112776226,4834628.757090848&size=1427%2C479&f=image
+final_test = 
+http://gis.toronto.ca/arcgis/rest/services/primary/cot_geospatial2_mtm/MapServer/export?dpi=96&transparent=true&format=svg&layers=show%3A3&bbox=333855.923,4849928.319,335972.595,4852044.989&size=800%2C800&f=image
 
+333855.923,4849928.319,335972.595,4852044.989
 
-wget -O - -o /dev/null "http://gis.toronto.ca/arcgis/rest/services/primary/cot_geospatial2_mtm/MapServer/export?dpi=96&transparent=true&format=svg&layers=show%3A8,3&bbox=302844.048,4846380.249,305601.012,4847438.584&bboxSR=2019&imageSR=2019&size=1042%2C400&f=image" > withlabels.svg
+#############################################################
+
+http://gis.toronto.ca/arcgis/rest/services/primary/cot_geospatial2_mtm/MapServer/export?dpi=96&transparent=true&format=svg&layers=show%3A3&bbox=310880.78342223354,4833361.400389468,314391.8112776226,4834628.757090848&size=1427,479&f=image
+
+minx = 293176.154
+maxx = 336612.886
+dx = 43436.732
+
+miny = 4827041.814
+maxy = 4857580.084
+dy = 30538.27
+
+400x400 px = 333855.923,4849928.319,334914.259,4850986.654
+800x800 px = 333855.923,4849928.319,335972.595,4852044.989
+
+400x400 px d = 1058.335,1058.335
+800x800 px d = 2116.67,2116.67
+
+335972.595,4849928.319,338089.265,4852044.989
+
+bbox for miny = 299838.375,4827041.814,302595.3397680129,4828100.150283633
+bbox for minx = 293176.1542629752,4844835.079586833,295933.11811023625,4845893.415036838
+
+bbox for maxx = 333855.92312251305,4849928.318939979,336612.8869697741,4850986.654389984
+bbox for maxy = 329887.16518499714,4856521.748793509,332644.1290322582,4857580.084243514
+
+wget -O - -o /dev/null "http://gis.toronto.ca/arcgis/rest/services/primary/cot_geospatial2_mtm/MapServer/export?dpi=96&transparent=true&format=svg&layers=show%3A8,3&bbox=302844.048,4846380.249,305601.012,4847438.584&bboxSR=2019&imageSR=2019&size=1042,400&f=image" > withlabels.svg
 ./bin/read_svg -f withlabels.svg \
   | ./bin/filter --column=tagName --value=tspan > tspan.b
 ./bin/read_svg -f withlabels.svg \
@@ -15,7 +43,7 @@ cat tspan.b | ./bin/join_geographic -f shapes.t.b | ./bin/unique --column=first_
 cat shapes.b | ./bin/columns --remove=text | ./bin/join --join=left --right_file=joined_geographic.b --left_column=shape_row_id --right_column=first_hit_shape_row_id | ./bin/bounds --bbox=302844.048,305601.012,4847438.584,4846380.249 | ./bin/coordinate_convert | ./bin/inspect | ./bin/write_kml --filename=output.kml
 
 
-wget -O - -o /dev/null "http://gis.toronto.ca/arcgis/rest/services/primary/cot_geospatial2_mtm/MapServer/export?dpi=96&transparent=true&format=svg&layers=show%3A8,3&bbox=305601.012,4846380.249,308357.976,4847438.584&bboxSR=2019&imageSR=2019&size=1042%2C400&f=image" > withlabels2.svg
+wget -O - -o /dev/null "http://gis.toronto.ca/arcgis/rest/services/primary/cot_geospatial2_mtm/MapServer/export?dpi=96&transparent=true&format=svg&layers=show%3A8,3&bbox=305601.012,4846380.249,308357.976,4847438.584&bboxSR=2019&imageSR=2019&size=1042,400&f=image" > withlabels2.svg
 ./bin/read_svg -f withlabels2.svg \
   | ./bin/filter --column=tagName --value=tspan > tspan2.b
 ./bin/read_svg -f withlabels2.svg \

@@ -206,6 +206,101 @@ void near(struct mg_connection *conn, const struct mg_request_info *ri, void *da
 
 }
 
+void details(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
+{
+	char * temp = NULL;
+	temp = mg_get_var(conn, "geo_id");
+	int geo_id = (temp==NULL) ? 0 : atoi(temp);
+	free(temp);
+	
+	mg_printf(conn, "[");
+	char query[1000] = "";
+	sprintf(query,	"SELECT is_opp, wday, infraction_code, tickets_all_day, tickets_half_hourly FROM ticket_day_infractions_for_geo_id "
+									"WHERE geo_id = %d ORDER BY is_opp, wday, infraction_code, tickets_all_day, tickets_half_hourly", geo_id);
+	//mg_printf(conn, "%s\n", query);
+	if (mysql_query(&mysql, query)==0) {
+		res = mysql_store_result(&mysql);
+		num_address_lines = mysql_num_rows(res);
+		int i = 0;
+		while ((row = mysql_fetch_row(res))) {
+			char thh_temp[100] = "";
+			int j=0,k=0;
+			for (j = 0 ; j < strlen(row[4]) ; j++) {
+				if (row[4][j] == '"' || row[4][j] == '\\' || row[4][j] == '/') {
+					thh_temp[k++] = '\\';
+				}
+				thh_temp[k++] = row[4][j];
+			}
+			thh_temp[99] = 0;
+			mg_printf(conn, "%s\n  [%s,%s,%3s,%3s,\"%s\"]", (i!=0 ? "," : ""), row[0], row[1], row[2], row[3], thh_temp);
+			i++;
+		}
+		mysql_free_result(res);
+	}
+	mg_printf(conn, "\n]");
+}
+
+void break_down_infraction_code(struct mg_connection *conn, const struct mg_request_info *ri, void *data) {
+	char * temp = NULL;
+	temp = mg_get_var(conn, "infraction_code");
+	int infraction_code = (temp==NULL) ? 0 : atoi(temp);
+	free(temp);
+	mg_printf(conn, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n");
+	if (infraction_code == 0) {
+		mg_printf(conn, "infraction_code needed\n");
+		return;
+	}
+	
+	FILE * fp = NULL;
+	char filename[100] = "";
+	sprintf(filename, "cache_images/infractions/%d-0.png", infraction_code);
+	fp = fopen(filename, "r");
+	if (fp == NULL) {
+		int wday;
+		for (wday = 0 ; wday < 7 ; wday++) {
+			sprintf(filename, "cache_images/infractions/%d-%d.png", infraction_code, wday);
+			fp = fopen(filename, "r");
+			if (fp == NULL) {
+				char cmd[1000] = "";
+				sprintf(cmd, "./bin/read_mysql -q "
+												"\"SELECT *, count/7.0 AS alpha, sum_tickets_all_day/1000.0 AS red FROM "
+													"(SELECT id, "
+														"(SELECT COUNT(*) FROM mb.ticket_day_infractions_for_geo_id t "
+															"WHERE t.geo_id = al.geo_id "
+																"AND ((al.arc_side = 'L' AND t.is_opp = 0) OR (al.arc_side = 'R' AND t.is_opp = 1)) "
+																"AND t.infraction_code = %d) AS count, "
+														"(SELECT SUM(tickets_all_day) FROM mb.ticket_day_infractions_for_geo_id t "
+															"WHERE t.geo_id = al.geo_id "
+																"AND ((al.arc_side = 'L' AND t.is_opp = 0) OR (al.arc_side = 'R' AND t.is_opp = 1)) "
+																"AND t.infraction_code = %d) AS sum_tickets_all_day, "
+														"0 AS green, "
+														"0 AS blue, "
+														"x, y, (geo_id * if(arc_side='L', -1, 1)) AS shape_row_id, 0 AS shape_part_id, 5 AS shape_part_type "
+															"FROM mb.address_lines al "
+																//"WHERE geo_id = 7930734 "
+																"ORDER BY geo_id, arc_side, id) e"
+												"\" | ./bin/png --filename=%s", 
+												infraction_code, 
+												infraction_code, 
+												filename);
+				fprintf(stderr, "%s\n", cmd);
+				system(cmd);
+			} else {
+				fclose(fp);
+			}
+			break;
+		}
+	} else {
+		fclose(fp);
+	}
+	
+	int wday;
+	for (wday = 0 ; wday < 7 ; wday++) {
+		mg_printf(conn, "%d<img src='cache_images/infractions/%d-%d.png' /><br />", wday, infraction_code, wday);
+		break;
+	}
+}
+
 void httpkill(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
 {
 	//mg_printf(conn, "HTTP/1.1 200 OK\r\nContent-Type: application/javascript\r\nConnection: close\r\n\r\n");
@@ -222,7 +317,7 @@ int main(int argc, char ** argv)
 	{
 		fprintf(stderr, "ERROR: mysql_real_connect error (%s)\n", mysql_error(&mysql));
 	}
-	
+	/*
 	//if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines WHERE geo_id IN (1143060,1143217,1143508,1143623,1144803,1144964,1145067,1145132,1146178,1146213,1146443,1146522,1146556,1146683,1146728,1146770,1146853,1146976,1146998,1147027,2821086,3150314,5999130,7569522,7569576,7569605,7929431,7929478,7929486,7929605,7929919,7930184,7930461,7930588,7930670,7930734,7930769,7930850,7930872,7930873,8033769,8418213,8492130,8677044,10222906,10223745,10223817,10223853,10223870,10223904,10223924,10223941,10458361,10494161,10494181,10494196,10512735,10513373,10513396,10513444,10864275,10864288,10906331,12763884,12763900,14024762,14024763,14024764,14024849,14024850,14024868,14024869,14024988,14024989,14025205,14025206,14025244,14025245,14025275,14025276,14025283,14025284,14025347,14025348,14025408,14025409,14025410,14025469,14025535,14025536,14025543,14025544,14025568,14025569,14025583,14025584,14035996,14035997,14035998,14036014,14036064,14036065,14073511,14073512,14614667,14661238,14671468,14671590,14671591,14673213,14673508,14673518,14673703,14673704,14673829,14673830,20006289,20006295,20034983,20035030,20110574,20110595,20110596,20141140,30022476) ORDER BY geo_id, arc_side, sequence")==0)
 	if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines WHERE geo_id IN (7930734) ORDER BY geo_id, arc_side, sequence")==0)
 	{
@@ -262,7 +357,7 @@ int main(int argc, char ** argv)
 	{
 		fprintf(stderr, "ERROR: mysql_query() error %s\n", mysql_error(&mysql));
 	}
-	
+	*/
 	struct mg_context *ctx = mg_start();
 	mg_set_option(ctx, "dir_list", "no"); // Set document root
 	int ret = 0;
@@ -311,6 +406,8 @@ int main(int argc, char ** argv)
 	
 	mg_set_uri_callback(ctx, "/near", &near, NULL);
 	mg_set_uri_callback(ctx, "/kill", &httpkill, NULL);
+	mg_set_uri_callback(ctx, "/details", &details, NULL);
+	mg_set_uri_callback(ctx, "/break_down_infraction_code", &break_down_infraction_code, NULL);
 	
 	while (!received_kill)
 	{
