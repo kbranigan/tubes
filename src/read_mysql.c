@@ -99,7 +99,9 @@ int main(int argc, char ** argv)
     {
       switch (field->type) {
         case MYSQL_TYPE_LONG:     block = add_int32_column(block, field->name); break;
-        case MYSQL_TYPE_LONGLONG: block = add_int64_column(block, field->name); break;
+        case MYSQL_TYPE_LONGLONG: 
+				case MYSQL_TYPE_DECIMAL: 
+				case MYSQL_TYPE_NEWDECIMAL: block = add_int64_column(block, field->name); break;
         case MYSQL_TYPE_FLOAT:    block = add_float_column(block, field->name); break;
         case MYSQL_TYPE_DOUBLE:   block = add_double_column(block, field->name); break;
         case MYSQL_TYPE_VAR_STRING:
