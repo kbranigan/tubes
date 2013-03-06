@@ -1,64 +1,137 @@
 
 #include "block.h"
 #include "libxml/xmlreader.h"
+#include <string.h>
 
 struct Block * block = NULL;
-int row_id = 0;
+int shape_row_id = 0;
 char shape_name[1000] = "";
+int name_column_id = -1;
+char shape_style[1000] = "";
+int style_column_id = -1;
+char shape_description[1000] = "";
+int description_column_id = -1;
+
+struct Style {
+	char styleUrl[10];
+	char lineStyleColor[10];
+	int lineStyleWidth;
+	char polyStyleColor[10];
+	int polyStyleFill;
+	int polyStyleOutline;
+};
+
+struct Style * styles = NULL;
+int num_styles = 0;
+
+void add_style(xmlTextReaderPtr reader) {
+	if (num_styles == 1) return;
+	num_styles++;
+	styles = (struct Style *)realloc(styles, sizeof(struct Style)*num_styles);
+	memset(&styles[num_styles-1], 0, sizeof(struct Style));
+	
+	struct Style * style = &styles[num_styles-1];
+	
+	while (xmlTextReaderMoveToNextAttribute(reader)) {
+		char * attr_name = xmlTextReaderName(reader);
+		char * attr_value = xmlTextReaderValue(reader);
+		
+		if (strcmp(attr_name, "id") == 0) {
+			strncpy(style->styleUrl, attr_value, sizeof(style->styleUrl));
+			break;
+		}
+	}
+	xmlTextReaderMoveToElement(reader);
+	//fprintf(stderr, "%d: %s\n", num_styles, style->styleUrl);
+	
+	int ret = 1;
+	while (ret == 1) {
+		const xmlChar * tagName = xmlTextReaderConstName(reader);
+		const xmlChar * tagValue = xmlTextReaderConstValue(reader);
+		if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT && xmlTextReaderDepth(reader) == 2 && strcmp(tagName, "Style")==0) {
+			return;
+		} else if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT && xmlTextReaderDepth(reader) == 3 && strcmp(tagName, "LineStyle")==0) {
+			while (!(xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT && xmlTextReaderDepth(reader) == 3 && strcmp(tagName, "LineStyle")==0)) {
+				if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_TEXT) {
+					//strncpy(shape_description, xmlTextReaderConstValue(reader), sizeof(shape_description));
+				}
+				ret = xmlTextReaderRead(reader);
+			}
+		} else if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT && xmlTextReaderDepth(reader) == 3 && strcmp(tagName, "PolyStyle")==0) {
+			while (!(xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT && xmlTextReaderDepth(reader) == 3 && strcmp(tagName, "PolyStyle")==0)) {
+				if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_TEXT) {
+					//strncpy(shape_description, xmlTextReaderConstValue(reader), sizeof(shape_description));
+				}
+				ret = xmlTextReaderRead(reader);
+			}
+		}
+		ret = xmlTextReaderRead(reader);
+	}
+}
 
 struct Block * add_placemark(struct Block * block, xmlTextReaderPtr reader) {
 	
-	int row_id_column_id = get_column_id_by_name(block, "shape_row_id");
-	int part_type_column_id = get_column_id_by_name(block, "shape_part_type");
-	int x_column_id = get_column_id_by_name(block, "x");
-	int y_column_id = get_column_id_by_name(block, "y");
+	name_column_id = get_column_id_by_name(block, "name");
+	style_column_id = get_column_id_by_name(block, "style");
+	description_column_id = get_column_id_by_name(block, "description");
 	
 	int ret = 1;
 	
 	if (reader != NULL) {
 		while (ret == 1) {
-			const xmlChar * name = xmlTextReaderConstName(reader);
-			const xmlChar * value = xmlTextReaderConstValue(reader);
+			const xmlChar * tagName = xmlTextReaderConstName(reader);
+			const xmlChar * tagValue = xmlTextReaderConstValue(reader);
 			//fprintf(stderr, " %s %d %d\n", name, xmlTextReaderNodeType(reader), xmlTextReaderDepth(reader));
-			if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT && xmlTextReaderDepth(reader) == 2 && strcmp(name, "Placemark")==0)
-			{
-				// end of Placemark yo
+			if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT && xmlTextReaderDepth(reader) == 2 && strcmp(tagName, "Placemark")==0) {
 				return block;
-			}
-			else if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT && xmlTextReaderDepth(reader) == 3 && strcmp(name, "name")==0)
-			{
-				while (!(xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT && xmlTextReaderDepth(reader) == 3 && strcmp(name, "name")==0))
-				{
-					if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_TEXT)
-					{
-						value = xmlTextReaderConstValue(reader);
-						strncpy(shape_name, value, sizeof(shape_name));
-						// kbfu do something here
-						//fprintf(stderr, "%s\n", value);
+			} else if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT && xmlTextReaderDepth(reader) == 3 && strcmp(tagName, "name")==0) {
+				while (!(xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT && xmlTextReaderDepth(reader) == 3 && strcmp(tagName, "name")==0)) {
+					if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_TEXT) {
+						strncpy(shape_name, xmlTextReaderConstValue(reader), sizeof(shape_name));
 					}
 					ret = xmlTextReaderRead(reader);
 				}
-			}
-			else if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT && xmlTextReaderDepth(reader) == 6 && strcmp(name, "coordinates")==0)
-			{
-				row_id++;
-				//fprintf(stderr, "  %d %s\n", xmlTextReaderDepth(reader), name);
-				while (!(xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT && xmlTextReaderDepth(reader) == 6 && strcmp(name, "coordinates")==0))
-				{
-					if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_TEXT)
-					{
-						value = xmlTextReaderConstValue(reader);
+			} else if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT && xmlTextReaderDepth(reader) == 3 && strcmp(tagName, "styleUrl")==0) {
+				while (!(xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT && xmlTextReaderDepth(reader) == 3 && strcmp(tagName, "styleUrl")==0)) {
+					if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_TEXT) {
+						strncpy(shape_style, xmlTextReaderConstValue(reader), sizeof(shape_style));
+					}
+					ret = xmlTextReaderRead(reader);
+				}
+			} else if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT && xmlTextReaderDepth(reader) == 3 && strcmp(tagName, "description")==0) {
+				while (!(xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT && xmlTextReaderDepth(reader) == 3 && strcmp(tagName, "description")==0)) {
+					if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_TEXT) {
+						strncpy(shape_description, xmlTextReaderConstValue(reader), sizeof(shape_description));
+					}
+					ret = xmlTextReaderRead(reader);
+				}
+			} else if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT && xmlTextReaderDepth(reader) == 6 && strcmp(tagName, "coordinates")==0) {
+				shape_row_id++;
+				while (!(xmlTextReaderNodeType(reader) == XML_READER_TYPE_END_ELEMENT && xmlTextReaderDepth(reader) == 6 && strcmp(tagName, "coordinates")==0)) {
+					if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_TEXT) {
+						tagValue = xmlTextReaderConstValue(reader);
 						//fprintf(stderr, "%s", value);
-						char * ptr = strtok((char*)value, "\n");
-						while (ptr != NULL)
-						{
-							block = add_row(block);
+						char * ptr = strtok((char*)tagValue, "\n");
+						while (ptr != NULL) {
+							block = add_row_and_blank(block);
+							int row_id = block->num_rows-1;
 							float x, y, z;
 							sscanf(ptr, "%f,%f,%f", &x, &y, &z);
-							set_cell_from_int32(block, block->num_rows-1, row_id_column_id, row_id);
-							set_cell_from_int32(block, block->num_rows-1, part_type_column_id, 5);
-							set_cell_from_double(block, block->num_rows-1, x_column_id, x);
-							set_cell_from_double(block, block->num_rows-1, y_column_id, y);
+							set_shape_part(block, row_id, shape_row_id, 5);
+							set_xyz(block, row_id, x, y, z);
+							if (name_column_id != -1) {
+								set_cell_from_string(block, row_id, name_column_id, shape_name);
+							}
+							if (style_column_id != -1) {
+								set_cell_from_string(block, row_id, style_column_id, shape_style);
+							}
+							if (description_column_id != -1) {
+								set_cell_from_string(block, row_id, description_column_id, shape_description);
+							}
+							//set_cell_from_int32(block, block->num_rows-1, row_id_column_id, shape_row_id);
+							//set_cell_from_int32(block, block->num_rows-1, part_type_column_id, 5);
+							//set_cell_from_double(block, block->num_rows-1, x_column_id, x);
+							//set_cell_from_double(block, block->num_rows-1, y_column_id, y);
 							//fprintf(stderr, "%f %f %f\n", x, y, z);
 							ptr = strtok(NULL, "\n");
 						}
@@ -119,32 +192,23 @@ int main(int argc, char ** argv) {
 	
 	block = new_block();
 	block = add_command(block, argc, argv);
-	block = add_int32_column(block, "shape_row_id");
-	block = add_int32_column(block, "shape_part_type");
-	block = add_float_column(block, "x");
-	block = add_float_column(block, "y");
+	block = add_shape_columns(block);
+	block = add_rgba_columns(block);
+	block = add_string_column_with_length(block, "name", 20);
+	block = add_string_column_with_length(block, "style", 20);
+	block = add_string_column_with_length(block, "description", 80);
 	
 	reader = xmlReaderForFile(filename, NULL, 0);
 	if (reader != NULL) {
 		ret = xmlTextReaderRead(reader);
 		while (ret == 1) {
 			const xmlChar * name = xmlTextReaderConstName(reader);
-			const xmlChar * value = xmlTextReaderConstValue(reader);
 			
-			if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT && xmlTextReaderDepth(reader) == 2 && strcmp(name, "Placemark")==0)
-			{
-				//if (block->num_rows == 0) // kbfu
-				{
-					//fprintf(stderr, "add_placemark\n");
-					//fprintf(stderr, "block->num_rows = %d\n", block->num_rows);
-					block = add_placemark(block, reader);
-					//fprintf(stderr, "block->num_rows = %d\n", block->num_rows);
-				}
+			if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT && xmlTextReaderDepth(reader) == 2 && strcmp(name, "Style")==0) {
+				add_style(reader);
+			} else if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_ELEMENT && xmlTextReaderDepth(reader) == 2 && strcmp(name, "Placemark")==0) {
+				block = add_placemark(block, reader);
 			}
-			// xmlTextReaderDepth(reader),
-			// xmlTextReaderNodeType(reader),
-			// xmlTextReaderIsEmptyElement(reader),
-			// xmlTextReaderHasValue(reader));
 			ret = xmlTextReaderRead(reader);
 		}
 		xmlFreeTextReader(reader);
