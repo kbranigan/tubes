@@ -220,7 +220,7 @@ double get_x(struct Block * block, uint32_t row_id);
 double get_y(struct Block * block, uint32_t row_id);
 double get_z(struct Block * block, uint32_t row_id);
 
-void set_shape_part(struct Block * block, uint32_t row_id, int shape_row_id, int shape_part_id);
+void set_shape_part(struct Block * block, uint32_t row_id, int shape_row_id, int shape_part_id, int shape_part_type);
 void set_xy(struct Block * block, uint32_t row_id, double x, double y);
 void set_xyz(struct Block * block, uint32_t row_id, double x, double y, double z);
 void set_rgb(struct Block * block, uint32_t row_id, float r, float g, float b);

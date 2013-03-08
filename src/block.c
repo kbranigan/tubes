@@ -600,6 +600,7 @@ struct Block * add_string_column_with_length_and_blank(struct Block * block, con
 struct Block * add_shape_columns(struct Block * block) {
 	if (block == NULL) { fprintf(stderr, "%s called on NULL block\n", __func__); return; }
 	block = add_int32_column(block, "shape_row_id");
+	block = add_int32_column(block, "shape_part_id");
 	block = add_int32_column(block, "shape_part_type");
 	block = add_xy_columns(block);
 	return block;
@@ -964,12 +965,13 @@ double get_z(struct Block * block, uint32_t row_id) {
 	}
 }
 
-void set_shape_part(struct Block * block, uint32_t row_id, int shape_row_id, int shape_part_id) {
+void set_shape_part(struct Block * block, uint32_t row_id, int shape_row_id, int shape_part_id, int shape_part_type) {
 	if (block == NULL) { fprintf(stderr, "%s called on NULL block\n", __func__); return; }
 	if (row_id > block->num_rows) { fprintf(stderr, "%s invalid row_id (%d)\n", __func__, row_id); return; }
 	if (cached_block_ptr != block) update_cached_block_column_ids(block);
 	if (cached_block_column_ids.shape_row_id != -1) set_cell_from_double(block, row_id, cached_block_column_ids.shape_row_id, shape_row_id);
 	if (cached_block_column_ids.shape_part_id != -1) set_cell_from_double(block, row_id, cached_block_column_ids.shape_part_id, shape_part_id);
+	if (cached_block_column_ids.shape_part_type != -1) set_cell_from_double(block, row_id, cached_block_column_ids.shape_part_type, shape_part_type);
 }
 
 void set_xy(struct Block * block, uint32_t row_id, double x, double y)
