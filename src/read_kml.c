@@ -263,33 +263,11 @@ int main(int argc, char ** argv) {
 	assert_stdout_is_piped();
 	//assert_stdin_or_out_is_piped();
 	
-	char filename[1000];
+	char filename[1000] = "";
 	
-	int c;
-	while (1)
-	{
-		static struct option long_options[] = {
-			{"file", required_argument, 0, 'f'},
-			//{"drop", no_argument, &drop, 1},
-			{0, 0, 0, 0}
-		};
-		
-		int option_index = 0;
-		c = getopt_long(argc, argv, "f:", long_options, &option_index);
-		if (c == -1) break;
-		
-		switch (c)
-		{
-			case 0: break;
-			case 'f': strncpy(filename, optarg, sizeof(filename)); break;
-			default: abort();
-		}
-	}
-	
-	if (filename[0] == 0 && argc == 2 && argv[1] != NULL)
-		strncpy(filename, argv[1], sizeof(filename));
-	
-	if (filename[0] == 0) { fprintf(stderr, "ERROR %s: filename not provided\n", argv[0]); return EXIT_FAILURE; }
+	struct Params * params = NULL;
+	params = add_string_param(params, "filename", 'f', filename, 1);
+	eval_params(params, argc, argv);
 	
 	LIBXML_TEST_VERSION
 	
