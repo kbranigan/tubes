@@ -244,6 +244,7 @@ struct Params * _add_param(struct Params * params, const char * name, char name_
 struct Params * add_string_param(struct Params * params, const char * name, char name_char, char * dest, int required);
 struct Params * add_float_param(struct Params * params, const char * name, char name_char, float * dest, int required);
 struct Params * add_flag_param(struct Params * params, const char * name, char name_char, int * dest, int required);
+struct Params * add_int_param(struct Params * params, const char * name, char name_char, int * dest, int required);
 int eval_params(struct Params * params, int argc, char ** argv);
 
 #include "functions/functions.h"

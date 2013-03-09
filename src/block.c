@@ -1376,6 +1376,10 @@ struct Params * add_flag_param(struct Params * params, const char * name, char n
 	return _add_param(params, name, name_char, 0, (void*)dest, required);
 }
 
+struct Params * add_int_param(struct Params * params, const char * name, char name_char, int * dest, int required) {
+	return _add_param(params, name, name_char, TYPE_INT, (void*)dest, required);
+}
+
 int eval_params(struct Params * params, int argc, char ** argv) {
 	if (params == NULL) { fprintf(stderr, "%s called with NULL params\n", __func__); return; }
 	
