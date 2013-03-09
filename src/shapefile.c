@@ -15,59 +15,28 @@ int main(int argc, char ** argv)
   assert_stdout_is_piped();
   //assert_stdin_or_out_is_piped();
   
-  static long specific_row_id = -1;
-  static long specific_part_id = -1;
+  static int specific_row_id = -1;
+  static int specific_part_id = -1;
   static char filename[1000] = "";
-  
+  char allcolumns[1500] = "";
   int number_of_rows = 0;
-  
   static int debug = 0;
   
-  char * allcolumns = NULL;
   int num_specific_columns = 0;
   char ** specific_columns = NULL;
   
   int include_z = 0;
   int include_m = 0;
   
-  int c;
-  while (1)
-  {
-    static struct option long_options[] = {
-      {"row_id", required_argument, 0, 'r'},
-      {"part_id", required_argument, 0, 'p'},
-      {"filename", required_argument, 0, 'f'},
-      {"columns", required_argument, 0, 'c'},
-      {"number_of_rows", required_argument, 0, 'n'},
-      {"debug", no_argument, &debug, 1},
-      {0, 0, 0, 0}
-    };
-    
-    int option_index = 0;
-    c = getopt_long(argc, argv, "r:p:f:c:n:", long_options, &option_index);
-    if (c == -1) break;
-    
-    switch (c)
-    {
-      case 0: break;
-      case 'r': specific_row_id = atoi(optarg); break;
-      case 'p': specific_part_id = atoi(optarg); break;
-      case 'f': strncpy(filename, optarg, sizeof(filename)); break;
-      case 'c': { allcolumns = malloc(strlen(optarg)+1); strncpy(allcolumns, optarg, strlen(optarg)); break; }
-      case 'n': number_of_rows = atoi(optarg); break;
-      default: abort();
-    }
-  }
-  
-  if (filename[0] == 0 && argc == 2 && argv[1] != NULL)
-    strncpy(filename, argv[1], sizeof(filename));
-  
-  if (filename[0] == 0)
-  {
-    fprintf(stderr, "ERROR: Usage: %s -f [file_name]\n", argv[0]);
-    return -1;
-  }
-  
+	struct Params * params = NULL;
+	params = add_int_param(params, "row_id", 'r', &specific_row_id, 0);
+	params = add_int_param(params, "part_id", 'p', &specific_part_id, 0);
+	params = add_string_param(params, "filename", 'f', filename, 1);
+	params = add_string_param(params, "columns", 'c', allcolumns, 0);
+	params = add_int_param(params, "number_of_rows", 'r', &number_of_rows, 0);
+	params = add_flag_param(params, "debug", 'd', &debug, 0);
+	eval_params(params, argc, argv);
+	
   FILE * fp = filename[0] == 0 ? stdin : fopen(filename, "r");
   
   if (fp == NULL)
@@ -90,7 +59,7 @@ int main(int argc, char ** argv)
   struct Block * block = new_block();
   block = add_command(block, argc, argv);
   
-  if (allcolumns)
+  if (allcolumns[0] != 0)
   {
     block = add_string_attribute(block, "specific columns", allcolumns);
     char * ptr = strtok(allcolumns, ",");
@@ -103,7 +72,6 @@ int main(int argc, char ** argv)
       specific_columns[num_specific_columns-1][strlen(ptr)] = 0;
       ptr = strtok(NULL, ",");
     }
-    free(allcolumns);
   }
   
   double min_x = 180, max_x = -180;
