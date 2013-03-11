@@ -73,14 +73,20 @@ void setup_segfault_handling(char ** command)
   signal(SIGSEGV, block_segfault_handler);
 }
 
-struct Block * new_block()
-{
-  if (sizeof(struct Block) != SIZEOF_STRUCT_BLOCK) { fprintf(stderr, "sizeof(struct Block) is the wrong size (%ld) - should be %ld, perhaps padding or memory alignment works differently for your machine?\n", sizeof(struct Block), SIZEOF_STRUCT_BLOCK); exit(1); }
-  
-  struct Block * block = (struct Block*)malloc(sizeof(struct Block));
-  memset(block, 0, sizeof(struct Block));
-  block->version = TUBE_BLOCK_VERSION;
-  return block;
+struct Block * new_block() {
+	if (sizeof(struct Block) != SIZEOF_STRUCT_BLOCK) {
+		fprintf(stderr, "ERROR %s: sizeof(struct Block) is the wrong size (%d) - should be %d, perhaps padding or memory alignment works differently for your machine?\n", __func__, (int)sizeof(struct Block), (int)SIZEOF_STRUCT_BLOCK);
+		exit(1);
+	}
+	
+	struct Block * block = (struct Block*)malloc(sizeof(struct Block));
+	if (block == NULL) {
+		fprintf(stderr, "ERROR: %s, malloc failed\n", __func__);
+		exit(1);
+	}
+	memset(block, 0, sizeof(struct Block));
+	block->version = TUBE_BLOCK_VERSION;
+	return block;
 }
 
 struct Block * new_block_from_row_bitmask(struct Block * block, uint32_t * row_bitmask) {
@@ -1209,10 +1215,9 @@ struct Block * sort_block_using_int32_column(struct Block * block, int32_t colum
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void inspect_block(struct Block * block)
-{
-  if (block == NULL) { fprintf(stderr, "inspect_block called on a NULL block\n"); return; }
-  fprintf(stderr, "\nblock (%d+%d+%d=%d total size in bytes - with %ld byte header)\n", block->attributes_bsize, block->columns_bsize, block->data_bsize, block->attributes_bsize + block->columns_bsize + block->data_bsize, SIZEOF_STRUCT_BLOCK);
+void inspect_block(struct Block * block) {
+	if (block == NULL) { fprintf(stderr, "%s called on a NULL block\n", __func__); return; }
+	fprintf(stderr, "\nblock (%d+%d+%d=%d total size in bytes - with %d byte header)\n", block->attributes_bsize, block->columns_bsize, block->data_bsize, block->attributes_bsize + block->columns_bsize + block->data_bsize, (int)SIZEOF_STRUCT_BLOCK);
   
   if (block->num_attributes == 0)
     fprintf(stderr, "     ->no_attributes\n");
