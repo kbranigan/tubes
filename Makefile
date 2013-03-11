@@ -31,7 +31,6 @@ all: mkbin \
 	bin/unique \
 	bin/clip \
 	bin/attributes \
-	bin/tesselate \
 	bin/coordinate_convert \
 	bin/simplify_shapes \
 	bin/winding_direction \
@@ -43,6 +42,7 @@ extras: mkbin \
 	bin/read_nextbus \
 	bin/read_svg \
 	bin/read_kml \
+	bin/tesselate \
 	bin/png
 
 kevin: mkbin \
