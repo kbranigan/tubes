@@ -36,24 +36,20 @@ static size_t WriteMemoryCallback(void *ptr, size_t size, size_t nmemb, void *da
 
 int main(int argc, char ** argv)
 {
-  char * routeTag = NULL;
-  char agency[10] = "ttc";
-  long long last_vehicles_update = 0;
-  int num_requests = 1; // if num_requests == 0, then it loops forevah
-  int interval = 5000; // milliseconds
-  int c;
-  if (argv != NULL)
-  while ((c = getopt(argc, argv, "a:t:n:i:r:")) != -1)
-  switch (c)
-  {
-    case 'a': strncpy(agency, optarg, 10); break;
-    case 't': last_vehicles_update = atol(optarg); break;
-    case 'n': num_requests = atol(optarg); break;
-    case 'i': interval = atol(optarg); break;
-    case 'r': routeTag = malloc(10); strncpy(routeTag, optarg, 10); break;
-    default: abort();
-  }
-  
+	char routeTag[20] = "";
+	char agency[20] = "ttc";
+	long long last_vehicles_update = 0;
+	int num_requests = 1; // if num_requests == 0, then it loops forevah
+	int interval = 5000; // milliseconds
+	
+	struct Params * params = NULL;
+	params = add_string_param(params, "agency", 'a', agency, 0);
+	params = add_string_param(params, "routeTag", 'r', routeTag, 0);
+	params = add_longlong_param(params, "t", 't', &last_vehicles_update, 0);
+	params = add_int_param(params, "num_requests", 'n', &num_requests, 0);
+	params = add_int_param(params, "interval", 'i', &interval, 0);
+	eval_params(params, argc, argv);
+	
   CURL *curl = NULL;
   CURLcode res;
   
@@ -82,7 +78,6 @@ int main(int argc, char ** argv)
     if (routeTag) block = add_string_attribute(block, "routeTag", routeTag);
     block = add_int64_attribute(block, "request_index", request_index);
     block = add_int64_attribute(block, "num_requests", num_requests);
-    block = add_int64_attribute(block, "last_vehicles_update", last_vehicles_update);
     
     block = add_int32_column(block, "id");
     block = add_int32_column(block, "routeTag");
@@ -93,6 +88,8 @@ int main(int argc, char ** argv)
     block = add_string_column_with_length(block, "predictable", 5);
     block = add_int32_column(block, "heading");
     block = add_float_column(block, "speedKmHr");
+    block = add_int64_column(block, "last_vehicles_update");
+    block = add_int64_column(block, "curr_vehicles_update");
     
     if (chunk.size == 0)
     {
@@ -100,6 +97,8 @@ int main(int argc, char ** argv)
     }
     else
     {
+			long long curr_vehicles_update = last_vehicles_update;
+			
       int count = 0;
       reader = xmlReaderForMemory(chunk.memory, chunk.size, NULL, NULL, (XML_PARSE_NOBLANKS | XML_PARSE_NOCDATA | XML_PARSE_NOERROR | XML_PARSE_NOWARNING));
       if (reader != NULL)
@@ -111,7 +110,7 @@ int main(int argc, char ** argv)
           
           if (strcmp((const char *)name, "vehicle")==0)
           {
-            block = add_row(block);
+            block = add_row_and_blank(block);
             
             int num_attributes = xmlTextReaderAttributeCount(reader);
             
@@ -156,14 +155,26 @@ int main(int argc, char ** argv)
       free(chunk.memory);
       
       fprintf(stderr, "- %d vehicles received\n", count);
+			
+			int last_vehicles_update_column_id = get_column_id_by_name(block, "last_vehicles_update");
+			int curr_vehicles_update_column_id = get_column_id_by_name(block, "curr_vehicles_update");
+			int row_id;
+			for (row_id = 0 ; row_id < block->num_rows ; row_id++) {
+				if (last_vehicles_update_column_id != -1) {
+					set_cell_from_int32(block, row_id, last_vehicles_update_column_id, last_vehicles_update);
+				}
+				if (curr_vehicles_update_column_id != -1) {
+					set_cell_from_int32(block, row_id, curr_vehicles_update_column_id, curr_vehicles_update);
+				}
+			}
+			
+	    write_block(stdout, block);
+	    free_block(block);
+	    fflush(stdout);
     }
-    write_block(stdout, block);
-    free_block(block);
-    fflush(stdout);
     
     if (interval != 0 && (num_requests == 0 || request_index < num_requests - 1)) usleep(interval*1000);
   }
-  free(routeTag);
   curl_easy_cleanup(curl);
   curl = NULL;
   xmlCleanupParser();
