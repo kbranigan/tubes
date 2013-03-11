@@ -605,7 +605,7 @@ struct Block * bsv(char * filename, int instruction)
           {
             if (strlen(row.fields[j]) > 60)
             {
-              fprintf(stderr, "strlen(row[%d].fields[%d]) = %ld\n", block->num_rows, j, strlen(row.fields[j]));
+              fprintf(stderr, "strlen(row[%d].fields[%d]) = %ld\n", block->num_rows, j, (long)strlen(row.fields[j]));
               return block;
             }
             if (strlen(row.fields[j]) > max_column_widths[j])
