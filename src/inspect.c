@@ -15,31 +15,13 @@ int main(int argc, char ** argv)
   static int debug = 0;
   static int reverse = 0;
   
-  int c;
-  while (1)
-  {
-    static struct option long_options[] = {
-      {"column", required_argument, 0, 'c'},
-      {"sort", no_argument, 0, 's'},
-      {"reverse", no_argument, 0, 'r'},
-      {"debug", no_argument, &debug, 1},
-      {0, 0, 0, 0}
-    };
-    
-    int option_index = 0;
-    c = getopt_long(argc, argv, "c:sr", long_options, &option_index);
-    if (c == -1) break;
-    
-    switch (c)
-    {
-      case 0: break;
-      case 'c': strncpy(column_name, optarg, sizeof(column_name)); break;
-      case 's': sort_that_column = 1; break;
-      case 'r': reverse = 1; break;
-      default: abort();
-    }
-  }
-  
+	struct Params * params = NULL;
+	params = add_string_param(params, "column", 'c', column_name, 0);
+	params = add_flag_param(params, "sort", 's', &sort_that_column, 0);
+	params = add_flag_param(params, "reverse", 'r', &reverse, 0);
+	params = add_flag_param(params, "debug", 'd', &debug, 0);
+	eval_params(params, argc, argv);
+	
   struct Block * block = NULL;
   while ((block = read_block(stdin)))
   {
