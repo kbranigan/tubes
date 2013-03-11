@@ -1380,6 +1380,10 @@ struct Params * add_int_param(struct Params * params, const char * name, char na
 	return _add_param(params, name, name_char, TYPE_INT, (void*)dest, required);
 }
 
+struct Params * add_longlong_param(struct Params * params, const char * name, char name_char, long long * dest, int required) {
+	return _add_param(params, name, name_char, TYPE_LONGLONG, (void*)dest, required);
+}
+
 int eval_params(struct Params * params, int argc, char ** argv) {
 	if (params == NULL) { fprintf(stderr, "%s called with NULL params\n", __func__); return; }
 	
@@ -1437,6 +1441,15 @@ int eval_params(struct Params * params, int argc, char ** argv) {
 					} else {
 						int temp = atoi(optarg);
 						(*(int*)params->params[i].dest) = temp;
+						params->params[i].found = 1;
+					}
+				} else if (params->params[i].type == TYPE_LONGLONG) {
+					if (optarg == NULL) {
+						fprintf(stderr, "argument for longlong param '%s' is required\n", params->params[i].name);
+						break;
+					} else {
+						long long temp = atoll(optarg);
+						(*(long long*)params->params[i].dest) = temp;
 						params->params[i].found = 1;
 					}
 				} else if (params->params[i].type == TYPE_FLOAT) {
