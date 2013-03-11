@@ -79,7 +79,7 @@ int main(int argc, char ** argv)
     block = add_int64_attribute(block, "request_index", request_index);
     block = add_int64_attribute(block, "num_requests", num_requests);
     
-    block = add_int32_column(block, "id");
+    block = add_int32_column(block, "vehicle_id");
     block = add_int32_column(block, "routeTag");
     block = add_string_column_with_length(block, "dirTag", 25);
     block = add_float_column(block, "x");
@@ -125,7 +125,8 @@ int main(int argc, char ** argv)
               
               int block_column_id = get_column_id_by_name(block, name);
               
-              if (strcmp(name, "lat")==0) block_column_id = get_column_id_by_name(block, "y");
+              if (strcmp(name, "id")==0) block_column_id = get_column_id_by_name(block, "vehicle_id");
+              else if (strcmp(name, "lat")==0) block_column_id = get_column_id_by_name(block, "y");
               else if (strcmp(name, "lon")==0) block_column_id = get_column_id_by_name(block, "x");
               
               if (block_column_id != -1)
