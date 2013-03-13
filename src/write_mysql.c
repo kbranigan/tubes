@@ -3,43 +3,25 @@
 
 int main(int argc, char ** argv)
 {
-  if (stdout_is_piped()) // other wise you don't see the seg fault
-    setup_segfault_handling(argv);
+	if (stdout_is_piped()) // other wise you don't see the seg fault
+		setup_segfault_handling(argv);
   
-  assert_stdin_is_piped();
-  assert_stdout_is_piped();
-  //assert_stdin_or_out_is_piped();
-  
-  static char table[1000] = "";
-	static int drop = 0;
-  
-  int c;
-  while (1)
-  {
-    static struct option long_options[] = {
-      {"table", required_argument, 0, 't'},
-      {"drop", no_argument, &drop, 1},
-      {0, 0, 0, 0}
-    };
-    
-    int option_index = 0;
-    c = getopt_long(argc, argv, "t:", long_options, &option_index);
-    if (c == -1) break;
-    
-    switch (c)
-    {
-      case 0: break;
-      case 't': strncpy(table, optarg, sizeof(table)); break;
-      default: abort();
-    }
-  }
+	assert_stdin_is_piped();
+	assert_stdout_is_piped();
+	//assert_stdin_or_out_is_piped();
 	
-	if (table[0] == 0) { fprintf(stderr, "%s: --table (or -t) required\n", argv[0]); return EXIT_FAILURE; }
-  
+	static char table[1000] = "";
+	static int drop = 0;
+	
+	struct Params * params = NULL;
+	params = add_string_param(params, "table", 't', table, 1);
+	params = add_flag_param(params, "drop", 'd', &drop, 0);
+	eval_params(params, argc, argv);
+	
 	if (drop) fprintf(stdout, "DROP TABLE IF EXISTS `%s`;\n", table);
-  struct Block * block = NULL;
-  while ((block = read_block(stdin)))
-  {
+	struct Block * block = NULL;
+	while ((block = read_block(stdin)))
+	{
 		int row_id, column_id;
 		fprintf(stdout, "CREATE TABLE IF NOT EXISTS `%s` (id int PRIMARY KEY AUTO_INCREMENT", table);
 		for (column_id = 0 ; column_id < block->num_columns ; column_id++)
@@ -97,6 +79,6 @@ int main(int argc, char ** argv)
 		}
 		fprintf(stdout, ";\n");
 		
-    free_block(block);
-  }
+		free_block(block);
+	}
 }

@@ -53,7 +53,8 @@ enum TYPE {
   TYPE_INT   = 1,
   TYPE_UINT  = 2,
   TYPE_FLOAT = 3,
-  TYPE_CHAR  = 4
+  TYPE_CHAR  = 4,
+	TYPE_LONGLONG = 5 // only used in add_longlong_param(), probably shouldn't have done it that way
 };
 
 /* TODO
@@ -244,6 +245,7 @@ struct Params * _add_param(struct Params * params, const char * name, char name_
 struct Params * add_string_param(struct Params * params, const char * name, char name_char, char * dest, int required);
 struct Params * add_float_param(struct Params * params, const char * name, char name_char, float * dest, int required);
 struct Params * add_flag_param(struct Params * params, const char * name, char name_char, int * dest, int required);
+struct Params * add_longlong_param(struct Params * params, const char * name, char name_char, long long * dest, int required);
 struct Params * add_int_param(struct Params * params, const char * name, char name_char, int * dest, int required);
 int eval_params(struct Params * params, int argc, char ** argv);
 

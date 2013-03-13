@@ -7,6 +7,8 @@
 #include <curl/curl.h>
 #include <getopt.h>   // for getopt_long
 
+#include "block.h"
+
 struct MemoryStruct {
 	char *memory;
 	size_t size;
@@ -42,27 +44,9 @@ int main(int argc, char ** argv)
 	
 	static char url[2000] = "";
 	
-	int c;
-	while (1)
-	{
-		static struct option long_options[] = {
-			{"url", required_argument, 0, 'u'},
-			{0, 0, 0, 0}
-		};
-		
-		int option_index = 0;
-		c = getopt_long(argc, argv, "u:", long_options, &option_index);
-		if (c == -1) break;
-		
-		switch (c)
-		{
-			case 0: break;
-			case 'u': strncpy(url, optarg, sizeof(url)); break;
-			default: abort();
-		}
-	}
-	
-	if (url[0] == 0) { fprintf(stderr, "ERROR: %s --url=[] required\n", argv[0]); exit(1); }
+	struct Params * params = NULL;
+	params = add_string_param(params, "url", 'u', url, 1);
+	eval_params(params, argc, argv);
 	
 	struct MemoryStruct chunk;
 	chunk.memory = NULL;
@@ -80,11 +64,10 @@ int main(int argc, char ** argv)
 	curl_easy_cleanup(curl);
 	curl = NULL;
 	
-	fprintf(stderr, "- received %ld byte response.\n", chunk.size);
+	fprintf(stderr, "- received %d byte response.\n", (int)chunk.size);
 	if (chunk.size > 0)
 	{
 		fwrite(chunk.memory, chunk.size, 1, stdout);
 		free(chunk.memory);
 	}
-	
 }
