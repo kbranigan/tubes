@@ -5,41 +5,12 @@
 
 int main(int argc, char ** argv)
 {
-	/*
 	if (stdout_is_piped()) // other wise you don't see the seg fault
 		setup_segfault_handling(argv);
 	
-	//assert_stdin_is_piped();
+	assert_stdin_is_piped();
 	assert_stdout_is_piped();
 	//assert_stdin_or_out_is_piped();
-	
-	static char filename[1000] = "";
-	static int output_header = 1;
-	static int debug = 0;
-	
-	int c;
-	while (1)
-	{
-		static struct option long_options[] = {
-			{"filename", required_argument, 0, 'f'},
-			{"header", no_argument, &output_header, 1},
-			{"no-header", no_argument, &output_header, 0},
-			{"debug", no_argument, &debug, 1},
-			{0, 0, 0, 0}
-		};
-		
-		int option_index = 0;
-		c = getopt_long(argc, argv, "d:f:", long_options, &option_index);
-		if (c == -1) break;
-		
-		switch (c)
-		{
-			case 0: break;
-			case 'f': strncpy(filename, optarg, sizeof(filename)); break;
-			default: abort();
-		}
-	}
-	*/
 	
 	int zoneletter = 0;
 	int zonenumber = 10;
@@ -49,6 +20,14 @@ int main(int argc, char ** argv)
 	
 	struct ellipsoid e;
 	//get_geo_constants(&e, 5, xtm); // set by nad27 or wgs84
+	
+	struct Params * params = NULL;
+	params = add_string_param(params, "ellipsoid", 'e', ellipsoid_string, 0);
+	params = add_int_param(params, "letter", 'l', &zoneletter, 0);
+	params = add_int_param(params, "number", 'n', &zonenumber, 0);
+	params = add_int_param(params, "xtm", 'x', &xtm, 0);
+	params = add_int_param(params, "meridian", 'm', &ref_meridian, 0);
+	eval_params(params, argc, argv);
 	
 	if (strcmp(ellipsoid_string, "nad27") == 0 || strcmp(ellipsoid_string, "NAD27") == 0) get_geo_constants(&e, 5, xtm);
 	else if (strcmp(ellipsoid_string, "nad83") == 0 || strcmp(ellipsoid_string, "NAD83") == 0) get_geo_constants(&e, 22, xtm);
