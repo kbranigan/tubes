@@ -37,13 +37,6 @@ int main(int argc, char ** argv)
 	params = add_flag_param(params, "debug", 'd', &debug, 0);
 	eval_params(params, argc, argv);
 	
-  FILE * fp = filename[0] == 0 ? stdin : fopen(filename, "r");
-  
-  if (fp == NULL)
-  {
-    fprintf(stderr, "ERROR: file '%s' couldn't be opened for reading.\n", filename);
-  }
-  
   DBFHandle dbf = DBFOpen(filename, "rb");
   SHPHandle shp = SHPOpen(filename, "rb");
   
