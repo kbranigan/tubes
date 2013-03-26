@@ -873,7 +873,7 @@ void fprintf_cell(FILE * fp, struct Block * block, uint32_t row_id, uint32_t col
   switch (column->type) {
     case TYPE_INT:
       if      (column->bsize == 4) fprintf(fp, "%d", *(int32_t*)get_cell(block, row_id, column_id));
-      else if (column->bsize == 8) fprintf(fp, "%ld", *(long*)get_cell(block, row_id, column_id));
+      else if (column->bsize == 8) fprintf(fp, "%lld", *(int64_t*)get_cell(block, row_id, column_id));
       else                         fprintf(stderr, "bad %s %s:(%d)\n", __func__, __FILE__, __LINE__);
       break;
     case TYPE_FLOAT:
