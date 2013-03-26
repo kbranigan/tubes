@@ -806,9 +806,9 @@ void set_cell(struct Block * block, uint32_t row_id, uint32_t column_id, void * 
 
 void set_cell_from_int32(struct Block * block, uint32_t row_id, uint32_t column_id, int32_t data)
 {
-  if (block == NULL) { fprintf(stderr, "set_cell_from_int called with null block\n"); exit(0); }
-  if (row_id >= block->num_rows) { fprintf(stderr, "set_cell_from_int called with row_id(%d) >= block->num_rows(%d)\n", row_id, block->num_rows); exit(0); }
-  if (column_id >= block->num_columns) { fprintf(stderr, "set_cell_from_int called with column_id(%d) >= block->num_columns(%d)\n", column_id, block->num_columns); exit(0); }
+	if (block == NULL) { fprintf(stderr, "%s called with null block\n", __func__); exit(0); }
+	if (row_id >= block->num_rows) { fprintf(stderr, "%s called with row_id(%d) >= block->num_rows(%d)\n", __func__, row_id, block->num_rows); exit(0); }
+	if (column_id >= block->num_columns) { fprintf(stderr, "%s called with column_id(%d) >= block->num_columns(%d)\n", __func__, column_id, block->num_columns); exit(0); }
   
   struct Column * column = get_column(block, column_id);
   void * cell = get_cell(block, row_id, column_id);
@@ -818,6 +818,21 @@ void set_cell_from_int32(struct Block * block, uint32_t row_id, uint32_t column_
   else if (column->type == TYPE_FLOAT && column->bsize == 8) *(double*)cell = data;
   else if (column->type == TYPE_CHAR) snprintf((char*)cell, column->bsize, "%d", data);
   else fprintf(stderr, "bad %s\n", __func__);
+}
+
+void set_cell_from_int64(struct Block * block, uint32_t row_id, uint32_t column_id, int64_t data) {
+	if (block == NULL) { fprintf(stderr, "%s called with null block\n", __func__); exit(0); }
+	if (row_id >= block->num_rows) { fprintf(stderr, "%s called with row_id(%d) >= block->num_rows(%d)\n", __func__, row_id, block->num_rows); exit(0); }
+	if (column_id >= block->num_columns) { fprintf(stderr, "%s called with column_id(%d) >= block->num_columns(%d)\n", __func__, column_id, block->num_columns); exit(0); }
+	
+	struct Column * column = get_column(block, column_id);
+	void * cell = get_cell(block, row_id, column_id);
+	if      (column->type == TYPE_INT && column->bsize == 4) *(int32_t*)cell = data;
+	else if (column->type == TYPE_INT && column->bsize == 8) *(int64_t*)cell = data;
+	else if (column->type == TYPE_FLOAT && column->bsize == 4) *(float*)cell = data;
+	else if (column->type == TYPE_FLOAT && column->bsize == 8) *(double*)cell = data;
+	else if (column->type == TYPE_CHAR) snprintf((char*)cell, column->bsize, "%lld", data);
+	else fprintf(stderr, "bad %s\n", __func__);
 }
 
 void set_cell_from_double(struct Block * block, uint32_t row_id, uint32_t column_id, double data)
