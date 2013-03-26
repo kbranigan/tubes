@@ -1306,7 +1306,7 @@ void inspect_block(struct Block * block) {
         
         if      (cell == NULL) fprintf(stderr, "NULL");
         else if (column->type == TYPE_INT && column->bsize == 4)   fprintf(stderr, "%d", *(int32_t*)cell);
-        else if (column->type == TYPE_INT && column->bsize == 8)   fprintf(stderr, "%ld", *(long*)cell);
+        else if (column->type == TYPE_INT && column->bsize == 8)   fprintf(stderr, "%lld", *(int64_t*)cell);
         else if (column->type == TYPE_FLOAT && column->bsize == 4) fprintf(stderr, "%f", *(float*)cell);
         else if (column->type == TYPE_FLOAT && column->bsize == 8) fprintf(stderr, "%lf", *(double*)cell);
         else if (column->type == TYPE_CHAR)    fprintf(stderr, "\"%s\"", (char*)cell);
