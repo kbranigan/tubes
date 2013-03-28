@@ -48,8 +48,14 @@ MYSQL mysql;
 MYSQL_RES * res;
 MYSQL_ROW row;
 
+struct sPoint {
+	double x;
+	double y;
+};
+
 struct sAddressLine {
-	double x, y;
+	int num_points;
+	struct sPoint * points;
 	int32_t geo_id, arc_side, sequence;
 	time_t last_update_ts;
 	struct sTicketData * ticket_data;
@@ -91,40 +97,77 @@ void near(struct mg_connection *conn, const struct mg_request_info *ri, void *da
 	
 	fprintf(stderr, "%s %f %f %f\n", ri->uri, lat, lng, range);
 	
+	char time_ranges[3][15] = { "", "", "" };
+	
+	sprintf(time_ranges[0], "7pm");
+	sprintf(time_ranges[1], "8pm");
+	sprintf(time_ranges[2], "2am");
+	
 	mg_printf(conn, "{\n	\"years\":[2008,2011],\n	\"api_version\":\"2\"");
 	mg_printf(conn, ",\n	\"params\": {\n		\"lat\":%lf,\n		\"lng\":%lf", lat, lng);
-	mg_printf(conn, ",\n		\"range_in_meters\":%lf,\n		\"range_in_minutes\":[60, 120, 360", range);
-	mg_printf(conn, "]\n	},\n	\"addresses\": [");
+	mg_printf(conn, ",\n		\"payment_options\":[\"Free\", \"Meter\", \"Lots\"]");
+	mg_printf(conn, ",\n		\"time_ranges\":[\"%s\", \"%s\", \"%s\"", range, time_ranges[0], time_ranges[1], time_ranges[2]);
+	mg_printf(conn, "]\n	},\n	\"address_ranges\": [");
 	
 	duplet d = { {lng, lat}, NULL };
 	std::vector<duplet> v;
 	kdtree->find_within_range(d, range/1000, std::back_inserter(v));
 	
-	/*{
-		int i;
-		for (i = 0 ; i < num_address_lines; i ++)
-		fprintf(stderr, "%d: %d %d\n", i, address_lines[i].geo_id, address_lines[i].arc_side);
-	}*/
+	int * ids = NULL;
+	int num_ids = 0;
 	
+	for (std::vector<duplet>::iterator it = v.begin() ; it != v.end() ; it++) {
+		int id = it->row_id;
+		
+		int found = 0;
+		for (i = 0 ; i < num_ids ; i++) {
+			if (ids[i] == id) {
+				found = 1;
+				break;
+			}
+		}
+		
+		if (found == 0) {
+			num_ids++;
+			ids = (int*)realloc(ids, num_ids*sizeof(int));
+			ids[num_ids-1] = id;
+		}
+	}
+	
+	{
+		//int i;
+		//for (i = 0 ; i < num_ids; i ++)
+		//	fprintf(stderr, "%d: %d\n", i, ids[i]);
+	}
+	
+	//fprintf(stderr, "num_address_lines = %d, num_ids = %d\n", num_address_lines, num_ids);
 	int count = 0;
 	//for (i = 0 ; i < num_address_lines ; i++)
-	for (std::vector<duplet>::iterator it = v.begin() ; it != v.end() ; it++)
-	{
-		int i = it->row_id;
+	//if (0)
+	//for (std::vector<duplet>::iterator it = v.begin() ; it != v.end() ; it++)
+	
+	int index;
+	for (index = 0 ; index < num_ids ; index++) {
+		int i = ids[index];//it->row_id;
 		//fprintf(stderr, "i:%d\n", i);
-		mg_printf(conn, "%s\n		{\"id\":\"%d\"", (count==0?"":","), address_lines[i].geo_id);
+		mg_printf(conn, "%s\n		{\"id\":\"%d-%d\"", (count==0?"":","), address_lines[i].arc_side, address_lines[i].geo_id);
 		//if (FULL_ADDRESS != NULL) mg_printf(conn, ", \"name\":\"%s\"", FULL_ADDRESS);
 		mg_printf(conn, ", \"polyline\":[");
 		
-		j = i;
+		/*j = i;
 		while (j < num_address_lines)
 		{
-			mg_printf(conn, "%s[%f,%f]", (j==i?"":","), address_lines[j].y, address_lines[j].x);
+			//mg_printf(conn, "%s[%f,%f]", (j==i?"":","), address_lines[j].y, address_lines[j].x);
 			j++;
 			if (j == num_address_lines) break;
 			if (address_lines[j].geo_id != address_lines[i].geo_id) break;
 			if (address_lines[j].arc_side != address_lines[i].arc_side) break;
+		}*/
+		
+		for (j = 0 ; j < address_lines[i].num_points ; j++) {
+			mg_printf(conn, "%s[%f,%f]", (j==0?"":","), address_lines[i].points[j].y, address_lines[i].points[j].x);
 		}
+		
 		mg_printf(conn, "]");
 		
 		float redgreen[3] = { 0.5, 0.5, 0.5 };
@@ -151,13 +194,13 @@ void near(struct mg_connection *conn, const struct mg_request_info *ri, void *da
 			char query[200];
 			sprintf(query, "SELECT infraction_code, tickets_all_day, tickets_half_hourly, SUBSTRING(tickets_half_hourly, %d, 6) "
 				"FROM mb.ticket_day_infractions_for_geo_id WHERE geo_id = %d AND is_opp = %d AND wday = %d", string_offset+1, address_lines[i].geo_id, address_lines[i].arc_side, timeinfo->tm_wday);
-			fprintf(stderr, "%s\n", query);
+			//fprintf(stderr, "%s\n", query);
 			if (mysql_query(&mysql, query)==0)
 			{
 				res = mysql_store_result(&mysql);
 				address_lines[i].num_ticket_data = mysql_num_rows(res);
 				address_lines[i].ticket_data = (struct sTicketData*)calloc(address_lines[i].num_ticket_data, sizeof(struct sTicketData));
-				fprintf(stderr, "address_lines[i].num_ticket_data = %d\n", address_lines[i].num_ticket_data);
+				//fprintf(stderr, "address_lines[i].num_ticket_data = %d\n", address_lines[i].num_ticket_data);
 				
 				int r = 0;
 				while ((row = mysql_fetch_row(res)))
@@ -174,23 +217,23 @@ void near(struct mg_connection *conn, const struct mg_request_info *ri, void *da
 				}
 				mysql_free_result(res);
 			}
-			
-			int r = 0;
-			for (r = 0 ; r < address_lines[i].num_ticket_data ; r++)
-			{
-				struct sTicketData * ticket_data = &address_lines[i].ticket_data[r];
-				total_tickets += ticket_data->tickets_all_day;
-				if (ticket_data->infraction_code == 1 || ticket_data->infraction_code == 207 || 
-						ticket_data->infraction_code == 210 || ticket_data->infraction_code == 312)
-				{
-					total_meter_tickets += ticket_data->tickets_all_day;
-				}
-			}
-			
-			if ((float)total_meter_tickets > (float)total_tickets * 0.05) ever_metered = 1;
-			
-			if (ever_metered) redgreen[0] = 0;
 		}
+		
+		int r = 0;
+		for (r = 0 ; r < address_lines[i].num_ticket_data ; r++)
+		{
+			struct sTicketData * ticket_data = &address_lines[i].ticket_data[r];
+			total_tickets += ticket_data->tickets_all_day;
+			if (ticket_data->infraction_code == 1 || ticket_data->infraction_code == 207 || 
+					ticket_data->infraction_code == 210 || ticket_data->infraction_code == 312)
+			{
+				total_meter_tickets += ticket_data->tickets_all_day;
+			}
+		}
+		
+		if ((float)total_meter_tickets > (float)total_tickets * 0.05) ever_metered = 1;
+		
+		if (ever_metered) redgreen[0] = 0;
 		
 		mg_printf(conn, ", \"tickets\":[%.2f,%.2f,%.2f], \"total\":%d, \"total_meter\":%d}", 
 			redgreen[0], redgreen[1], redgreen[2], total_tickets, total_meter_tickets);
@@ -203,9 +246,10 @@ void near(struct mg_connection *conn, const struct mg_request_info *ri, void *da
 	
 	mg_printf(conn, ",\n	\"bbox\":[[%f,%f],[%f,%f]]", lat-0.0021, lng-0.0021, lat+0.0021, lng+0.0021);
 	mg_printf(conn, ",\n	\"exec_time\":%.5f\n}", (float)(get_msec() - start) / 1000.0);
-
+	
+	free(ids);
 }
-
+/*
 void details(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
 {
 	char * temp = NULL;
@@ -307,7 +351,7 @@ void httpkill(struct mg_connection *conn, const struct mg_request_info *ri, void
 	mg_printf(conn, "ok");
 	received_kill = 1;
 }
-
+*/
 int main(int argc, char ** argv)
 {
 	unsigned int start = get_msec();
@@ -317,37 +361,46 @@ int main(int argc, char ** argv)
 	{
 		fprintf(stderr, "ERROR: mysql_real_connect error (%s)\n", mysql_error(&mysql));
 	}
-	/*
+	
 	//if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines WHERE geo_id IN (1143060,1143217,1143508,1143623,1144803,1144964,1145067,1145132,1146178,1146213,1146443,1146522,1146556,1146683,1146728,1146770,1146853,1146976,1146998,1147027,2821086,3150314,5999130,7569522,7569576,7569605,7929431,7929478,7929486,7929605,7929919,7930184,7930461,7930588,7930670,7930734,7930769,7930850,7930872,7930873,8033769,8418213,8492130,8677044,10222906,10223745,10223817,10223853,10223870,10223904,10223924,10223941,10458361,10494161,10494181,10494196,10512735,10513373,10513396,10513444,10864275,10864288,10906331,12763884,12763900,14024762,14024763,14024764,14024849,14024850,14024868,14024869,14024988,14024989,14025205,14025206,14025244,14025245,14025275,14025276,14025283,14025284,14025347,14025348,14025408,14025409,14025410,14025469,14025535,14025536,14025543,14025544,14025568,14025569,14025583,14025584,14035996,14035997,14035998,14036014,14036064,14036065,14073511,14073512,14614667,14661238,14671468,14671590,14671591,14673213,14673508,14673518,14673703,14673704,14673829,14673830,20006289,20006295,20034983,20035030,20110574,20110595,20110596,20141140,30022476) ORDER BY geo_id, arc_side, sequence")==0)
-	if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines WHERE geo_id IN (7930734) ORDER BY geo_id, arc_side, sequence")==0)
+	//if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines WHERE geo_id IN (7930734) ORDER BY geo_id, arc_side, sequence")==0)
+	if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines ORDER BY geo_id, arc_side, sequence")==0)
 	{
 		res = mysql_store_result(&mysql);
-		num_address_lines = mysql_num_rows(res);
-		fprintf(stderr, "num_address_lines = %d\n", num_address_lines);
-		address_lines = (struct sAddressLine*)calloc(num_address_lines, sizeof(struct sAddressLine));
+		//num_address_lines = mysql_num_rows(res);
+		//fprintf(stderr, "num_address_lines = %d\n", num_address_lines);
+		//address_lines = (struct sAddressLine*)calloc(num_address_lines, sizeof(struct sAddressLine));
 		
-		int prev_geo_id = -1;
-		int i = 0;
 		while ((row = mysql_fetch_row(res)))
 		{
-			address_lines[i].x				= atof(row[0]);
-			address_lines[i].y				= atof(row[1]);
-			address_lines[i].sequence = atoi(row[2]);
-			address_lines[i].geo_id 	= atoi(row[3]);
-			address_lines[i].arc_side = atoi(row[4]);
-			address_lines[i].last_update_ts = 0;
-			address_lines[i].num_ticket_data = 0;
-			address_lines[i].ticket_data = NULL;
-			//strcpy(address_lines[i].ticket_data, "       ");
+			int geo_id   = atoi(row[3]);
+			int arc_side = atoi(row[4]);
 			
-			duplet d = { {address_lines[i].x, address_lines[i].y}, i };
-			fprintf(stderr, "%d: %d %d\n", i, address_lines[i].geo_id, address_lines[i].arc_side);
-			if (prev_geo_id != address_lines[i].arc_side)
-				kdtree->insert(d);
+			if (num_address_lines == 0 || address_lines[num_address_lines-1].geo_id != geo_id || address_lines[num_address_lines-1].arc_side != arc_side) {
+				num_address_lines++;
+				address_lines = (struct sAddressLine*)realloc(address_lines, num_address_lines*sizeof(struct sAddressLine));
+				memset(&address_lines[num_address_lines-1], 0, sizeof(struct sAddressLine));
+				address_lines[num_address_lines-1].sequence = atoi(row[2]);
+				address_lines[num_address_lines-1].geo_id   = geo_id;
+				address_lines[num_address_lines-1].arc_side = arc_side;
+				address_lines[num_address_lines-1].last_update_ts = 0;
+				address_lines[num_address_lines-1].num_ticket_data = 0;
+				address_lines[num_address_lines-1].ticket_data = NULL;
+			}
 			
-			prev_geo_id = address_lines[i].arc_side;
-			i++;
+			double x = atof(row[0]);
+			double y = atof(row[1]);
+			
+			address_lines[num_address_lines-1].num_points++;
+			address_lines[num_address_lines-1].points = (struct sPoint*)realloc(address_lines[num_address_lines-1].points, sizeof(struct sPoint)*address_lines[num_address_lines-1].num_points);
+			address_lines[num_address_lines-1].points[address_lines[num_address_lines-1].num_points-1].x = x;
+			address_lines[num_address_lines-1].points[address_lines[num_address_lines-1].num_points-1].y = y;
+			
+			duplet d = { {x, y}, num_address_lines-1 };
+			kdtree->insert(d);
 		}
+		fprintf(stderr, "num_address_lines = %d\n", num_address_lines);
+		
 		kdtree->optimize();
 		fprintf(stderr, "kdtree->size() = %ld\n", kdtree->size());
 		
@@ -357,7 +410,7 @@ int main(int argc, char ** argv)
 	{
 		fprintf(stderr, "ERROR: mysql_query() error %s\n", mysql_error(&mysql));
 	}
-	*/
+	
 	struct mg_context *ctx = mg_start();
 	mg_set_option(ctx, "dir_list", "no"); // Set document root
 	int ret = 0;
@@ -405,9 +458,9 @@ int main(int argc, char ** argv)
 	printf("-------------------------------------------------------------------------\n");
 	
 	mg_set_uri_callback(ctx, "/near", &near, NULL);
-	mg_set_uri_callback(ctx, "/kill", &httpkill, NULL);
-	mg_set_uri_callback(ctx, "/details", &details, NULL);
-	mg_set_uri_callback(ctx, "/break_down_infraction_code", &break_down_infraction_code, NULL);
+	//mg_set_uri_callback(ctx, "/kill", &httpkill, NULL);
+	//mg_set_uri_callback(ctx, "/details", &details, NULL);
+	//mg_set_uri_callback(ctx, "/break_down_infraction_code", &break_down_infraction_code, NULL);
 	
 	while (!received_kill)
 	{
