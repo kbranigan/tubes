@@ -106,10 +106,10 @@ void near(struct mg_connection *conn, const struct mg_request_info *ri, void *da
 	mg_printf(conn, "{\n	\"years\":[2008,2011],\n	\"api_version\":\"2\"");
 	mg_printf(conn, ",\n	\"params\": {\n		\"lat\":%lf,\n		\"lng\":%lf", lat, lng);
 	mg_printf(conn, ",\n		\"payment_options\":[\"Free\", \"Meter\", \"Lots\"]");
-	mg_printf(conn, ",\n		\"time_ranges\":[\"%s\", \"%s\", \"%s\"", range, time_ranges[0], time_ranges[1], time_ranges[2]);
+	mg_printf(conn, ",\n		\"time_ranges\":[\"%s\", \"%s\", \"%s\"", time_ranges[0], time_ranges[1], time_ranges[2]);
 	mg_printf(conn, "]\n	},\n	\"address_ranges\": [");
 	
-	duplet d = { {lng, lat}, NULL };
+	duplet d = { {lng, lat}, 0 };
 	std::vector<duplet> v;
 	kdtree->find_within_range(d, range/1000, std::back_inserter(v));
 	
@@ -402,7 +402,7 @@ int main(int argc, char ** argv)
 		fprintf(stderr, "num_address_lines = %d\n", num_address_lines);
 		
 		kdtree->optimize();
-		fprintf(stderr, "kdtree->size() = %ld\n", kdtree->size());
+		fprintf(stderr, "kdtree->size() = %d\n", (int)kdtree->size());
 		
 		mysql_free_result(res);
 	}
