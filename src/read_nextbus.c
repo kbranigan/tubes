@@ -147,7 +147,6 @@ int main(int argc, char ** argv)
             void * temp = xmlTextReaderGetAttribute(reader, (xmlChar *)"time");
             last_vehicles_update = atoll(temp); free(temp);
           }
-          
           ret = xmlTextReaderRead(reader);
         }
         xmlFreeTextReader(reader);
@@ -162,10 +161,10 @@ int main(int argc, char ** argv)
 			int row_id;
 			for (row_id = 0 ; row_id < block->num_rows ; row_id++) {
 				if (last_vehicles_update_column_id != -1) {
-					set_cell_from_int32(block, row_id, last_vehicles_update_column_id, last_vehicles_update);
+					set_cell_from_int64(block, row_id, last_vehicles_update_column_id, last_vehicles_update);
 				}
 				if (curr_vehicles_update_column_id != -1) {
-					set_cell_from_int32(block, row_id, curr_vehicles_update_column_id, curr_vehicles_update);
+					set_cell_from_int64(block, row_id, curr_vehicles_update_column_id, curr_vehicles_update);
 				}
 			}
 			

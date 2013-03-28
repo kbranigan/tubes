@@ -11,7 +11,6 @@ all: mkbin \
 	bin/write_shapefile \
 	bin/block_test \
 	bin/inspect \
-	bin/nextbus \
 	bin/columns \
 	bin/filter \
 	bin/filter_by_distance \
@@ -166,9 +165,6 @@ bin/add_color: bin/block.o src/add_color.c
 
 bin/tesselate: bin/block.o src/tesselate.c
 	gcc -lm bin/block.o src/tesselate.c -framework OpenGL -o bin/tesselate
-
-bin/nextbus: bin/block.o src/nextbus.c
-	gcc -lm bin/block.o src/nextbus.c -o bin/nextbus -lcurl `xml2-config --cflags --libs`
 
 bin/upgrade_block: bin/block.o src/upgrade_block.c
 	gcc -lm bin/block.o src/upgrade_block.c -o bin/upgrade_block

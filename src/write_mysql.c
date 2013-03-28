@@ -12,10 +12,12 @@ int main(int argc, char ** argv)
 	
 	static char table[1000] = "";
 	static int drop = 0;
+	static int add_created_at_field = 0;
 	
 	struct Params * params = NULL;
 	params = add_string_param(params, "table", 't', table, 1);
 	params = add_flag_param(params, "drop", 'd', &drop, 0);
+	params = add_flag_param(params, "created_at", 'c', &add_created_at_field, 0);
 	eval_params(params, argc, argv);
 	
 	if (drop) fprintf(stdout, "DROP TABLE IF EXISTS `%s`;\n", table);
@@ -23,7 +25,7 @@ int main(int argc, char ** argv)
 	while ((block = read_block(stdin)))
 	{
 		int row_id, column_id;
-		fprintf(stdout, "CREATE TABLE IF NOT EXISTS `%s` (id int PRIMARY KEY AUTO_INCREMENT", table);
+		fprintf(stdout, "CREATE TABLE IF NOT EXISTS `%s` (id int PRIMARY KEY AUTO_INCREMENT%s", table, (add_created_at_field?", `created_at` datetime":""));
 		for (column_id = 0 ; column_id < block->num_columns ; column_id++)
 		{
 			struct Column * column = get_column(block, column_id);
@@ -35,7 +37,8 @@ int main(int argc, char ** argv)
 		fprintf(stdout, ");\n");
 		
 		char insert_header[1000] = "";
-		sprintf(insert_header, "INSERT INTO `%s` (", table);
+		sprintf(insert_header, "INSERT INTO `%s` (%s", table, (add_created_at_field?"`created_at`,":""));
+		
 		for (column_id = 0 ; column_id < block->num_columns ; column_id++)
 		{
 			sprintf(&insert_header[strlen(insert_header)], "`%s`", column_get_name(get_column(block, column_id)));
@@ -47,6 +50,9 @@ int main(int argc, char ** argv)
 		{
 			if (row_id%100==0) fprintf(stdout, "%s%s (", (row_id==0?"":";\n"), insert_header);
 			else fprintf(stdout, ",(");
+			if (add_created_at_field) {
+				fprintf(stdout, "NOW(),");
+			}
 			for (column_id = 0 ; column_id < block->num_columns ; column_id++)
 			{
 				struct Column * column = get_column(block, column_id);

@@ -210,6 +210,7 @@ char * get_cell_as_char(struct Block * block, uint32_t row_id, uint32_t column_i
 
 void set_cell(struct Block * block, uint32_t row_id, uint32_t column_id, void * data);
 void set_cell_from_int32(struct Block * block, uint32_t row_id, uint32_t column_id, int32_t data);
+void set_cell_from_int64(struct Block * block, uint32_t row_id, uint32_t column_id, int64_t data);
 void set_cell_from_double(struct Block * block, uint32_t row_id, uint32_t column_id, double data);
 void set_cell_from_string(struct Block * block, uint32_t row_id, uint32_t column_id, char * data);
 
