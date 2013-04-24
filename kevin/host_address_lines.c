@@ -170,8 +170,10 @@ void near(struct mg_connection *conn, const struct mg_request_info *ri, void *da
 		
 		mg_printf(conn, "]");
 		
-		float redgreen[3] = { 0.5, 0.5, 0.5 };
-		
+		float ha = rand()/(float)RAND_MAX;
+
+		float redgreen[3] = { ha, 1.0 - ha, 0.5 };
+
 		int total_tickets = 0;
 		int total_meter_tickets = 0;
 		
