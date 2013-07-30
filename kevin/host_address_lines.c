@@ -258,6 +258,10 @@ void near(struct mg_connection *conn, const struct mg_request_info *ri, void *da
 							//fprintf(stderr, "'%s' after\n", ticket_data->tickets_next_3_hours);
 							mysql_free_result(res2);
 						}
+						else // no data for tomorrow
+						{
+							strncat(ticket_data->tickets_next_3_hours, "      ", 6 - strlen(ticket_data->tickets_next_3_hours));
+						}
 					}
 
 					//if (ticket_data->infraction_code == 29 && address_lines[i].geo_id == 7930734)
@@ -297,7 +301,7 @@ void near(struct mg_connection *conn, const struct mg_request_info *ri, void *da
 											  ticket_data->tickets_next_3_hours[1]-32 + ticket_data->tickets_next_3_hours[2]-32 + 
 											  ticket_data->tickets_next_3_hours[4]-32 + ticket_data->tickets_next_3_hours[5]-32) / 15.0;
 				if (redgreen[2] > 1) redgreen[2] = 1;
-				//fprintf(stderr, "%d-%02d '%s'\n", address_lines[i].arc_side, ticket_data->infraction_code, ticket_data->tickets_next_3_hours);
+				fprintf(stderr, "%d-%02d '%s'\n", address_lines[i].arc_side, ticket_data->infraction_code, ticket_data->tickets_next_3_hours);
 			}
 		}
 		
@@ -433,7 +437,8 @@ int main(int argc, char ** argv)
 	
 	//if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines WHERE geo_id IN (1143060,1143217,1143508,1143623,1144803,1144964,1145067,1145132,1146178,1146213,1146443,1146522,1146556,1146683,1146728,1146770,1146853,1146976,1146998,1147027,2821086,3150314,5999130,7569522,7569576,7569605,7929431,7929478,7929486,7929605,7929919,7930184,7930461,7930588,7930670,7930734,7930769,7930850,7930872,7930873,8033769,8418213,8492130,8677044,10222906,10223745,10223817,10223853,10223870,10223904,10223924,10223941,10458361,10494161,10494181,10494196,10512735,10513373,10513396,10513444,10864275,10864288,10906331,12763884,12763900,14024762,14024763,14024764,14024849,14024850,14024868,14024869,14024988,14024989,14025205,14025206,14025244,14025245,14025275,14025276,14025283,14025284,14025347,14025348,14025408,14025409,14025410,14025469,14025535,14025536,14025543,14025544,14025568,14025569,14025583,14025584,14035996,14035997,14035998,14036014,14036064,14036065,14073511,14073512,14614667,14661238,14671468,14671590,14671591,14673213,14673508,14673518,14673703,14673704,14673829,14673830,20006289,20006295,20034983,20035030,20110574,20110595,20110596,20141140,30022476) ORDER BY geo_id, arc_side, sequence")==0)
 	//if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines WHERE geo_id IN (7930734) ORDER BY geo_id, arc_side, sequence")==0) // kbfu
-	if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines ORDER BY geo_id, arc_side, sequence")==0)
+	if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines WHERE geo_id IN (14025568) ORDER BY geo_id, arc_side, sequence")==0) // kbfu
+	//if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines ORDER BY geo_id, arc_side, sequence")==0)
 	{
 		res = mysql_store_result(&mysql);
 		//num_address_lines = mysql_num_rows(res);
