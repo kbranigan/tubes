@@ -1,6 +1,14 @@
 
 vpath %.c src/functions/in:src/functions/inout:src/functions/out
 
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+	mysql= -I/usr/include/mysql -lmysqlclient -L/usr/lib/mysql
+endif
+ifeq ($(UNAME_S),Darwin)
+	mysql= -I/usr/local/include/mysql -lmysqlclient -L/usr/local/lib/mysql
+endif
+
 all: mkbin \
 	bin/read_csv \
 	bin/write_csv \
@@ -83,10 +91,10 @@ kevin/host_ticket_data: bin/block.o bin/block_kdtree.o ext/mongoose.c kevin/host
 	g++ -lm -lpthread -ldl bin/block.o bin/block_kdtree.o ext/mongoose.c kevin/host_ticket_data.c -o kevin/host_ticket_data
 
 kevin/host_address_lines: ext/mongoose.c kevin/host_address_lines.c
-	g++ -lm -lpthread -ldl ext/mongoose.c kevin/host_address_lines.c -o kevin/host_address_lines -I/usr/local/include/mysql -L/usr/local/lib/mysql -lmysqlclient
+	g++ -lm -lpthread -ldl ext/mongoose.c kevin/host_address_lines.c -o kevin/host_address_lines $(mysql)
 
 kevin/update_tickets.address_id: bin/hashtable.o kevin/update_tickets.address_id.c
-	g++ -lm -lmysqlclient bin/hashtable.o kevin/update_tickets.address_id.c -o kevin/update_tickets.address_id -I/usr/local/include/mysql -L/usr/local/lib/mysql
+	g++ -lm bin/hashtable.o kevin/update_tickets.address_id.c -o kevin/update_tickets.address_id $(mysql)
 
 kevin/test: bin/block.o kevin/test.c bin/hashtable.o bin/block_kdtree.o
 	g++ -lm bin/block.o kevin/test.c bin/hashtable.o bin/block_kdtree.o -o kevin/test
@@ -224,10 +232,10 @@ bin/test: bin/block.o src/test.c
 	gcc -lm bin/block.o src/test.c -o bin/test
 
 bin/read_mysql: bin/block.o src/read_mysql.c
-	gcc -lm bin/block.o src/read_mysql.c -o bin/read_mysql -I/usr/local/include/mysql -L/usr/local/lib/mysql -lmysqlclient
+	gcc -lm bin/block.o src/read_mysql.c -o bin/read_mysql $(mysql)
 
 bin/read_mysql_table: bin/block.o src/read_mysql_table.c
-	gcc -lm bin/block.o src/read_mysql_table.c -o bin/read_mysql_table -I/usr/local/include/mysql -L/usr/local/lib/mysql -lmysqlclient
+	gcc -lm bin/block.o src/read_mysql_table.c -o bin/read_mysql_table $(mysql)
 
 bin/png: bin/block.o src/png.c
 	gcc -lm bin/block.o src/png.c ext/SOIL/src/*.c -o bin/png -Iext/SOIL/src -framework OpenGL -framework CoreFoundation -lpng
