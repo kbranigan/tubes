@@ -88,6 +88,26 @@ void near(struct mg_connection *conn, const struct mg_request_info *ri, void *da
 	double lat, lng, range=2;
 	time_t now_t = time(NULL);
 	struct tm * timeinfo = localtime(&now_t);
+	
+	//timeinfo->tm_min  = 34; // kbfu for testing
+	//timeinfo->tm_hour = 10; // kbfu for testing
+
+	if (timeinfo->tm_min >= 45)
+	{
+		timeinfo->tm_hour++;
+		if (timeinfo->tm_hour == 24)
+		{
+			timeinfo->tm_hour	= 0;
+			timeinfo->tm_wday++;
+			if (timeinfo->tm_wday == 7)
+			{
+				timeinfo->tm_wday = 0;
+			}
+		}
+	}
+
+	timeinfo->tm_min = 0; // makes life easier
+
 	int string_offset = timeinfo->tm_hour*2 + (int)floor(timeinfo->tm_min / 30.0);
 	int i, j, k, l;
 	
@@ -99,13 +119,17 @@ void near(struct mg_connection *conn, const struct mg_request_info *ri, void *da
 	
 	char time_ranges[3][15] = { "", "", "" };
 	
-	sprintf(time_ranges[0], "7pm");
-	sprintf(time_ranges[1], "8pm");
-	sprintf(time_ranges[2], "2am");
+	int haha = (timeinfo->tm_hour == 23 ? 0 : timeinfo->tm_hour+1);
+	if (timeinfo->tm_min > 45) haha = (haha > 23) ? 0 : haha++;
+	sprintf(time_ranges[0], "%d%s", (haha==0?12:(haha>12?haha-12:haha)), (haha==0?"am":(haha>=12?"pm":"am")));
+	haha = (haha == 23) ? 0 : haha+1;
+	sprintf(time_ranges[1], "%d%s", (haha==0?12:(haha>12?haha-12:haha)), (haha==0?"am":(haha>=12?"pm":"am")));
+	haha = (haha == 23) ? 0 : haha+1;
+	sprintf(time_ranges[2], "%d%s", (haha==0?12:(haha>12?haha-12:haha)), (haha==0?"am":(haha>=12?"pm":"am")));
 	
 	mg_printf(conn, "{\n	\"years\":[2008,2011],\n	\"api_version\":\"2\"");
 	mg_printf(conn, ",\n	\"params\": {\n		\"lat\":%lf,\n		\"lng\":%lf", lat, lng);
-	mg_printf(conn, ",\n		\"payment_options\":[\"Free\", \"Meter\", \"Lots\"]");
+	mg_printf(conn, ",\n		\"payment_options\":[\"Free\", \"Metered\"]");//, \"Lots\"]");
 	mg_printf(conn, ",\n		\"time_ranges\":[\"%s\", \"%s\", \"%s\"", time_ranges[0], time_ranges[1], time_ranges[2]);
 	mg_printf(conn, "]\n	},\n	\"address_ranges\": [");
 	
@@ -170,9 +194,9 @@ void near(struct mg_connection *conn, const struct mg_request_info *ri, void *da
 		
 		mg_printf(conn, "]");
 		
-		float ha = rand()/(float)RAND_MAX;
+		//float ha = rand()/(float)RAND_MAX;
 
-		float redgreen[3] = { ha, 1.0 - ha, 0.5 };
+		float redgreen[3] = { 0, 0, 0 }; //ha, 1.0 - ha, 0.5 };
 
 		int total_tickets = 0;
 		int total_meter_tickets = 0;
@@ -212,8 +236,34 @@ void near(struct mg_connection *conn, const struct mg_request_info *ri, void *da
 					
 					ticket_data->infraction_code = atoi(row[0]);
 					ticket_data->tickets_all_day = atoi(row[1]);
-					strncpy(ticket_data->tickets_next_3_hours, row[3], 6); // you'll have to verify this one
-					
+					strncpy(ticket_data->tickets_next_3_hours, row[3], 6); // kbfu, you'll have to verify this one, also night rollover
+
+					// get tomorrows data, append that shit
+					if (string_offset+6 >= 48)// && address_lines[i].geo_id == 7930734 && ticket_data->infraction_code == 29)
+					{
+						sprintf(query, "SELECT tickets_half_hourly FROM mb.ticket_day_infractions_for_geo_id WHERE infraction_code = %d AND geo_id = %d AND is_opp = %d AND wday = %d", ticket_data->infraction_code, address_lines[i].geo_id, address_lines[i].arc_side, (timeinfo->tm_wday==6?0:timeinfo->tm_wday+1));
+						//fprintf(stderr, "%s\n", query);
+						if (mysql_query(&mysql, query)==0)
+						{
+							//fprintf(stderr, "%ld\n", strlen(ticket_data->tickets_next_3_hours));
+							MYSQL_RES * res2 = mysql_store_result(&mysql);
+							MYSQL_ROW row2 = mysql_fetch_row(res2);
+
+							//fprintf(stderr, "'%s' before\n", ticket_data->tickets_next_3_hours);
+							//fprintf(stderr, "append '%s'\n", row2[0]);
+							if (row2 != NULL && row2[0] != NULL)
+							{
+								strncat(ticket_data->tickets_next_3_hours, row2[0], 6 - strlen(ticket_data->tickets_next_3_hours));
+							}
+							//fprintf(stderr, "'%s' after\n", ticket_data->tickets_next_3_hours);
+							mysql_free_result(res2);
+						}
+					}
+
+					//if (ticket_data->infraction_code == 29 && address_lines[i].geo_id == 7930734)
+					//{
+					//	fprintf(stderr, "%d '%s' vs '%s'\n", string_offset+1, row[2], ticket_data->tickets_next_3_hours);
+					//}
 					//fprintf(stderr, "%03d '%s'\n", address_lines[i].ticket_data[r].infraction_code, address_lines[i].ticket_data[r].tickets_next_3_hours);
 					r++;
 				}
@@ -231,11 +281,28 @@ void near(struct mg_connection *conn, const struct mg_request_info *ri, void *da
 			{
 				total_meter_tickets += ticket_data->tickets_all_day;
 			}
+			else if (ticket_data->infraction_code == 5 || ticket_data->infraction_code == 6
+				    || ticket_data->infraction_code == 8 || ticket_data->infraction_code == 9
+				    || ticket_data->infraction_code == 28 || ticket_data->infraction_code == 29
+				    || ticket_data->infraction_code == 139 || ticket_data->infraction_code == 209
+				    || ticket_data->infraction_code == 263 || ticket_data->infraction_code == 264
+				    || ticket_data->infraction_code == 266)// && address_lines[i].geo_id == 7930734)
+			{
+				redgreen[0] += (ticket_data->tickets_next_3_hours[0]-32 + ticket_data->tickets_next_3_hours[1]-32) / 5.0;
+				if (redgreen[0] > 1) redgreen[0] = 1;
+				redgreen[1] += (ticket_data->tickets_next_3_hours[0]-32 + ticket_data->tickets_next_3_hours[1]-32 + 
+											  ticket_data->tickets_next_3_hours[2]-32 + ticket_data->tickets_next_3_hours[3]-32) / 10.0;
+				if (redgreen[1] > 1) redgreen[1] = 1;
+				redgreen[2] += (ticket_data->tickets_next_3_hours[0]-32 + ticket_data->tickets_next_3_hours[1]-32 + 
+											  ticket_data->tickets_next_3_hours[1]-32 + ticket_data->tickets_next_3_hours[2]-32 + 
+											  ticket_data->tickets_next_3_hours[4]-32 + ticket_data->tickets_next_3_hours[5]-32) / 15.0;
+				if (redgreen[2] > 1) redgreen[2] = 1;
+				//fprintf(stderr, "%d-%02d '%s'\n", address_lines[i].arc_side, ticket_data->infraction_code, ticket_data->tickets_next_3_hours);
+			}
 		}
 		
-		if ((float)total_meter_tickets > (float)total_tickets * 0.05) ever_metered = 1;
-		
-		if (ever_metered) redgreen[0] = 0;
+		//if ((float)total_meter_tickets > (float)total_tickets * 0.05) ever_metered = 1;
+		//if (ever_metered) redgreen[0] = 0;
 		
 		mg_printf(conn, ", \"tickets\":[%.2f,%.2f,%.2f], \"total\":%d, \"total_meter\":%d}", 
 			redgreen[0], redgreen[1], redgreen[2], total_tickets, total_meter_tickets);
@@ -365,8 +432,8 @@ int main(int argc, char ** argv)
 	}
 	
 	//if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines WHERE geo_id IN (1143060,1143217,1143508,1143623,1144803,1144964,1145067,1145132,1146178,1146213,1146443,1146522,1146556,1146683,1146728,1146770,1146853,1146976,1146998,1147027,2821086,3150314,5999130,7569522,7569576,7569605,7929431,7929478,7929486,7929605,7929919,7930184,7930461,7930588,7930670,7930734,7930769,7930850,7930872,7930873,8033769,8418213,8492130,8677044,10222906,10223745,10223817,10223853,10223870,10223904,10223924,10223941,10458361,10494161,10494181,10494196,10512735,10513373,10513396,10513444,10864275,10864288,10906331,12763884,12763900,14024762,14024763,14024764,14024849,14024850,14024868,14024869,14024988,14024989,14025205,14025206,14025244,14025245,14025275,14025276,14025283,14025284,14025347,14025348,14025408,14025409,14025410,14025469,14025535,14025536,14025543,14025544,14025568,14025569,14025583,14025584,14035996,14035997,14035998,14036014,14036064,14036065,14073511,14073512,14614667,14661238,14671468,14671590,14671591,14673213,14673508,14673518,14673703,14673704,14673829,14673830,20006289,20006295,20034983,20035030,20110574,20110595,20110596,20141140,30022476) ORDER BY geo_id, arc_side, sequence")==0)
-	//if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines WHERE geo_id IN (7930734) ORDER BY geo_id, arc_side, sequence")==0)
-	if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines ORDER BY geo_id, arc_side, sequence")==0)
+	if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines WHERE geo_id IN (7930734) ORDER BY geo_id, arc_side, sequence")==0)
+	//if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines ORDER BY geo_id, arc_side, sequence")==0)
 	{
 		res = mysql_store_result(&mysql);
 		//num_address_lines = mysql_num_rows(res);
@@ -413,6 +480,8 @@ int main(int argc, char ** argv)
 		fprintf(stderr, "ERROR: mysql_query() error %s\n", mysql_error(&mysql));
 	}
 	
+	fprintf(stderr, "binding to port: %s\n", port);
+
 	struct mg_context *ctx = mg_start();
 	mg_set_option(ctx, "dir_list", "no"); // Set document root
 	int ret = 0;
