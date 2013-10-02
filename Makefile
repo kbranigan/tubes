@@ -63,7 +63,9 @@ kevin: mkbin \
 	kevin/host_address_lines \
 	kevin/update_tickets.address_id \
 	kevin/add_address_id_and_is_opp \
+	kevin/convert_location1_to_is_opp \
 	kevin/filter_no_at_and_no_op_ticket \
+	kevin/update_addresses.num_tickets \
 	kevin/test
 
 mkbin:
@@ -101,6 +103,12 @@ kevin/test: bin/block.o kevin/test.c bin/hashtable.o bin/block_kdtree.o
 
 kevin/add_address_id_and_is_opp: bin/block.o bin/block_hashtable.o bin/hashtable.o kevin/add_address_id_and_is_opp.c
 	gcc -lm bin/block.o bin/block_hashtable.o bin/hashtable.o kevin/add_address_id_and_is_opp.c -o kevin/add_address_id_and_is_opp
+
+kevin/convert_location1_to_is_opp: bin/block.o kevin/convert_location1_to_is_opp.c
+	gcc -lm bin/block.o kevin/convert_location1_to_is_opp.c -o kevin/convert_location1_to_is_opp
+
+kevin/update_addresses.num_tickets: bin/block.o kevin/update_addresses.num_tickets.c
+	gcc -lm bin/block.o kevin/update_addresses.num_tickets.c -o kevin/update_addresses.num_tickets $(mysql)
 
 kevin/add_wday: bin/block.o kevin/add_wday.c
 	gcc -lm bin/block.o kevin/add_wday.c -o kevin/add_wday
