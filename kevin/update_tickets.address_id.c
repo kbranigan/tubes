@@ -5,6 +5,8 @@
 #include <string.h>
 #include "../ext/hashtable.h"
 
+const char * addresses_table = "addresses_july2013";
+
 static unsigned int hash_from_string_fn(void * str)
 {
   unsigned char * key = (unsigned char*)str;
@@ -21,6 +23,9 @@ static int strings_equal_fn(void * key1, void * key2)
 
 int main(int argc, char ** argv)
 {
+	fprintf(stderr, "this function no longer functions\n"); /* there are multiple addresses with the same address */
+	exit(1);
+
 	MYSQL mysql;
 	MYSQL_RES * res;
 	MYSQL_ROW row;
@@ -35,7 +40,10 @@ int main(int argc, char ** argv)
 		fprintf(stderr, "ERROR: mysql_real_connect error (%s)\n", mysql_error(&mysql));
 	}
 	
-	if (mysql_query(&mysql, "SELECT id, UPPER(TRIM(FULL_ADDRESS)) FROM addresses_oct2012 WHERE FULL_ADDRESS IS NOT NULL")==0)
+	char query[1000] = "";
+	sprintf(query, "SELECT id, UPPER(TRIM(FULL_ADDRESS)) FROM %s WHERE FULL_ADDRESS IS NOT NULL", addresses_table);
+
+	if (mysql_query(&mysql, query)==0)
 	{
 		res = mysql_store_result(&mysql);
 		int num_rows = mysql_num_rows(res);
