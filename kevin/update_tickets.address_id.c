@@ -23,9 +23,6 @@ static int strings_equal_fn(void * key1, void * key2)
 
 int main(int argc, char ** argv)
 {
-	fprintf(stderr, "this function no longer functions\n"); /* there are multiple addresses with the same address */
-	exit(1);
-
 	MYSQL mysql;
 	MYSQL_RES * res;
 	MYSQL_ROW row;
@@ -96,14 +93,14 @@ int main(int argc, char ** argv)
 			{
 				if (row[3] == NULL) continue;
 				char tempquery[200];
-			
+				
 				void * ptr = hashtable_search(ht, row[3]);
 				if (ptr != NULL)
-					fprintf(stdout, "UPDATE tickets SET address_id = %d WHERE id = %s;\n", *(int32_t*)ptr, row[0]);
+					sprintf(tempquery, "UPDATE tickets SET address_id = %d WHERE id = %s;\n", *(int32_t*)ptr, row[0]);
 				else
-					fprintf(stdout, "UPDATE tickets SET address_id = NULL WHERE id = %s;\n", row[0]);
-			
-				//mysql_query(&mysql, tempquery);
+					sprintf(tempquery, "UPDATE tickets SET address_id = NULL WHERE id = %s;\n", row[0]);
+				
+				mysql_query(&mysql, tempquery);
 			}
 		
 			mysql_free_result(res);

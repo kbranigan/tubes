@@ -23,11 +23,11 @@ struct duplet
   
   double distance_to(struct duplet const& x) const
   {
-    fprintf(stderr, "distance_to\n");
+    //fprintf(stderr, "distance_to\n");
     double dx = d[0] - x.d[0];
     double dy = d[1] - x.d[1];
     double dist = std::sqrt(dx*dx + dy*dy);
-    fprintf(stderr, "dist = %f (%f %f)\n", dist, d[0], dy);
+    //fprintf(stderr, "dist = %f (%f %f)\n", dist, d[0], dy);
     return dist;
   }
   
@@ -86,7 +86,14 @@ void near(struct mg_connection *conn, const struct mg_request_info *ri, void *da
 	mg_printf(conn, "HTTP/1.1 200 OK\r\nContent-Type: application/javascript\r\nConnection: close\r\n\r\n");
 	
 	double lat, lng, range=2;
-	time_t now_t = time(NULL);
+	time_t now_t;
+
+	char * temp = NULL;
+	temp = mg_get_var(conn, "lat"); if (temp != NULL) { lat = atof(temp); mg_free(temp); } else if (range==0) { mg_printf(conn, "{\"error\":\"lat is required\"}"); return; }
+	temp = mg_get_var(conn, "lng"); if (temp != NULL) { lng = atof(temp); mg_free(temp); } else if (range==0) { mg_printf(conn, "{\"error\":\"lng is required\"}"); return; }
+	
+	temp = mg_get_var(conn, "now"); if (temp != NULL) { now_t = atol(temp); mg_free(temp); } else { now_t = time(NULL); }
+	//time_t now_t = time(NULL);
 	struct tm * timeinfo = localtime(&now_t);
 	
 	//timeinfo->tm_min  = 34; // kbfu for testing
@@ -107,15 +114,14 @@ void near(struct mg_connection *conn, const struct mg_request_info *ri, void *da
 	}
 
 	timeinfo->tm_min = 0; // makes life easier
+	timeinfo->tm_sec = 0; // makes life easier
+
+	now_t = mktime(timeinfo);
 
 	int string_offset = timeinfo->tm_hour*2 + (int)floor(timeinfo->tm_min / 30.0);
 	int i, j, k, l;
 	
-	char * temp = NULL;
-	temp = mg_get_var(conn, "lat"); if (temp != NULL) { lat = atof(temp); mg_free(temp); } else if (range==0) { mg_printf(conn, "{\"error\":\"lat is required\"}"); return; }
-	temp = mg_get_var(conn, "lng"); if (temp != NULL) { lng = atof(temp); mg_free(temp); } else if (range==0) { mg_printf(conn, "{\"error\":\"lng is required\"}"); return; }
-	
-	fprintf(stderr, "%s %f %f %f\n", ri->uri, lat, lng, range);
+	fprintf(stderr, "%s %f %f %f @ %ld\n", ri->uri, lat, lng, range, now_t);
 	
 	char time_ranges[3][15] = { "", "", "" };
 	
@@ -129,7 +135,12 @@ void near(struct mg_connection *conn, const struct mg_request_info *ri, void *da
 	
 	mg_printf(conn, "{\n	\"years\":[2008,2011],\n	\"api_version\":\"2\"");
 	mg_printf(conn, ",\n	\"params\": {\n		\"lat\":%lf,\n		\"lng\":%lf", lat, lng);
-	mg_printf(conn, ",\n		\"payment_options\":[\"Free\", \"Metered\"]");//, \"Lots\"]");
+	mg_printf(conn, ",\n		\"now\":%ld", now_t);
+	char * now_t_readable = asctime(timeinfo);
+	now_t_readable[strlen(now_t_readable)-1] = 0;
+	mg_printf(conn, ",\n		\"now_string\":\"%s\"", now_t_readable);
+	//mg_printf(conn, ",\n		\"payment_options\":[\"Free\", \"Metered\"]");//, \"Lots\"]");
+	mg_printf(conn, ",\n		\"payment_options\":[\"Meter Beater\"]");//, \"Lots\"]");
 	mg_printf(conn, ",\n		\"time_ranges\":[\"%s\", \"%s\", \"%s\"", time_ranges[0], time_ranges[1], time_ranges[2]);
 	mg_printf(conn, "]\n	},\n	\"address_ranges\": [");
 	
@@ -289,23 +300,30 @@ void near(struct mg_connection *conn, const struct mg_request_info *ri, void *da
 			{
 				total_meter_tickets += ticket_data->tickets_all_day;
 			}
-			else if (ticket_data->infraction_code == 5 || ticket_data->infraction_code == 6
+			else if (ticket_data->infraction_code == 0 /* 0 = blacklist */
+						|| ticket_data->infraction_code == 5 || ticket_data->infraction_code == 6
 				    || ticket_data->infraction_code == 8 || ticket_data->infraction_code == 9
 				    || ticket_data->infraction_code == 28 || ticket_data->infraction_code == 29
 				    || ticket_data->infraction_code == 139 || ticket_data->infraction_code == 209
 				    || ticket_data->infraction_code == 263 || ticket_data->infraction_code == 264
+				    || ticket_data->infraction_code == 250 || ticket_data->infraction_code == 337
 				    || ticket_data->infraction_code == 266)// && address_lines[i].geo_id == 7930734)
 			{
-				redgreen[0] += (ticket_data->tickets_next_3_hours[0]-32 + ticket_data->tickets_next_3_hours[1]-32) / 5.0;
+				redgreen[0] += (ticket_data->tickets_next_3_hours[0]-32 + ticket_data->tickets_next_3_hours[1]-32);// / 5.0;
 				if (redgreen[0] > 1) redgreen[0] = 1;
 				redgreen[1] += (ticket_data->tickets_next_3_hours[0]-32 + ticket_data->tickets_next_3_hours[1]-32 + 
-											  ticket_data->tickets_next_3_hours[2]-32 + ticket_data->tickets_next_3_hours[3]-32) / 10.0;
+											  ticket_data->tickets_next_3_hours[2]-32 + ticket_data->tickets_next_3_hours[3]-32);// / 10.0;
 				if (redgreen[1] > 1) redgreen[1] = 1;
 				redgreen[2] += (ticket_data->tickets_next_3_hours[0]-32 + ticket_data->tickets_next_3_hours[1]-32 + 
-											  ticket_data->tickets_next_3_hours[1]-32 + ticket_data->tickets_next_3_hours[2]-32 + 
-											  ticket_data->tickets_next_3_hours[4]-32 + ticket_data->tickets_next_3_hours[5]-32) / 15.0;
+											  ticket_data->tickets_next_3_hours[2]-32 + ticket_data->tickets_next_3_hours[3]-32 + 
+											  ticket_data->tickets_next_3_hours[4]-32 + ticket_data->tickets_next_3_hours[5]-32);// / 15.0;
 				if (redgreen[2] > 1) redgreen[2] = 1;
-				fprintf(stderr, "%d-%02d '%s'\n", address_lines[i].arc_side, ticket_data->infraction_code, ticket_data->tickets_next_3_hours);
+				/*fprintf(stderr, "%d-%02d '%s'\n", address_lines[i].arc_side, ticket_data->infraction_code, ticket_data->tickets_next_3_hours);
+				for (int g = 0 ; g < 6 ; g++) {
+					fprintf(stderr, "  %d:%d\n", g, ticket_data->tickets_next_3_hours[g]);
+				}
+				fprintf(stderr, "  %f %f %f\n", redgreen[0], redgreen[1], redgreen[2]);
+				fprintf(stderr, "\n");*/
 			}
 		}
 		
@@ -429,6 +447,55 @@ void httpkill(struct mg_connection *conn, const struct mg_request_info *ri, void
 	received_kill = 1;
 }
 */
+
+void reload_geo_id(struct mg_connection *conn, const struct mg_request_info *ri, void *data)
+{
+	mg_printf(conn, "HTTP/1.1 200 OK\r\nContent-Type: application/javascript\r\nConnection: close\r\n\r\n");
+	int geo_id = -1;
+	int is_opp = -1;
+	char * temp = NULL;
+	temp = mg_get_var(conn, "geo_id"); if (temp != NULL) { geo_id = atoi(temp); mg_free(temp); }
+	temp = mg_get_var(conn, "is_opp"); if (temp != NULL) { is_opp = atoi(temp); mg_free(temp); }
+
+	if (geo_id == -1 || is_opp == -1) return;
+
+	int i;
+	for (i = 0 ; i < num_address_lines ; i++)
+	{
+		if (address_lines[i].geo_id == geo_id && address_lines[i].arc_side == is_opp)
+		{
+			address_lines[i].last_update_ts = 0;
+			mg_printf(conn, "%d<br />\n", i);
+			char query[300];
+			sprintf(query, "SELECT id, x, y, sequence FROM address_lines WHERE geo_id = %d AND arc_side = '%s' ORDER BY sequence", geo_id, (is_opp?"L":"R"));
+			if (mysql_query(&mysql, query)==0)
+			{
+				int j = 0;
+				res = mysql_store_result(&mysql);
+				while ((row = mysql_fetch_row(res)))
+				{
+					int   id = atoi(row[0]);
+					double x = atof(row[1]);
+					double y = atof(row[2]);
+					int  seq = atoi(row[3]);
+
+					if (j == seq)
+					{
+						address_lines[i].points[j].x = x;
+						address_lines[i].points[j].y = y;
+					}
+
+					j++;
+				}
+			}
+			else
+			{
+				fprintf(stderr, "ERROR: mysql_query() error %s\n", mysql_error(&mysql));
+			}
+		}
+	}
+}
+
 int main(int argc, char ** argv)
 {
 	unsigned int start = get_msec();
@@ -440,8 +507,10 @@ int main(int argc, char ** argv)
 	}
 	
 	//if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines WHERE geo_id IN (1143060,1143217,1143508,1143623,1144803,1144964,1145067,1145132,1146178,1146213,1146443,1146522,1146556,1146683,1146728,1146770,1146853,1146976,1146998,1147027,2821086,3150314,5999130,7569522,7569576,7569605,7929431,7929478,7929486,7929605,7929919,7930184,7930461,7930588,7930670,7930734,7930769,7930850,7930872,7930873,8033769,8418213,8492130,8677044,10222906,10223745,10223817,10223853,10223870,10223904,10223924,10223941,10458361,10494161,10494181,10494196,10512735,10513373,10513396,10513444,10864275,10864288,10906331,12763884,12763900,14024762,14024763,14024764,14024849,14024850,14024868,14024869,14024988,14024989,14025205,14025206,14025244,14025245,14025275,14025276,14025283,14025284,14025347,14025348,14025408,14025409,14025410,14025469,14025535,14025536,14025543,14025544,14025568,14025569,14025583,14025584,14035996,14035997,14035998,14036014,14036064,14036065,14073511,14073512,14614667,14661238,14671468,14671590,14671591,14673213,14673508,14673518,14673703,14673704,14673829,14673830,20006289,20006295,20034983,20035030,20110574,20110595,20110596,20141140,30022476) ORDER BY geo_id, arc_side, sequence")==0)
-	//if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines WHERE geo_id IN (7930734) ORDER BY geo_id, arc_side, sequence")==0) // kbfu
 	//if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines WHERE geo_id IN (14025568) ORDER BY geo_id, arc_side, sequence")==0) // kbfu
+	//if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines WHERE geo_id IN (7930734) ORDER BY geo_id, arc_side, sequence")==0) // kbfu
+	//if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines WHERE geo_id IN (6168193) ORDER BY geo_id, arc_side, sequence")==0) // kbfu
+	//if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines WHERE geo_id IN (20139610,7930734,20139600,6168193,1145763) ORDER BY geo_id, arc_side, sequence")==0) // kbfu
 	if (mysql_query(&mysql, "SELECT x, y, sequence, geo_id, arc_side='L' FROM address_lines ORDER BY geo_id, arc_side, sequence")==0)
 	{
 		res = mysql_store_result(&mysql);
@@ -538,6 +607,7 @@ int main(int argc, char ** argv)
 	printf("-------------------------------------------------------------------------\n");
 	
 	mg_set_uri_callback(ctx, "/near", &near, NULL);
+	mg_set_uri_callback(ctx, "/reload_geo_id", &reload_geo_id, NULL);
 	//mg_set_uri_callback(ctx, "/kill", &httpkill, NULL);
 	//mg_set_uri_callback(ctx, "/details", &details, NULL);
 	//mg_set_uri_callback(ctx, "/break_down_infraction_code", &break_down_infraction_code, NULL);

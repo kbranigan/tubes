@@ -7,10 +7,16 @@ if ($argv[1] != 'ok')
 mysql_connect("localhost", "root", "");
 mysql_select_db("mb");
 
+////////////////////////////////////////////////////////////////
+mysql_query("truncate table ticket_day_infractions_for_geo_id");
+////////////////////////////////////////////////////////////////
+
 $codes = array();//1,5,8,9,29,207,210,264,312);
 
 // meter based infractions
 //$codes = array(39,40,46,261,301,302,303,304,305,306,307,308,309,310,311,312,313,314);
+
+$table_date = "july2013"; // "oct2012";
 
 if (count($codes) == 0)
 {
@@ -20,11 +26,12 @@ if (count($codes) == 0)
 
 //$street_restriction = " AND lf_name = 'Camden St' ";
 
-function add_ticket_day_infractions($one, $two) // kbfu, not great
+function add_ticket_day_infractions($one, $two)
 {
   $ret = $one;
-  for ($i = 0 ; $i < 48 ; $i++)
-    if ($two[$i] != ' ') $ret[$i] = $two[$i];
+  for ($i = 0 ; $i < strlen($one) ; $i++) {
+    $ret[$i] = chr(min(94, (ord($one[$i])-32) + (ord($two[$i])-32))+32);
+	}
   
   return $ret;
 }
@@ -44,28 +51,32 @@ function time_to_offset($time_in)
 	return floor($min / 30);
 }
 
-mysql_query("truncate table ticket_day_infractions_for_geo_id");
-
 $count = 0;
-$r_streets = mysql_query("SELECT lf_name FROM mb.centreline_oct2012 WHERE lf_name IS NOT NULL $street_restriction GROUP BY lf_name");
+$r_streets = mysql_query("SELECT lf_name FROM mb.centreline_$table_date WHERE lf_name IS NOT NULL $street_restriction GROUP BY lf_name");
 $r_streets_count = mysql_num_rows($r_streets);
 print "r_street_count = $r_streets_count\n";
 while (list($lf_name) = mysql_fetch_array($r_streets))
 {
-	$r_geo_ids = mysql_query("SELECT geo_id FROM mb.centreline_oct2012 WHERE LF_NAME = '".mysql_real_escape_string($lf_name)."' GROUP BY geo_id");
+	$q = "SELECT geo_id FROM mb.centreline_$table_date WHERE LF_NAME = '".mysql_real_escape_string($lf_name)."' GROUP BY geo_id";
+	//print "$q\n";
+	$r_geo_ids = mysql_query($q);
 	print mysql_error();
 	$r_count_geo_ids = mysql_num_rows($r_geo_ids);
 	while (list($geo_id) = mysql_fetch_array($r_geo_ids))
 	{
 		$addresses = array();
 		
-		$request_addresses = mysql_query("SELECT id FROM mb.addresses_oct2012 WHERE ".
-			"LF_NAME = '".mysql_real_escape_string($lf_name)."' AND street_geo_id = $geo_id AND ARC_SIDE = 'L'"); print mysql_error();
+		$q = "SELECT id FROM mb.addresses_$table_date WHERE ".
+			"LF_NAME = '".mysql_real_escape_string($lf_name)."' AND LINK = $geo_id AND ARC_SIDE = 'L' AND (num_at_tickets > 0 OR num_opp_tickets > 0)";
+		//print $q."\n";
+		$request_addresses = mysql_query($q); print mysql_error();
 		while (($address = mysql_fetch_object($request_addresses)))
 			$addresses['left'][] = $address->id;
 		
-		$request_addresses = mysql_query("SELECT id FROM mb.addresses_oct2012 WHERE ".
-			"LF_NAME = '".mysql_real_escape_string($lf_name)."' AND street_geo_id = $geo_id AND ARC_SIDE = 'R'"); print mysql_error();
+		$q = "SELECT id FROM mb.addresses_$table_date WHERE ".
+			"LF_NAME = '".mysql_real_escape_string($lf_name)."' AND LINK = $geo_id AND ARC_SIDE = 'R' AND (num_at_tickets > 0 OR num_opp_tickets > 0)";
+		//print $q."\n";
+		$request_addresses = mysql_query($q); print mysql_error();
 		while (($address = mysql_fetch_object($request_addresses)))
 			$addresses['right'][] = $address->id;
 		
@@ -96,7 +107,7 @@ while (list($lf_name) = mysql_fetch_array($r_streets))
 				$tickets_all_day[$code][$wday]++;
 			}*/
 			
-			foreach (array(0,1,2,3,4,5,6) as $wday)
+			//foreach (array(0,1,2,3,4,5,6) as $wday)
 			{
 				/*foreach ($codes as $code)
 				{
@@ -150,8 +161,9 @@ while (list($lf_name) = mysql_fetch_array($r_streets))
 				if ($addresses['left'])
 				{
 					$tickets_query = "SELECT address_id, is_opp, date_of_infraction, time_of_infraction, wday, infraction_code, set_fine_amount FROM tickets USE INDEX (loverboy) WHERE ".
-						" " . ($addresses['left'] ? "(address_id in (".implode(",",$addresses['left']).") AND is_opp = ".round($is_opp).")" : "0").
-						" AND infraction_code IN (".implode(",",$codes).") AND wday = $wday";
+						" " . ($addresses['left'] ? "(address_id in (".implode(",",$addresses['left']).") AND is_opp = ".round($is_opp).")" : "0");
+						//" AND infraction_code IN (".implode(",",$codes).") ".
+						//" AND wday = $wday";
 					$tickets_request = mysql_query($tickets_query); print mysql_error();
 					//print $tickets_query ."\n". mysql_num_rows($tickets_request) . "\n";
 					while (($ticket = mysql_fetch_object($tickets_request)))
@@ -173,8 +185,9 @@ while (list($lf_name) = mysql_fetch_array($r_streets))
 				if ($addresses['right'])
 				{
 					$tickets_query = "SELECT address_id, is_opp, date_of_infraction, time_of_infraction, wday, infraction_code, set_fine_amount FROM tickets USE INDEX (loverboy) WHERE ".
-						" " . ($addresses['right'] ? "(address_id in (".implode(",",$addresses['right']).") AND is_opp = ".round(!$is_opp).")" : "0").
-						" AND infraction_code IN (".implode(",",$codes).") AND wday = $wday";
+						" " . ($addresses['right'] ? "(address_id in (".implode(",",$addresses['right']).") AND is_opp = ".round(!$is_opp).")" : "0");
+						//" AND infraction_code IN (".implode(",",$codes).") ".
+						//" AND wday = $wday";
 					$tickets_request = mysql_query($tickets_query); print mysql_error();
 					//print $tickets_query ."\n". mysql_num_rows($tickets_request) . "\n";
 					while (($ticket = mysql_fetch_object($tickets_request)))
@@ -214,6 +227,7 @@ while (list($lf_name) = mysql_fetch_array($r_streets))
 	if ($count > $r_streets_count / 100) { print ","; $count = 0; }
 	print ".";
 	$count++;
+	//die();
 }
 
 
@@ -222,11 +236,11 @@ die();
 $wdays = array(0, 1, 2, 3, 4, 5, 6);
 $codes = array(5, 29, 207);
 
-$r_streets = mysql_query("SELECT geo_id, lf_name FROM mb.centreline_oct2012 WHERE LF_NAME = 'RICHMOND ST W' GROUP BY geo_id");
+$r_streets = mysql_query("SELECT geo_id, lf_name FROM mb.centreline_$table_date WHERE LF_NAME = 'RICHMOND ST W' GROUP BY geo_id");
 while ((list($street_geo_id, $lf_name) = mysql_fetch_row($r_streets)))
 {
 	$points = array();
-	$r_points = mysql_query("SELECT x, y FROM mb.centreline_oct2012 WHERE geo_id = $street_geo_id ORDER BY id ASC");
+	$r_points = mysql_query("SELECT x, y FROM mb.centreline_$table_date WHERE geo_id = $street_geo_id ORDER BY id ASC");
 	while (($point = mysql_fetch_object($r_points))) $points[] = $point;
 	
 	foreach ($points as $i => $point)
