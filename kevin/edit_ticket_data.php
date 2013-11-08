@@ -28,7 +28,7 @@ if ($_GET['command'] == 'deletepolyline') {
 
 		mysql_query($q); print mysql_error();
 	}
-	file_get_contents("http://localhost:4512/reload_geo_id?geo_id=$geo_id&is_opp=$is_opp");
+	file_get_contents("http://".$_SERVER["SERVER_NAME"].":4512/reload_geo_id?geo_id=$geo_id&is_opp=$is_opp");
 
 } else if ($_GET['command'] == 'savepolyline') {
 	mysql_connect("localhost", "root", "");
@@ -58,7 +58,7 @@ if ($_GET['command'] == 'deletepolyline') {
 				mysql_query($q); print mysql_error();
 			}
 		}
-		file_get_contents("http://localhost:4512/reload_geo_id?geo_id=$geo_id&is_opp=$is_opp");
+		file_get_contents("http://".$_SERVER["SERVER_NAME"].":4512/reload_geo_id?geo_id=$geo_id&is_opp=$is_opp");
 	}
 
 } else if ($_GET['command'] == 'getstreetdata') {
@@ -111,7 +111,7 @@ if ($_GET['command'] == 'deletepolyline') {
 	print "<input style='white-space:pre;font:8pt Courier New;width:350px;padding:0px' maxlength='48' type='text' value='".str_repeat(" ",48)."' onKeyUp='change_black_list(this)' id='black_list' geo_id='".$_GET['id']."'><br /><div id='black_list_text'></div><script type='text/javascript'>change_black_list($('#black_list'))</script><input type='button' value='save blacklist' onClick='saveblacklist()'> - <input type='button' onClick='$(\"#black_list\").val(\"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\");$(\"input[name=selected_wdays]\").prop(\"checked\",true)' value='pre-fill blacklist (does not save)'>";
 
 } else if ($_GET['command'] == 'search') {
-	print file_get_contents("http://localhost:4512/near?" . $_SERVER["QUERY_STRING"]);
+	print file_get_contents("http://".$_SERVER["SERVER_NAME"].":4512/near?" . $_SERVER["QUERY_STRING"]);
 } else {
 	?>
 	<script type='text/javascript' src='jquery-1.10.2.min.js'></script>
@@ -276,7 +276,7 @@ if ($_GET['command'] == 'deletepolyline') {
 	google.maps.event.addDomListener(window, 'load', initialize);
 	</script>
 	<body style="padding:0px;margin:0px">
-	Now: <input type='text' id='now' value='1383015600' /> <input type='radio' checked name='t' value='0'><input type='radio' name='t' value='1'><input type='radio' name='t' value='2'> <span id='now-string'></span>
+	Now: <input type='text' id='now' value='1383015600' onKeyUp='mapDragEnd()' /> <input type='radio' checked name='t' value='0' onClick='mapDragEnd()'><input type='radio' name='t' value='1' onClick='mapDragEnd()'><input type='radio' name='t' value='2' onClick='mapDragEnd()'> <span id='now-string'></span>
 	<div id="map-canvas" style="height:95%;padding:0px;margin:0px;width:60%"></div>
 	<div id="street-data" style="position:absolute;top:0px;right:0px;height:100%;width:450px">click a line</div>
 	<?php
