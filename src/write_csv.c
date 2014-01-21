@@ -6,6 +6,7 @@ int main(int argc, char ** argv)
   static char filename[1000] = "";
   static int output_header = 1;
   static int output_quotes = 1;
+  static int output_CRLF = 0;
   
   int c;
   while (1)
@@ -16,6 +17,7 @@ int main(int argc, char ** argv)
       {"no-header", no_argument, &output_header, 0},
       {"quotes", no_argument, &output_quotes, 1},
       {"no-quotes", no_argument, &output_quotes, 0},
+      {"output-CRLF", no_argument, &output_CRLF, 1},
       {0, 0, 0, 0}
     };
     
@@ -61,7 +63,10 @@ int main(int argc, char ** argv)
       else
         fprintf(fp, "%s%s", ((column_id == 0)?"":","), column_get_name(get_column(block, column_id)));
     }
-    fprintf(fp, "\n");
+    if (output_CRLF)
+      fprintf(fp, "\r\n");
+    else
+      fprintf(fp, "\n");
   }
   
   int row_id = 0;
@@ -99,7 +104,10 @@ int main(int argc, char ** argv)
       else
         fprintf_cell(fp, block, row_id, column_id);
     }
-    fprintf(fp, "\n");
+    if (output_CRLF)
+      fprintf(fp, "\r\n");
+    else
+      fprintf(fp, "\n");
   }
   
   int ignored_block_count = 0;
