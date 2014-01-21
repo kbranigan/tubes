@@ -165,6 +165,8 @@ struct Block * add_float_column_and_blank(struct Block * block, const char * nam
 struct Block * add_double_column_and_blank(struct Block * block, const char * name);
 struct Block * add_string_column_with_length_and_blank(struct Block * block, const char * name, uint32_t length);
 
+struct Block * set_string_column_length(struct Block * block, uint32_t column_id, uint32_t length);
+
 //int column_is_string(struct Column * column);
 int32_t get_column_id_by_name(struct Block * block, const char * column_name);
 int32_t get_column_id_by_name_or_exit(struct Block * block, const char * column_name);
@@ -172,12 +174,13 @@ struct Column * get_column_by_name(struct Block * block, const char * column_nam
 
 struct Block * column_string_set_length(struct Block * block, uint32_t column_id, int32_t length);
 
-inline int32_t * get_column_offsets(const struct Block * block);
-inline int32_t * get_cell_offsets(const struct Block * block);
-inline struct Column * get_first_column(const struct Block * block);
-inline struct Column * get_next_column(const struct Block * block, const struct Column * column);
+extern inline uint32_t * get_column_offsets(const struct Block * block);
+extern inline uint32_t * get_cell_offsets(const struct Block * block);
+extern inline struct Column * get_first_column(const struct Block * block);
+extern inline struct Column * get_next_column(const struct Block * block, const struct Column * column);
 
 struct Block * set_num_rows(struct Block * block, uint32_t num_rows);
+void * _get_row_with_different_row_bsize(struct Block * block, uint32_t row_id, uint32_t different_row_bsize);
 void * get_row(struct Block * block, uint32_t row_id);
 struct Block * add_row(struct Block * block);
 struct Block * add_row_and_blank(struct Block * block);
@@ -249,6 +252,8 @@ struct Params * add_flag_param(struct Params * params, const char * name, char n
 struct Params * add_longlong_param(struct Params * params, const char * name, char name_char, long long * dest, int required);
 struct Params * add_int_param(struct Params * params, const char * name, char name_char, int * dest, int required);
 int eval_params(struct Params * params, int argc, char ** argv);
+
+uint32_t memory_pad(uint32_t i, uint32_t bsize);
 
 #include "functions/functions.h"
 
