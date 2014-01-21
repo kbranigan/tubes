@@ -11,6 +11,7 @@ endif
 
 all: mkbin \
 	bin/read_csv \
+	bin/read_csv_fast \
 	bin/write_csv \
 	bin/write_kml \
 	bin/write_js \
@@ -208,6 +209,9 @@ bin/curl: bin/block.o src/curl.c
 
 bin/read_csv: bin/block.o src/read_csv.c src/bsv.c
 	gcc -lm bin/block.o src/read_csv.c -o bin/read_csv
+
+bin/read_csv_fast: bin/block.o src/read_csv_fast.c
+	gcc -lm bin/block.o src/read_csv_fast.c -o bin/read_csv_fast
 
 bin/read_kml: bin/block.o src/read_kml.c
 	gcc -I/usr/include/libxml2 -lxml2 bin/block.o src/read_kml.c -o bin/read_kml
