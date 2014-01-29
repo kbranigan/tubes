@@ -66,6 +66,8 @@ int main(int argc, char ** argv)
       if (row[length] == '\r' || row[length] == '\n') row[length] = 0;
       //fprintf(stderr, "row: \"%s\"\n", row);
 
+      if (length == 0) continue;
+
       block = add_row(block);
 
       int column_id = 0;

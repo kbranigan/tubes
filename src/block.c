@@ -1468,7 +1468,7 @@ struct Params * add_int_param(struct Params * params, const char * name, char na
 }
 
 struct Params * add_longlong_param(struct Params * params, const char * name, char name_char, long long * dest, int required) {
-	return _add_param(params, name, name_char, TYPE_LONGLONG, (void*)dest, required);
+	return _add_param(params, name, name_char, BLOCK_TYPE_LONGLONG, (void*)dest, required);
 }
 
 int eval_params(struct Params * params, int argc, char ** argv) {
@@ -1530,7 +1530,7 @@ int eval_params(struct Params * params, int argc, char ** argv) {
 						(*(int*)params->params[i].dest) = temp;
 						params->params[i].found = 1;
 					}
-				} else if (params->params[i].type == TYPE_LONGLONG) {
+				} else if (params->params[i].type == BLOCK_TYPE_LONGLONG) {
 					if (optarg == NULL) {
 						fprintf(stderr, "argument for longlong param '%s' is required\n", params->params[i].name);
 						break;

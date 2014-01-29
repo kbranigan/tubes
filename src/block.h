@@ -54,7 +54,7 @@ enum TYPE {
   TYPE_UINT  = 2,
   TYPE_FLOAT = 3,
   TYPE_CHAR  = 4,
-	TYPE_LONGLONG = 5 // only used in add_longlong_param(), probably shouldn't have done it that way
+	BLOCK_TYPE_LONGLONG = 5 // only used in add_longlong_param(), probably shouldn't have done it that way
 };
 
 /* TODO

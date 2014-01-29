@@ -579,7 +579,7 @@ struct Block * bsv(char * filename, int instruction)
     int i;
     for(i = 0 ; i < header_row.num_fields ; i++)
     {
-      block = add_string_column_with_length(block, header_row.fields[i], 60); // major kbfu oh well
+      block = add_string_column_with_length(block, header_row.fields[i], 150); // major kbfu oh well
     }
     
     int32_t * max_column_widths = malloc(sizeof(int32_t)*header_row.num_fields);
@@ -603,7 +603,7 @@ struct Block * bsv(char * filename, int instruction)
         {
           if (row.fields[j] != NULL)
           {
-            if (strlen(row.fields[j]) > 60)
+            if (strlen(row.fields[j]) > 150)
             {
               fprintf(stderr, "strlen(row[%d].fields[%d]) = %ld\n", block->num_rows, j, (long)strlen(row.fields[j]));
               return block;
