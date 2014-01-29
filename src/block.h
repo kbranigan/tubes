@@ -92,7 +92,7 @@ struct Attribute {
   uint32_t value_length;
   //char name[name_length];
   //char value[bsize];
-  
+
 };
 
 char * attribute_get_name(struct Attribute * attribute);
@@ -174,10 +174,10 @@ struct Column * get_column_by_name(struct Block * block, const char * column_nam
 
 struct Block * column_string_set_length(struct Block * block, uint32_t column_id, int32_t length);
 
-extern inline uint32_t * get_column_offsets(const struct Block * block);
-extern inline uint32_t * get_cell_offsets(const struct Block * block);
-extern inline struct Column * get_first_column(const struct Block * block);
-extern inline struct Column * get_next_column(const struct Block * block, const struct Column * column);
+extern uint32_t * get_column_offsets(const struct Block * block);
+extern uint32_t * get_cell_offsets(const struct Block * block);
+extern struct Column * get_first_column(const struct Block * block);
+extern struct Column * get_next_column(const struct Block * block, const struct Column * column);
 
 struct Block * set_num_rows(struct Block * block, uint32_t num_rows);
 void * _get_row_with_different_row_bsize(struct Block * block, uint32_t row_id, uint32_t different_row_bsize);

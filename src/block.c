@@ -238,19 +238,19 @@ struct Attribute * get_attribute(struct Block * block, uint32_t attribute_id)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-extern inline uint32_t * get_column_offsets(const struct Block * block) {
+extern uint32_t * get_column_offsets(const struct Block * block) {
   return (uint32_t*)((char*)block + sizeof(struct Block) + block->attributes_bsize);
 }
 
-extern inline uint32_t * get_cell_offsets(const struct Block * block) {
+extern uint32_t * get_cell_offsets(const struct Block * block) {
   return (uint32_t*)((char*)block + sizeof(struct Block) + block->attributes_bsize + sizeof(uint32_t)*block->num_columns);
 }
 
-extern inline struct Column * get_first_column(const struct Block * block) {
+extern struct Column * get_first_column(const struct Block * block) {
   return (block == NULL) ? NULL : (struct Column *)((char*)block + sizeof(struct Block) + block->attributes_bsize + (sizeof(int32_t)+sizeof(int32_t))*block->num_columns);
 }
 
-extern inline struct Column * get_next_column(const struct Block * block, const struct Column * column) {
+extern struct Column * get_next_column(const struct Block * block, const struct Column * column) {
   if (block == NULL || column == NULL) return NULL;
   if (column >= get_first_column(block) + block->columns_bsize) return NULL;
   return (struct Column *)((char*)column + sizeof(struct Column) + column->name_length);

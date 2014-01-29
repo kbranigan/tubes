@@ -10,6 +10,8 @@ ifeq ($(UNAME_S),Darwin)
 endif
 
 all: mkbin \
+	bin/block.o \
+	bin/block_hashtable.o \
 	bin/read_csv \
 	bin/read_csv_fast \
 	bin/write_csv \
