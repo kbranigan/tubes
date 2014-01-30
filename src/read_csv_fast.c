@@ -76,7 +76,32 @@ int main(int argc, char ** argv)
       {
         length = (line_ptr == 0) ? strlen(field) : line_ptr - field - 1;
 
-        if (field[0] == '"') { fprintf(stderr, "uh oh, file has a quoted field - you'll need to impliment that haha\n"); exit(1); } // kbfu
+        if (field[0] == '"')
+        {
+          int count = 0;
+          char * start_of_field = field;
+          int length = strlen(field);
+          while (field[strlen(field)-1] != '"' && count < 100)
+          {
+            //fprintf(stderr, "last char = %d\n", field[strlen(field)-1]);
+            //fprintf(stderr, "count     = %d\n", count);            
+            //fprintf(stderr, "line_ptr  = '%s'\n", line_ptr);
+            //fprintf(stderr, "field     = '%s'\n", field);
+            length = strlen(field);
+            //fprintf(stderr, "length    = '%d'\n", length);
+            field[length] = ',';
+            line_ptr ++;
+            //fprintf(stderr, "new field = '%s'\n", field);
+            //fprintf(stderr, "new line_ptr  = '%s'\n", line_ptr);
+            strsep(&line_ptr, ",");
+            count++;
+          }
+          if (count == 100)
+          {
+            fprintf(stderr, "major problem reading file in read_csv_fast, perhaps use read_csv instead\n");
+          }
+          field = start_of_field;
+        }
         
         //fprintf(stderr, "  cell: \"%s\" (%d)\n", field, length);
         struct Column * column = get_column(block, column_id);
