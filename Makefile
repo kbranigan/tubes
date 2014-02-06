@@ -32,6 +32,7 @@ all: mkbin \
 	bin/strcat \
 	bin/curl \
 	bin/upgrade_block \
+	bin/trim_whitespace \
 	bin/test \
 	bin/pass_through \
 	bin/join_geographic \
@@ -145,6 +146,9 @@ bin/block_test: bin/block.o src/block_test.c
 
 bin/generate: bin/block.o src/generate.c
 	gcc -lm bin/block.o src/generate.c -o bin/generate
+
+bin/trim_whitespace: bin/block.o src/trim_whitespace.c
+	gcc -lm bin/block.o src/trim_whitespace.c -o bin/trim_whitespace
 
 bin/clip: bin/block.o src/clip.c bin/gpc.o
 	gcc -lm bin/block.o bin/gpc.o src/clip.c -o bin/clip
