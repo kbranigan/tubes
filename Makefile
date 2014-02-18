@@ -24,6 +24,7 @@ all: mkbin \
 	bin/inspect \
 	bin/columns \
 	bin/filter \
+	bin/filter_by_bbox \
 	bin/filter_by_distance \
 	bin/filter_loop_overlap \
 	bin/append \
@@ -239,6 +240,9 @@ bin/append: bin/block.o src/append.c
 
 bin/filter: bin/block.o src/filter.c
 	gcc -lm bin/block.o src/filter.c -o bin/filter
+
+bin/filter_by_bbox: bin/block.o src/filter_by_bbox.c
+	gcc -lm bin/block.o src/filter_by_bbox.c -o bin/filter_by_bbox
 
 bin/filter_by_distance: bin/block.o src/filter_by_distance.c
 	gcc -lm bin/block.o src/filter_by_distance.c -o bin/filter_by_distance
