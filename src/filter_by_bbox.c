@@ -33,16 +33,16 @@ int main(int argc, char ** argv)
   char * p = bbox_char;
   char * bbox_ptr = bbox_char;
   p = strsep(&bbox_ptr, ",");
-  if (p == NULL) { fprintf(stderr, "ERROR: Usage: %s --bbox=\"0,0,1,1\" (min_x,max_x,min_y,max_y)", argv[0]); return; }
+  if (p == NULL) { fprintf(stderr, "ERROR: Usage: %s --bbox=\"0,0,1,1\" (min_x,max_x,min_y,max_y)", argv[0]); return 0; }
   bbox[0][0] = atof(p);
   p = strsep(&bbox_ptr, ",");
-  if (p == NULL) { fprintf(stderr, "ERROR: Usage: %s --bbox=\"0,0,1,1\" (min_x,max_x,min_y,max_y)", argv[0]); return; }
+  if (p == NULL) { fprintf(stderr, "ERROR: Usage: %s --bbox=\"0,0,1,1\" (min_x,max_x,min_y,max_y)", argv[0]); return 0; }
   bbox[0][1] = atof(p);
   p = strsep(&bbox_ptr, ",");
-  if (p == NULL) { fprintf(stderr, "ERROR: Usage: %s --bbox=\"0,0,1,1\" (min_x,max_x,min_y,max_y)", argv[0]); return; }
+  if (p == NULL) { fprintf(stderr, "ERROR: Usage: %s --bbox=\"0,0,1,1\" (min_x,max_x,min_y,max_y)", argv[0]); return 0; }
   bbox[1][0] = atof(p);
   p = strsep(&bbox_ptr, ",");
-  if (p == NULL) { fprintf(stderr, "ERROR: Usage: %s --bbox=\"0,0,1,1\" (min_x,max_x,min_y,max_y)", argv[0]); return; }
+  if (p == NULL) { fprintf(stderr, "ERROR: Usage: %s --bbox=\"0,0,1,1\" (min_x,max_x,min_y,max_y)", argv[0]); return 0; }
   bbox[1][1] = atof(p);
 
   int i, j;
