@@ -44,6 +44,9 @@ int main(int argc, char ** argv)
 	
 	int * ivalues = NULL;
 	int num_ivalues = 0;
+
+	long * lvalues = NULL;
+	int num_lvalues = 0;
 	
 	int i,j;
 	struct Block * block = NULL;
@@ -52,9 +55,9 @@ int main(int argc, char ** argv)
 		
 		struct Column * column = get_column(block, column_id);
 		if (column->type != TYPE_CHAR && 
-				(column->type != TYPE_INT || column->bsize != 4) && 
+				(column->type != TYPE_INT) && 
 				(column->type != TYPE_FLOAT)) {
-			fprintf(stderr, "column '%s' is not a string or int32_t or float or double.\n", column_name);
+			fprintf(stderr, "column '%s' is not a string or int32_t or int64_t or float or double.\n", column_name);
 			write_block(stdout, block);
 			free_block(block);
 			continue;
@@ -63,7 +66,7 @@ int main(int argc, char ** argv)
 		struct Block * newblock = new_block();
 		newblock = copy_all_attributes(newblock, block);
 		
-		if (column->type == TYPE_INT) {
+		if (column->type == TYPE_INT && column->bsize == 4) {
 			if (ivalues != NULL) {
 				free(ivalues);
 				num_ivalues = 0;
@@ -75,7 +78,20 @@ int main(int argc, char ** argv)
 				ivalues[num_ivalues-1] = atoi(ptr);
 				ptr = strtok(NULL, ",");
 			}
+		} else if (column->type == TYPE_INT && column->bsize == 8) {
+			if (lvalues != NULL) {
+				free(lvalues);
+				num_lvalues = 0;
+			}
+			char * ptr = strtok(value, ",");
+			while (ptr != NULL) {
+				num_lvalues++;
+				lvalues = (long*)realloc(lvalues, sizeof(long)*num_lvalues);
+				lvalues[num_lvalues-1] = atol(ptr);
+				ptr = strtok(NULL, ",");
+			}
 		}
+
 		double fvalue;
 		if (column->type == TYPE_FLOAT) {
 			fvalue = atof(value);
@@ -89,6 +105,13 @@ int main(int argc, char ** argv)
 				for (j = 0 ; j < num_ivalues ; j++) {
 					if ((operator == OPERATOR_DELETE && (*(int32_t*)cell) != ivalues[j]) || 
 							(operator == OPERATOR_PASS	 && (*(int32_t*)cell) == ivalues[j]))
+					newblock->num_rows++;
+				}
+			} else if (column->type == TYPE_INT && column->bsize == 8) {
+				int j;
+				for (j = 0 ; j < num_lvalues ; j++) {
+					if ((operator == OPERATOR_DELETE && (*(int64_t*)cell) != lvalues[j]) || 
+							(operator == OPERATOR_PASS	 && (*(int64_t*)cell) == lvalues[j]))
 					newblock->num_rows++;
 				}
 			} else if (column->type == TYPE_FLOAT && column->bsize == 4) {
@@ -134,6 +157,15 @@ int main(int argc, char ** argv)
 				for (j = 0 ; j < num_ivalues ; j++) {
 					if ((operator == OPERATOR_DELETE && (*(int32_t*)cell) != ivalues[j]) || 
 							(operator == OPERATOR_PASS	 && (*(int32_t*)cell) == ivalues[j])) {
+						memcpy(get_row(newblock, newblock_row_id), get_row(block, i), block->row_bsize);
+						newblock_row_id++;
+					}
+				}
+			} else if (column->type == TYPE_INT && column->bsize == 8) {
+				int j;
+				for (j = 0 ; j < num_lvalues ; j++) {
+					if ((operator == OPERATOR_DELETE && (*(int64_t*)cell) != lvalues[j]) || 
+							(operator == OPERATOR_PASS	 && (*(int64_t*)cell) == lvalues[j])) {
 						memcpy(get_row(newblock, newblock_row_id), get_row(block, i), block->row_bsize);
 						newblock_row_id++;
 					}
