@@ -36,7 +36,7 @@ static int ints_equal_fn(void * key1, void * key2)
   return *(int*)key1 == *(int*)key2;
 }
 
-void * _create_string_hashtable_on_column(struct Block * block, char * column_name)
+void * _create_string_hashtable_on_column(struct Block * block, const char * column_name)
 {
   int row_id, column_id = get_column_id_by_name_or_exit(block, column_name);
   struct hashtable * ht = create_hashtable(16, hash_from_string_fn, strings_equal_fn);
@@ -71,7 +71,7 @@ void * _create_string_hashtable_on_column(struct Block * block, char * column_na
   return (void*)ht;
 }
 
-void * _create_int_hashtable_on_column(struct Block * block, char * column_name)
+void * _create_int_hashtable_on_column(struct Block * block, const char * column_name)
 {
   int row_id, column_id = get_column_id_by_name_or_exit(block, column_name);
   struct hashtable * ht = create_hashtable(16, hash_from_int_fn, ints_equal_fn);
@@ -97,7 +97,7 @@ void * _create_int_hashtable_on_column(struct Block * block, char * column_name)
   return (void*)ht;
 }
 
-void * create_hashtable_on_column(struct Block * block, char * column_name)
+void * create_hashtable_on_column(struct Block * block, const char * column_name)
 {
   if (block == NULL) { fprintf(stderr, "%s called on NULL block.\n", __func__); return NULL; }
   

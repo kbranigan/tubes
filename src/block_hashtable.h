@@ -8,7 +8,7 @@ struct Block;
 extern "C" {
 #endif
 
-void * create_hashtable_on_column(struct Block * block, char * column_name);
+void * create_hashtable_on_column(struct Block * block, const char * column_name);
 int32_t search_hashtable_for_string(void * ht, char * search);
 int32_t search_hashtable_for_int(void * ht, int32_t search);
 int32_t get_hashtable_count(void * ht);

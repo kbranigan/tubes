@@ -18,6 +18,7 @@
 struct CachedColumnIds {
   int32_t xyz[3];
   int32_t rgba[4];
+  int32_t latlon[2];
   int32_t shape_row_id;
   int32_t shape_part_id;
   int32_t shape_part_type;
@@ -37,6 +38,9 @@ void update_cached_block_column_ids(struct Block * block)
   cached_block_column_ids.rgba[1] = get_column_id_by_name(cached_block_ptr, "green");
   cached_block_column_ids.rgba[2] = get_column_id_by_name(cached_block_ptr, "blue");
   cached_block_column_ids.rgba[3] = get_column_id_by_name(cached_block_ptr, "alpha");
+
+  cached_block_column_ids.latlon[0] = get_column_id_by_name(cached_block_ptr, "lat");
+  cached_block_column_ids.latlon[1] = get_column_id_by_name(cached_block_ptr, "lon");
 
   cached_block_column_ids.shape_row_id = get_column_id_by_name(cached_block_ptr, "shape_row_id");
   cached_block_column_ids.shape_part_id = get_column_id_by_name(cached_block_ptr, "shape_part_id");
@@ -1048,6 +1052,27 @@ double get_z(struct Block * block, uint32_t row_id) {
 	} else {
 		return 0;
 	}
+}
+
+double get_lat(struct Block * block, uint32_t row_id)
+{
+  if (row_id > block->num_rows) { fprintf(stderr, "%s invalid row_id (%d)\n", __func__, row_id); exit(0); }
+  if (cached_block_ptr != block) update_cached_block_column_ids(block);
+  if (cached_block_column_ids.latlon[0] != -1) {
+    return get_cell_as_double(block, row_id, cached_block_column_ids.latlon[0]);
+  } else {
+    return 0;
+  }
+}
+
+double get_lon(struct Block * block, uint32_t row_id) {
+  if (row_id > block->num_rows) { fprintf(stderr, "%s invalid row_id (%d)\n", __func__, row_id); exit(0); }
+  if (cached_block_ptr != block) update_cached_block_column_ids(block);
+  if (cached_block_column_ids.latlon[1] != -1) {
+    return get_cell_as_double(block, row_id, cached_block_column_ids.latlon[1]);
+  } else {
+    return 0;
+  }
 }
 
 void set_shape_part(struct Block * block, uint32_t row_id, int shape_row_id, int shape_part_id, int shape_part_type) {
