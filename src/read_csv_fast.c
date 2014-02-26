@@ -101,6 +101,11 @@ int main(int argc, char ** argv)
             fprintf(stderr, "major problem reading file in read_csv_fast, perhaps use read_csv instead\n");
           }
           field = start_of_field;
+          if (field[0] == '"' && field[strlen(field)-1] == '"')
+          {
+            field[strlen(field)-1] = 0;
+            field++;
+          }
         }
         
         //fprintf(stderr, "  cell: \"%s\" (%d)\n", field, length);
