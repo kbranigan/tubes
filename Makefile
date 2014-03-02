@@ -12,6 +12,7 @@ endif
 all: mkbin \
 	bin/block.o \
 	bin/block_hashtable.o \
+	bin/block_varint.o \
 	bin/read_csv \
 	bin/read_csv_fast \
 	bin/write_csv \
@@ -132,6 +133,9 @@ bin/block.o: src/block.c src/block.h unique.c
 
 bin/block_hashtable.o: bin/block.o src/block_hashtable.c
 	gcc src/block_hashtable.c -c -o bin/block_hashtable.o
+
+bin/block_varint.o: bin/block.o src/block_varint.c
+	gcc src/block_varint.c -c -o bin/block_varint.o
 
 bin/block_kdtree.o: bin/block.o src/block_kdtree.c
 	g++ src/block_kdtree.c -c -o bin/block_kdtree.o
