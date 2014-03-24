@@ -8,6 +8,8 @@
 
 #include "block.h"
 
+// http://nationalmap.gov/standards/pdf/2DEM0198.PDF
+
 FILE * pFile = NULL;
 long lSize;
 char * buffer = NULL;
@@ -30,6 +32,16 @@ void get_chars(int count)
   
   result = fread(buffer, 1, count, pFile);
   buffer[count] = '\0';
+}
+
+void fix_fortran_ms_e_vs_D_float_bug()
+{
+  int i, len = strlen(buffer);
+  for (i = 0 ; i < len ; i++)
+  {
+    if (buffer[i] == 'd') buffer[i] = 'e';
+    else if (buffer[i] == 'D') buffer[i] = 'E';
+  }
 }
 
 int main(int argc, char ** argv)
@@ -87,40 +99,54 @@ int main(int argc, char ** argv)
   get_chars(40+60+9); // junk
   get_chars(4); int lng_deg = atoi(buffer);
   get_chars(2); int lng_min = atoi(buffer);
-  get_chars(7); float lng_sec = atof(buffer);
+  get_chars(7); fix_fortran_ms_e_vs_D_float_bug(); float lng_sec = atof(buffer);
   get_chars(4); int lat_deg = atoi(buffer);
   get_chars(2); int lat_min = atoi(buffer);
-  get_chars(7); float lat_sec = atof(buffer);
+  get_chars(7); fix_fortran_ms_e_vs_D_float_bug(); float lat_sec = atof(buffer);
   
-  //float lng = (fabs(lng_deg) + lng_min/60.0 + lng_sec/3600.0) * (lng_deg < 0 ? -1 : 1);
-  //float lat = (fabs(lat_deg) + lat_min/60.0 + lat_sec/3600.0) * (lng_deg < 0 ? -1 : 1);
-  //printf("%d %d %f (%f)\n", lng_deg, lng_min, lng_sec, lng);
-  //printf("%d %d %f (%f)\n", lat_deg, lat_min, lat_sec, lat);
+  float flng = (fabs(lng_deg) + lng_min/60.0 + lng_sec/3600.0) * (lng_deg < 0 ? -1 : 1);
+  float flat = (fabs(lat_deg) + lat_min/60.0 + lat_sec/3600.0) * (lng_deg < 0 ? -1 : 1);
+  //fprintf(stderr, "%d %d %f (%f)\n", lng_deg, lng_min, lng_sec, flng);
+  //fprintf(stderr, "%d %d %f (%f)\n", lat_deg, lat_min, lat_sec, flat);
   
-  get_chars(1+1+3+4+6+6+6+6+15*24+6+6+6); // junk
+  get_chars(1+1+3+4+6+6+6+6 + 15*24); // junk
+
+  get_chars(6); // fprintf(stderr, "%s\n", buffer);
+  assert(strcmp(buffer, "     3")==0); // unit of measure of coords (3 = arc-seconds)
+  get_chars(6); // fprintf(stderr, "%s\n", buffer);
+  assert(strcmp(buffer, "     2")==0); // unit of measure of elevations (2 = meters)
+  get_chars(6); // fprintf(stderr, "%s\n", buffer);
+  assert(strcmp(buffer, "     4")==0); // sides of polygon that defines the dem coverage (always 4)
+  //get_chars(6+6+6); // junk
   
-  get_chars(24); float sw_lng = atof(buffer) / 3600.00;
-  get_chars(24); float sw_lat = atof(buffer) / 3600.00;
-  get_chars(24); float nw_lng = atof(buffer) / 3600.00;
-  get_chars(24); float nw_lat = atof(buffer) / 3600.00;
-  get_chars(24); float ne_lng = atof(buffer) / 3600.00;
-  get_chars(24); float ne_lat = atof(buffer) / 3600.00;
-  get_chars(24); float se_lng = atof(buffer) / 3600.00;
-  get_chars(24); float se_lat = atof(buffer) / 3600.00;
-  //printf("%f %f\n", sw_lng, sw_lat);
-  //printf("%f %f\n", nw_lng, nw_lat);
-  //printf("%f %f\n", ne_lng, ne_lat);
-  //printf("%f %f\n", se_lng, se_lat);
+  get_chars(24); fix_fortran_ms_e_vs_D_float_bug(); float sw_lng = atof(buffer) / 3600.00;
+  get_chars(24); fix_fortran_ms_e_vs_D_float_bug(); float sw_lat = atof(buffer) / 3600.00;
+  get_chars(24); fix_fortran_ms_e_vs_D_float_bug(); float nw_lng = atof(buffer) / 3600.00;
+  get_chars(24); fix_fortran_ms_e_vs_D_float_bug(); float nw_lat = atof(buffer) / 3600.00;
+  get_chars(24); fix_fortran_ms_e_vs_D_float_bug(); float ne_lng = atof(buffer) / 3600.00;
+  get_chars(24); fix_fortran_ms_e_vs_D_float_bug(); float ne_lat = atof(buffer) / 3600.00;
+  get_chars(24); fix_fortran_ms_e_vs_D_float_bug(); float se_lng = atof(buffer) / 3600.00;
+  get_chars(24); fix_fortran_ms_e_vs_D_float_bug(); float se_lat = atof(buffer) / 3600.00;
+  //fprintf(stderr, "%f %f\n", sw_lng, sw_lat);
+  //fprintf(stderr, "%f %f\n", nw_lng, nw_lat);
+  //fprintf(stderr, "%f %f\n", ne_lng, ne_lat);
+  //fprintf(stderr, "%f %f\n", se_lng, se_lat);
   
-  get_chars(24); float min_elev = atof(buffer);
-  get_chars(24); float max_elev = atof(buffer);
-  //printf("%f %f\n", min_elev, max_elev);  // min/max
+  get_chars(24); fix_fortran_ms_e_vs_D_float_bug(); float min_elev = atof(buffer);
+  get_chars(24); fix_fortran_ms_e_vs_D_float_bug(); float max_elev = atof(buffer);
+  //fprintf(stderr, "%f %f\n", min_elev, max_elev);  // min/max
   
-  get_chars(24+6);
-  get_chars(12); float x_res = atof(buffer);
-  get_chars(12); float y_res = atof(buffer);
-  get_chars(12); float z_res = atof(buffer);
-  //printf("%f %f %f\n", x_res, y_res, z_res);
+  get_chars(24);
+  fix_fortran_ms_e_vs_D_float_bug();
+  assert(atof(buffer) == 0.0); // coordinate aligned dem, could you imagine supporting a rotated one? oie
+
+  get_chars(6);
+  assert(atoi(buffer) == 0 || atoi(buffer) == 1); // accuracy code for elevations
+
+  get_chars(12); fix_fortran_ms_e_vs_D_float_bug(); float x_res = atof(buffer);
+  get_chars(12); fix_fortran_ms_e_vs_D_float_bug(); float y_res = atof(buffer);
+  get_chars(12); fix_fortran_ms_e_vs_D_float_bug(); float z_res = atof(buffer);
+  //fprintf(stderr, "%f %f %f\n", x_res, y_res, z_res);
   //  +2*6+5+
   //  1+5+1+4+4+1+1+2+
   //  2+2+4+4+4*2+7); // junk
@@ -154,16 +180,20 @@ int main(int argc, char ** argv)
     assert(n == 1);
     
     get_chars(24);
+    fix_fortran_ms_e_vs_D_float_bug();
     lng[col_id] = atof(buffer) / 3600.00; // long in arc seconds
     get_chars(24);
+    fix_fortran_ms_e_vs_D_float_bug();
     lat[col_id] = atof(buffer) / 3600.00; // lat in arc seconds
-    //printf("%d %f %f\n", col, lng, lat);
+    //fprintf(stderr, "%d %f %f\n", col, lng, lat);
     
     get_chars(24); // always 0.0
     
     get_chars(24);
+    fix_fortran_ms_e_vs_D_float_bug();
     float min = atof(buffer); // min elevation
     get_chars(24);
+    fix_fortran_ms_e_vs_D_float_bug();
     float max = atof(buffer); // max elevation
     
     int char_count = 0;
@@ -172,6 +202,7 @@ int main(int argc, char ** argv)
     {
       get_chars(6); //short alt = atoi(buffer);
       char_count += 6;
+      fix_fortran_ms_e_vs_D_float_bug();
       elevation_data[col_id][row_id] = atof(buffer);
       if (set_invalid_data_to_water_level && elevation_data[col_id][row_id] == -32767) elevation_data[col_id][row_id] = water_level; // kbfu, applies to toronto data only, USA is invalid but it's all water anyway
       
@@ -279,13 +310,13 @@ int main(int argc, char ** argv)
   //free_shape(shape);
   
   //get_chars(type_b_header_size);
-  //printf("%s\n", buffer);
+  //fprintf(stderr, "%s\n", buffer);
   //get_chars(ceil((6*1201+type_b_header_size)/1024.0)*1024 - type_b_header_size);
-  //printf("%s------------\n", buffer);
+  //fprintf(stderr, "%s------------\n", buffer);
   
   //char temp[100];
   //sprintf(temp, "cp %s 030/", fn);
-  //printf("%s\n", temp);
+  //fprintf(stderr, "%s\n", temp);
   //system(temp);
   
   free(colors);
