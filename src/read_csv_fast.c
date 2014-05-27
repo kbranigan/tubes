@@ -34,6 +34,8 @@ int main(int argc, char ** argv)
   if (filename[0] == 0) { fprintf(stderr, "ERROR %s: filename not provided\n", argv[0]); return EXIT_FAILURE; }
   
   FILE * fp = fopen(filename, "r");
+  if (fgetc(fp) != 0xEF || fgetc(fp) != 0xBB || fgetc(fp) != 0xBF) rewind(fp); // skip UTF-8 BOM if it's found
+
   if (fp != NULL)
   {
     struct Block * block = new_block();
