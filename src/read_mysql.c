@@ -104,6 +104,7 @@ int main(int argc, char ** argv)
 				case MYSQL_TYPE_NEWDECIMAL: block = add_int64_column(block, field->name); break;
         case MYSQL_TYPE_FLOAT:    block = add_float_column(block, field->name); break;
         case MYSQL_TYPE_DOUBLE:   block = add_double_column(block, field->name); break;
+        case MYSQL_TYPE_BLOB:     block = add_string_column_with_length(block, field->name, 7); break;
         case MYSQL_TYPE_VAR_STRING:
         case MYSQL_TYPE_DATETIME:
           block = add_string_column_with_length(block, field->name, field->max_length); break;
@@ -132,7 +133,18 @@ int main(int argc, char ** argv)
         else if (column->type == TYPE_INT && column->bsize == 8 && row[column_id] != NULL) { long value = atoi(row[column_id]); set_cell(block, row_id, column_id, &value); }
         else if (column->type == TYPE_FLOAT && column->bsize == 4 && row[column_id] != NULL) { float value = atof(row[column_id]); set_cell(block, row_id, column_id, &value); }
         else if (column->type == TYPE_FLOAT && column->bsize == 8 && row[column_id] != NULL) { double value = atof(row[column_id]); set_cell(block, row_id, column_id, &value); }
-        else if (column->type == TYPE_CHAR && row[column_id] != NULL) set_cell(block, row_id, column_id, row[column_id]);
+        else if (column->type == TYPE_CHAR && row[column_id] != NULL)
+        {
+          if (strlen(row[column_id]) > column->bsize)
+          {
+            block = set_string_column_length(block, column_id, strlen(row[column_id]));
+          }
+          set_cell(block, row_id, column_id, row[column_id]);
+        }
+        else if (column->type == TYPE_CHAR && row[column_id] == NULL)
+        {
+          set_cell_from_string(block, row_id, column_id, "");
+        }
       }
       row_id++;
     }

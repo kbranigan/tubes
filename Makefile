@@ -6,7 +6,7 @@ ifeq ($(UNAME_S),Linux)
 	mysql= -I/usr/include/mysql -lmysqlclient -L/usr/lib/mysql
 endif
 ifeq ($(UNAME_S),Darwin)
-	mysql= -I/usr/local/include/mysql -lmysqlclient -L/usr/local/lib/mysql
+	mysql= -I/usr/local/mysql/include /usr/local/mysql/lib/libmysqlclient.a
 endif
 
 all: mkbin \
@@ -260,10 +260,10 @@ bin/test: bin/block.o src/test.c
 	gcc $(DEBUG) -lm bin/block.o src/test.c -o bin/test
 
 bin/read_mysql: bin/block.o src/read_mysql.c
-	gcc $(DEBUG) -lm bin/block.o src/read_mysql.c -o bin/read_mysql $(mysql)
+	g++ $(DEBUG) -lm bin/block.o src/read_mysql.c -o bin/read_mysql $(mysql)
 
 bin/read_mysql_table: bin/block.o src/read_mysql_table.c
-	gcc $(DEBUG) -lm bin/block.o src/read_mysql_table.c -o bin/read_mysql_table $(mysql)
+	g++ $(DEBUG) -lm bin/block.o src/read_mysql_table.c -o bin/read_mysql_table $(mysql)
 
 bin/png: bin/block.o src/png.c
 	gcc $(DEBUG) -lm bin/block.o src/png.c ext/SOIL/src/*.c -o bin/png -Iext/SOIL/src -framework OpenGL -framework CoreFoundation -lpng

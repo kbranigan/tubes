@@ -80,7 +80,7 @@ int main(int argc, char ** argv)
       else if (strncmp(row[1], "float", 5)==0)   block = add_float_column(block, row[0]);
       else if (strncmp(row[1], "double", 6)==0)  block = add_double_column(block, row[0]);
       else if (strncmp(row[1], "varchar", 7)==0) block = add_string_column_with_length(block, row[0], atoi(&row[1][8]));
-      else { fprintf(stderr, "ERROR: not handling mysql type '%s' (aborting)\n", row[1]); return; }
+      else { fprintf(stderr, "ERROR: not handling mysql type '%s' (aborting)\n", row[1]); return 0; }
     }
     mysql_free_result(res);
   }
