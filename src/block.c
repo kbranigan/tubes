@@ -406,6 +406,19 @@ const char * get_attribute_value_as_string(struct Block * block, const char * at
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void set_attribute_value_as_int32(struct Block * block, const char * attribute_name, int32_t value)
+{
+  struct Attribute * attribute = get_attribute_by_name(block, attribute_name);
+  if (attribute == NULL) return;
+
+  if (attribute->type == TYPE_INT && attribute->value_length == 4)
+    attribute_set_value(attribute, (void*)&value);
+  else
+    fprintf(stderr, "'%s' doesn't support attribute '%s' of type '%s'\n", __func__, attribute_name, get_type_name(attribute->type, attribute->value_length));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 char * attribute_get_name(struct Attribute * attribute)  { return (char*)attribute + sizeof(struct Attribute); }
 void * attribute_get_value(struct Attribute * attribute) { return (char*)attribute + sizeof(struct Attribute) + attribute->name_length; }
 void attribute_set_name(struct Attribute * attribute, const char * name)   { strncpy((char*)attribute + sizeof(struct Attribute), name, attribute->name_length); }

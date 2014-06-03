@@ -52,11 +52,11 @@ all: mkbin \
 extras: mkbin \
 	bin/read_mysql \
 	bin/read_mysql_table \
-	bin/read_nextbus \
 	bin/read_svg \
-	bin/read_kml \
 	bin/tesselate \
 	bin/png
+#	bin/read_kml \
+#	bin/read_nextbus \
 
 kevin: mkbin \
 	kevin/add_wday \
@@ -72,12 +72,16 @@ kevin: mkbin \
 	kevin/convert_location1_to_is_opp \
 	kevin/filter_no_at_and_no_op_ticket \
 	kevin/update_addresses.num_tickets \
+	kevin/run_change_log \
 	kevin/test
 
 mkbin:
 	@mkdir -p bin
 
-DEBUG= -g
+#DEBUG= -g
+
+kevin/run_change_log: bin/block.o kevin/run_change_log.c ext/cJSON.c
+	gcc $(DEBUG) -lm bin/block.o kevin/run_change_log.c ext/cJSON.c -o kevin/run_change_log
 
 kevin/add_ticket_totals_to_addresses: bin/block.o kevin/add_ticket_totals_to_addresses.c
 	gcc $(DEBUG) -lm bin/block.o kevin/add_ticket_totals_to_addresses.c -o kevin/add_ticket_totals_to_addresses

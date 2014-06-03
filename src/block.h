@@ -135,6 +135,8 @@ int32_t get_attribute_value_as_int32(struct Block * block, const char * attribut
 double get_attribute_value_as_double(struct Block * block, const char * attribute_name);
 const char * get_attribute_value_as_string(struct Block * block, const char * attribute_name);
 
+void set_attribute_value_as_int32(struct Block * block, const char * attribute_name, int32_t value);
+
 int32_t * get_attribute_offsets(struct Block * block);
 struct Attribute * get_first_attribute(struct Block * block);
 struct Attribute * get_next_attribute(struct Block * block, struct Attribute * attribute);

@@ -39,6 +39,9 @@ int main(int argc, char ** argv)
   if (fp != NULL)
   {
     struct Block * block = new_block();
+    block = add_command(block, argc, argv);
+    block = add_string_attribute(block, "source csv file", filename);
+    
     char header[500] = "";
     if (fgets(header, sizeof(header), fp) == NULL)
     {
