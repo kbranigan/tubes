@@ -72,7 +72,7 @@ kevin: mkbin \
 	kevin/convert_location1_to_is_opp \
 	kevin/filter_no_at_and_no_op_ticket \
 	kevin/update_addresses.num_tickets \
-	kevin/run_change_log \
+	kevin/run_changes \
 	kevin/test
 
 mkbin:
@@ -80,8 +80,8 @@ mkbin:
 
 #DEBUG= -g
 
-kevin/run_change_log: bin/block.o kevin/run_change_log.c ext/cJSON.c
-	gcc $(DEBUG) -lm bin/block.o kevin/run_change_log.c ext/cJSON.c -o kevin/run_change_log
+kevin/run_changes: bin/block.o kevin/run_changes.c ext/cJSON.c
+	gcc $(DEBUG) -lm bin/block.o kevin/run_changes.c ext/cJSON.c -o kevin/run_changes
 
 kevin/add_ticket_totals_to_addresses: bin/block.o kevin/add_ticket_totals_to_addresses.c
 	gcc $(DEBUG) -lm bin/block.o kevin/add_ticket_totals_to_addresses.c -o kevin/add_ticket_totals_to_addresses
