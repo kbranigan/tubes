@@ -12,6 +12,7 @@ endif
 all: mkbin \
 	bin/block.o \
 	bin/block_hashtable.o \
+	bin/block_glib_hashtable_test \
 	bin/block_varint.o \
 	bin/read_csv \
 	bin/read_csv_fast \
@@ -47,6 +48,7 @@ all: mkbin \
 	bin/coordinate_convert \
 	bin/simplify_shapes \
 	bin/winding_direction \
+	bin/read_osm_pbf \
 	bin/bounds
 
 extras: mkbin \
@@ -139,6 +141,12 @@ bin/block.o: src/block.c src/block.h unique.c
 
 bin/block_hashtable.o: bin/block.o src/block_hashtable.c
 	gcc $(DEBUG) src/block_hashtable.c -c -o bin/block_hashtable.o
+
+bin/block_glib_hashtable.o: bin/block.o src/block_glib_hashtable.c
+	gcc $(DEBUG) src/block_glib_hashtable.c -c -o bin/block_glib_hashtable.o `pkg-config --cflags glib-2.0`
+
+bin/block_glib_hashtable_test: bin/block.o bin/block_glib_hashtable.o src/block_glib_hashtable_test.c
+	gcc $(DEBUG) $^ -o $@ `pkg-config --cflags --libs glib-2.0`
 
 bin/block_varint.o: bin/block.o src/block_varint.c
 	gcc $(DEBUG) src/block_varint.c -c -o bin/block_varint.o
@@ -269,5 +277,17 @@ bin/read_mysql: bin/block.o src/read_mysql.c
 bin/read_mysql_table: bin/block.o src/read_mysql_table.c
 	g++ $(DEBUG) -lm bin/block.o src/read_mysql_table.c -o bin/read_mysql_table $(mysql)
 
+ext/SOIL/libsoil.a: ext/SOIL/src/SOIL.o ext/SOIL/src/image_DXT.o ext/SOIL/src/image_helper.o ext/SOIL/src/stb_image_aug.o
+	ar r $@ $^
+
 bin/png: bin/block.o src/png.c
-	gcc $(DEBUG) -lm bin/block.o src/png.c ext/SOIL/src/*.c -o bin/png -Iext/SOIL/src -framework OpenGL -framework CoreFoundation -lpng
+	gcc $(DEBUG) `pkg-config --libs --cflags libpng` bin/block.o src/png.c ext/SOIL/libsoil.a -Iext/SOIL/src -o bin/png -framework OpenGL -framework CoreFoundation -Wno-deprecated-declarations
+
+bin/read_osm_pbf: bin/block.o ext/fileformat.pb.o ext/osmformat.pb.o src/read_osm_pbf.cpp
+	g++ --std=c++11 $(DEBUG) -I/opt/homebrew/include -L/opt/homebrew/lib -lprotobuf-lite -Lext -lz $^ -o bin/read_osm_pbf
+
+ext/%.pb.o: ext/%.pb.cc
+	$(CXX) --std=c++11 $(CXXFLAGS) -I/opt/homebrew/include -fPIC -c -o $@ $<
+
+ext/%.pb.cc ext/%.pb.h: ext/%.proto
+	protoc --proto_path=ext --cpp_out=ext $<

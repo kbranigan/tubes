@@ -28,4 +28,9 @@ struct mtmZoner {
   double refMeridian;
 };
 
+void get_geo_constants(struct ellipsoid * e, int ellipsoid_id, int xtm);
+struct mtmZoner gsrugZoner(double mtmLat, double mtmLong, int mtmZone);
+char get_zoneletter(double lat);
+void get_latlon(struct latlon * ll, struct xtmcoord c, struct ellipsoid e);
+
 #endif

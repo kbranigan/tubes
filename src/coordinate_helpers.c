@@ -1,6 +1,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 
 #include "coordinate_helpers.h"
@@ -181,7 +182,7 @@ struct xtmcoord get_xtm(struct latlon ll, int xtm, struct ellipsoid e, double re
     else
     {
       lonorig = ref_meridian;
-      if (abs(ll.lon - lonorig) > 4.)
+      if (fabs(ll.lon - lonorig) > 4.)
         fprintf(stderr, "MTM ref meridian more than 4 degrees away from longitude\nContinuing anyway\n");
     }
   }

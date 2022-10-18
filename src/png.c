@@ -55,7 +55,7 @@ int setup_offscreen_render(float min_x, float max_x, float min_y, float max_y, f
   {
     kCGLPFADoubleBuffer,
     kCGLPFAAccumSize, (CGLPixelFormatAttribute)32,
-    (CGLPixelFormatAttribute)NULL
+    0
   };
   
   CGLPixelFormatObj pixFmt;
